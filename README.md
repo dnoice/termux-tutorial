@@ -140,4 +140,4 @@ explanations are all welcome.
 
 ## License
 
-[BSD-3](LICENSE) © dnoice
+[BSD 3-Clause License](LICENSE) © dnoice
