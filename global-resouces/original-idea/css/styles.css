@@ -1,0 +1,669 @@
+/* === css/styles.css */
+/* Version: 1.0 */
+/* Last Reviewed: 2025-04-27 */
+/* Author: Dennis 'dendogg' Smaltz (for Danny Barcello) */
+/* Description: This stylesheet defines the visual styles for the Termux Guide, ensuring a consistent and accessible user experience across different devices and themes. */
+
+/*------------------------------------*\
+ * BASE & RESET
+\*------------------------------------*/
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 100%; /* Base for rem units */
+}
+
+/*------------------------------------*\
+ * CSS VARIABLES & THEMES
+ * Defined here for global scope and theme switching.
+\*------------------------------------*/
+:root {
+  /* --- Core Palette --- */
+  --bg-color: #f4f7f9;
+  --bg-gradient: linear-gradient(180deg, color-mix(in srgb, var(--bg-color) 95%, white 5%) 0%, var(--bg-color) 100%);
+  --surface-color: #ffffff;
+  --surface-alt-color: #f0f3f6; /* Slightly different surface */
+  --text-color: #24292e;
+  --text-muted-color: #586069;
+  --border-color: #d0d7de; /* Main border color */
+  --border-subtle-color: #e1e4e8; /* Lighter border for less emphasis */
+
+  /* --- Accent & Links --- */
+  --accent-color: #4a69bd; /* Primary Accent (Blue/Purple) */
+  --accent-hover-color: #3b5bb5;
+  --link-color: #0969da; /* Link Blue */
+  --link-hover-color: #0550ae;
+
+  /* --- Semantic Colors --- */
+  --success-color: #1a7f37; /* Green */
+  --success-bg-color: #dafbe1;
+  --warning-color: #c67a0b; /* Amber/Orange */
+  --warning-bg-color: #fff8c5;
+  --error-color: #d73a49; /* Red */
+  --error-bg-color: #ffebe9;
+  --info-color: #1f78d1;  /* Blue */
+  --info-bg-color: #ddf4ff;
+
+  /* --- Icon Colors (For cycling through sections) --- */
+  --icon-color-1: var(--accent-color); /* Default/Blue-Purple */
+  --icon-color-2: #1a7f37; /* Success Green */
+  --icon-color-3: #c67a0b; /* Warning Orange */
+  --icon-color-4: #bc51a8; /* Purple/Magenta */
+  --fa-icon-color: inherit; /* Default FA icon color inherits text color */
+
+  /* --- Section Specific Accent (Set via nth-of-type, used by children) --- */
+  --section-accent-color: var(--accent-color); /* Default fallback */
+
+  /* --- Code --- */
+  --code-bg-color: #f6f8fa;
+  --code-text-color: var(--text-color);
+  --code-glow-color: color-mix(in srgb, var(--accent-color) 25%, transparent);
+
+  /* --- Shadows --- */
+  --shadow-color: rgba(140, 149, 159, 0.15);
+  --shadow-hover-color: rgba(140, 149, 159, 0.25);
+  --glow-shadow: 0 0 8px 2px var(--code-glow-color);
+
+  /* --- Theme Toggle --- */
+  --button-icon-color: var(--accent-color);
+  --button-icon-fill: none;
+  --button-icon-stroke-dark: var(--accent-color); /* For Moon stroke in dark mode */
+  --button-icon-fill-dark: var(--accent-color);   /* For Moon fill in dark mode */
+
+  /* --- Figcaption Color Variable (Dark Mode Override) --- */
+  --figcaption-color: #6a737d; /* Default figcaption color (muted) */
+
+  /* --- Other --- */
+  --header-graphic-filter: none;
+  --toc-active-bg: color-mix(in srgb, var(--accent-color) 15%, transparent);
+  --toc-active-text: var(--accent-color);
+
+  /* --- Typography --- */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  --line-height-base: 1.65;
+
+  /* --- Spacing (Using clamp for fluid responsiveness) --- */
+  --space-xs: clamp(0.3rem, 0.8vw, 0.5rem);
+  --space-sm: clamp(0.6rem, 1.5vw, 0.8rem);
+  --space-md: clamp(1.1rem, 3vw, 1.6rem);
+  --space-lg: clamp(1.6rem, 5vw, 2.8rem);
+  --space-xl: clamp(2.2rem, 8vw, 4.4rem);
+
+  /* --- Transitions --- */
+  --transition-speed-fast: 0.15s;
+  --transition-speed-med: 0.25s;
+  --transition-speed-slow: 0.4s;
+  --transition-easing: ease;
+  --transition-easing-elastic: cubic-bezier(0.445, 0.050, 0.550, 0.950);
+
+  /* --- Color Scheme Hint --- */
+  color-scheme: light;
+}
+
+/* Dark Theme Overrides */
+html[data-theme="dark"] {
+  /* Core Palette */
+  --bg-color: #0d1117; --bg-gradient: linear-gradient(180deg, color-mix(in srgb, var(--bg-color) 95%, black 5%) 0%, var(--bg-color) 100%); --surface-color: #161b22; --surface-alt-color: #1c2128; --text-color: #e6edf3; --text-muted-color: #7d8590; --border-color: #30363d; --border-subtle-color: #21262d;
+  /* Accent & Links */
+  --accent-color: #58a6ff; --accent-hover-color: #79c0ff; --link-color: var(--accent-color); --link-hover-color: var(--accent-hover-color);
+  /* Semantic Colors */
+  --success-color: #3fb950; --success-bg-color: rgba(46, 160, 67, 0.15); --warning-color: #d29922; --warning-bg-color: rgba(187, 128, 9, 0.15); --error-color: #f85149; --error-bg-color: rgba(248, 81, 73, 0.15); --info-color: #388bfd; --info-bg-color: rgba(56, 139, 253, 0.15);
+  /* Icon Colors (Dark Mode Adjustments if needed - using light mode versions here) */
+  --icon-color-1: var(--accent-color); --icon-color-2: #3fb950; --icon-color-3: #d29922; --icon-color-4: #db61a2; --fa-icon-color: inherit;
+  /* Code */
+  --code-bg-color: #10141a; --code-text-color: var(--text-color); --code-glow-color: color-mix(in srgb, var(--accent-color) 30%, transparent);
+  /* Shadows */
+  --shadow-color: rgba(0, 0, 0, 0.3); --shadow-hover-color: rgba(0, 0, 0, 0.5);
+  /* Theme Toggle */
+  --button-icon-color: var(--accent-color); --button-icon-fill: var(--button-icon-fill-dark); --button-icon-stroke-dark: var(--surface-color);
+  /* Figcaption Color */
+  --figcaption-color: var(--text-muted-color); /* Use muted text color in dark mode */
+  /* Other */
+  --header-graphic-filter: brightness(0.9) saturate(0.95) contrast(1.05); --toc-active-bg: color-mix(in srgb, var(--accent-color) 20%, transparent); --toc-active-text: var(--accent-color);
+
+  /* Color Scheme Hint */
+  color-scheme: dark;
+}
+
+/*------------------------------------*\
+ * GLOBAL STYLES
+\*------------------------------------*/
+body {
+  font-family: var(--font-family-sans);
+  line-height: var(--line-height-base);
+  background: var(--bg-gradient);
+  background-attachment: fixed; /* Keep gradient static during scroll */
+  color: var(--text-color);
+  transition: background var(--transition-speed-med) var(--transition-easing),
+              color var(--transition-speed-med) var(--transition-easing);
+  padding: var(--space-sm); /* Ensure some padding around the container */
+  -webkit-font-smoothing: antialiased; /* Smoother fonts on WebKit */
+  -moz-osx-font-smoothing: grayscale; /* Smoother fonts on Firefox */
+}
+
+.container {
+  max-width: 850px; /* Optimal reading width (subjective) */
+  margin: var(--space-md) auto; /* Centering and top/bottom margin */
+  background-color: var(--surface-color);
+  padding: var(--space-lg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px var(--shadow-color);
+  transition: background-color var(--transition-speed-med) var(--transition-easing),
+              border-color var(--transition-speed-med) var(--transition-easing),
+              box-shadow var(--transition-speed-med) var(--transition-easing);
+  overflow: hidden; /* Contains margins/floats, ensures consistent look */
+}
+
+/*------------------------------------*\
+ * TYPOGRAPHY & LINKS & ICONS
+\*------------------------------------*/
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-md);
+  line-height: 1.3;
+  font-weight: 600;
+  padding-bottom: var(--space-sm); /* Consistent spacing below heading text */
+  transition: border-color var(--transition-speed-med) var(--transition-easing);
+  display: flex; /* For vertical alignment of icons */
+  align-items: center;
+}
+
+h1 { font-size: clamp(1.7rem, 5vw, 2.3rem); border-bottom: none; }
+h2 { font-size: clamp(1.4rem, 4vw, 1.9rem); border-bottom: 1px solid var(--border-subtle-color); }
+h3 { font-size: clamp(1.2rem, 3vw, 1.5rem); border-bottom: none; }
+
+/* Paragraphs */
+p { margin-bottom: var(--space-md); }
+/* Avoid excessive bottom margin on last element in common containers */
+section p:last-child, .note p:last-child, .highlight p:last-child { margin-bottom: 0; }
+
+/* Links */
+a {
+  color: var(--link-color);
+  text-decoration: none;
+  transition: color var(--transition-speed-fast) var(--transition-easing),
+              background-color var(--transition-speed-fast) var(--transition-easing),
+              text-decoration-color var(--transition-speed-fast) var(--transition-easing);
+  text-decoration-color: transparent; /* Underline fade-in effect */
+  border-radius: 2px; /* Subtle rounding for focus */
+}
+a:hover, a:focus {
+  color: var(--link-hover-color);
+  text-decoration: underline;
+  text-decoration-color: var(--link-hover-color);
+}
+/* Enhanced focus style for keyboard navigation */
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 2px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-color) 30%, transparent);
+}
+/* Hide outline if not keyboard focused */
+a:focus:not(:focus-visible),
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Inline text semantics */
+strong, b { font-weight: 600; color: var(--text-color); }
+/* Italicize non-FontAwesome 'i' tags (like in <time><i>...</i></time>) */
+em, i:not([class*="fa-"]):not([class*="icon-"]) {
+  font-style: italic;
+  color: var(--accent-hover-color);
+}
+small { font-size: 0.9em; color: var(--text-muted-color); }
+time { font-family: var(--font-family-mono); font-size: 0.9em; color: var(--text-muted-color); }
+
+/* Font Awesome Icon Base Styling */
+i[class*="fa-"], .fab, .fas, .far, .fal, .fad { /* Target all FA styles */
+  color: var(--fa-icon-color); /* Use variable for color */
+  margin-inline: 0.2em; /* Default spacing around icons */
+  vertical-align: middle; /* Align icons nicely with text */
+  line-height: 1; /* Prevent extra line spacing */
+  transition: color var(--transition-speed-med) var(--transition-easing),
+              transform var(--transition-speed-fast) var(--transition-easing); /* Added transform transition */
+}
+
+/* Section Heading Icons */
+h2 > i.section-icon {
+  font-size: 0.8em; /* Relative size */
+  margin-right: 0.5em; /* Space after icon */
+  margin-left: 0;
+  width: 1.5em; /* Ensure consistent spacing */
+  text-align: center;
+  flex-shrink: 0; /* Prevent icon from shrinking */
+  color: var(--section-accent-color); /* Use the section's determined accent color */
+  transition: color var(--transition-speed-med) var(--transition-easing),
+              text-shadow var(--transition-speed-med) var(--transition-easing),
+              transform var(--transition-speed-fast) var(--transition-easing); /* Added transform */
+}
+/* Hover effect for section icons */
+h2 > i.section-icon:hover {
+    text-shadow: 0 0 6px color-mix(in srgb, var(--section-accent-color) 75%, transparent);
+    transform: scale(1.1);
+}
+
+/* Icons inside notes/highlights */
+.note i[class*="fa-"], .highlight i[class*="fa-"] {
+  margin-right: 0.4em; /* Space after icon */
+  margin-left: 0;
+  flex-shrink: 0; /* Prevent shrinking */
+  /* Colors are handled by specific .note.TYPE rules */
+}
+
+/*------------------------------------*\
+ * HEADER & HERO IMAGE
+\*------------------------------------*/
+.main-header {
+  text-align: left;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
+  position: relative; /* Needed for stacking context / parallax */
+  overflow: hidden; /* Clip parallaxing image to prevent overlap */
+}
+
+.header-graphic {
+  display: block;
+  max-width: clamp(180px, 40vw, 350px); /* Responsive max width */
+  height: auto;
+  margin: 0 auto var(--space-md) auto; /* Center graphic */
+  border-radius: 8px;
+  filter: var(--header-graphic-filter);
+  box-shadow: 0 4px 10px var(--shadow-color);
+  transition: filter var(--transition-speed-med) var(--transition-easing),
+              transform var(--transition-speed-med) var(--transition-easing), /* Base transform handled by JS */
+              box-shadow var(--transition-speed-med) var(--transition-easing);
+  will-change: transform; /* Performance hint for JS animation */
+}
+/* Enhance hover effect */
+.header-graphic:hover {
+  /* Scale effect - combines with JS translateY */
+  transform: scale(1.03) translateY(var(--parallax-offset, 0px));
+  filter: brightness(1.05) contrast(1.05) saturate(1.1);
+  box-shadow: 0 6px 15px var(--shadow-hover-color);
+}
+
+.header-intro { display: flex; flex-direction: column; align-items: flex-start; }
+.header-intro h1 { margin-bottom: var(--space-sm); }
+.main-header .intro { font-size: 1.1em; color: var(--text-muted-color); margin-bottom: var(--space-sm); }
+
+/*------------------------------------*\
+ * TABLE OF CONTENTS (NAV)
+\*------------------------------------*/
+.toc {
+  background-color: transparent;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--space-md) 0;
+  margin-bottom: var(--space-lg);
+}
+.toc h3 {
+  margin-top: 0; margin-bottom: var(--space-md); font-size: 1em; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted-color);
+  border-bottom: none; display: flex; align-items: center;
+}
+.toc ul { list-style: none; padding-left: 0; columns: 2; column-gap: var(--space-md); }
+.toc li { margin-bottom: var(--space-xs); }
+.toc a {
+  display: block; padding: var(--space-sm); border-radius: 4px; text-decoration: none;
+  color: var(--text-muted-color); font-size: 0.9em; font-weight: 500;
+  transition: background-color var(--transition-speed-fast) var(--transition-easing),
+              color var(--transition-speed-fast) var(--transition-easing),
+              transform var(--transition-speed-fast) var(--transition-easing);
+  position: relative;
+}
+.toc a:hover, .toc a:focus {
+  background-color: var(--accent-hover-color); color: white;
+  text-decoration: none; transform: translateX(3px);
+}
+.toc a.active { /* Style for active TOC link (via JS) */
+  background-color: var(--toc-active-bg); color: var(--toc-active-text);
+  font-weight: 700;
+}
+
+/*------------------------------------*\
+ * MAIN CONTENT & SECTIONS
+\*------------------------------------*/
+main section {
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px dashed var(--border-subtle-color); /* Subtle separator */
+  position: relative; /* Needed for section-specific variable */
+}
+main section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* /// SECTION COLOR INHERITANCE LOGIC /// */
+/* Sets the --section-accent-color variable based on the section index. */
+/* This variable is then used by child elements like H2 icons and list markers. */
+main section:nth-of-type(4n+1) { --section-accent-color: var(--icon-color-1); }
+main section:nth-of-type(4n+2) { --section-accent-color: var(--icon-color-2); }
+main section:nth-of-type(4n+3) { --section-accent-color: var(--icon-color-3); }
+main section:nth-of-type(4n+4) { --section-accent-color: var(--icon-color-4); }
+/* Specific override for the Android icon section if needed */
+main section:has(h2 > i.fa-android) { --section-accent-color: #3DDC84; }
+html[data-theme="dark"] main section:has(h2 > i.fa-android) { --section-accent-color: #69ef98; }
+
+
+/* Section/Figure Entrance Animation */
+.section-animate { /* Base state (applied via JS if needed) */
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  will-change: opacity, transform; /* Performance hint */
+}
+.section-animate.is-visible { /* Visible state (class added by JS) */
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Lists */
+ul, ol { margin-left: var(--space-md); margin-bottom: var(--space-md); padding-left: var(--space-md); }
+li { margin-bottom: var(--space-sm); padding-left: var(--space-xs); }
+/* Apply section accent color to list markers */
+li::marker {
+  color: var(--section-accent-color);
+  font-weight: 600;
+  transition: color var(--transition-speed-med) var(--transition-easing);
+}
+/* Nested lists spacing */
+li > ul, li > ol { margin-top: var(--space-sm); margin-bottom: var(--space-sm); }
+
+/* Code Blocks */
+pre {
+  background-color: var(--code-bg-color); color: var(--code-text-color);
+  font-family: var(--font-family-mono); padding: var(--space-md);
+  border-radius: 6px; overflow-x: auto; margin: var(--space-md) 0;
+  border: 1px solid var(--border-color);
+  transition: background-color var(--transition-speed-med) var(--transition-easing),
+              color var(--transition-speed-med) var(--transition-easing),
+              border-color var(--transition-speed-med) var(--transition-easing),
+              box-shadow var(--transition-speed-med) var(--transition-easing);
+  font-size: 0.9em; white-space: pre; position: relative; /* For copy button positioning */
+  will-change: background-color, color, border-color, box-shadow; /* Hint for transitions */
+}
+/* Glow effect on hover */
+pre:hover {
+  box-shadow: 0 2px 8px var(--shadow-hover-color), var(--glow-shadow);
+}
+
+/* Inline Code */
+code {
+  background-color: color-mix(in srgb, var(--accent-color) 10%, transparent);
+  color: var(--code-text-color); font-family: var(--font-family-mono);
+  padding: 0.2em 0.4em; border-radius: 3px; font-size: 0.9em;
+  border: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+  word-wrap: break-word; /* Prevent long code words from overflowing */
+  transition: background-color var(--transition-speed-fast) var(--transition-easing),
+              box-shadow var(--transition-speed-fast) var(--transition-easing);
+}
+/* Glow effect on hover for inline code */
+code:hover {
+    background-color: color-mix(in srgb, var(--accent-color) 20%, transparent);
+    box-shadow: 0 0 5px 1px var(--code-glow-color);
+}
+/* Reset inline code styles when inside a <pre> block */
+pre > code {
+  background-color: transparent; color: inherit; padding: 0; border-radius: 0;
+  border: none; font-size: inherit; white-space: inherit; word-wrap: normal;
+  box-shadow: none; /* No glow inside pre */
+}
+pre > code:hover {
+    background-color: transparent; /* Ensure no bg change on hover inside pre */
+    box-shadow: none;
+}
+
+/* Copy Button */
+.code-block-header { position: absolute; top: var(--space-sm); right: var(--space-sm); padding: 0; z-index: 1; }
+.copy-button {
+  background-color: color-mix(in srgb, var(--surface-color) 70%, var(--accent-color) 30%);
+  color: var(--text-muted-color); border: 1px solid var(--border-color);
+  border-radius: 4px; padding: 0.3em 0.8em; font-size: 0.8em;
+  font-family: var(--font-family-sans); font-weight: 500; cursor: pointer;
+  transition: all var(--transition-speed-fast) var(--transition-easing);
+  opacity: 0.6; will-change: opacity, background-color, color, transform, box-shadow; /* Hint */
+}
+/* Show button on pre hover */
+pre:hover .copy-button { opacity: 1; }
+.copy-button:focus, .copy-button:hover {
+  opacity: 1; background-color: var(--accent-color); border-color: var(--accent-hover-color);
+  color: white; transform: scale(1.05); box-shadow: 0 1px 3px var(--shadow-hover-color);
+}
+.copy-button:active { transform: scale(0.98); filter: brightness(0.9); }
+.copy-button.copied { /* Copied state */
+  background-color: var(--success-color);
+  border-color: color-mix(in srgb, var(--success-color) 80%, black 20%);
+  color: #fff; opacity: 1; transform: scale(1); box-shadow: none;
+}
+.copy-button.error { /* Error state */
+  background-color: var(--error-color);
+  border-color: color-mix(in srgb, var(--error-color) 80%, black 20%); /* Defined error border */
+  color: #fff; opacity: 1; transform: scale(1); box-shadow: none;
+}
+
+
+/* Custom Notes/Highlights */
+.highlight, .note {
+  padding: var(--space-sm) var(--space-md); margin: var(--space-md) 0;
+  border-left-width: 4px; border-left-style: solid; border-radius: 0 6px 6px 0;
+  transition: background-color var(--transition-speed-med) var(--transition-easing),
+              border-color var(--transition-speed-med) var(--transition-easing),
+              color var(--transition-speed-med) var(--transition-easing);
+  font-size: 0.95em; box-shadow: 1px 1px 3px color-mix(in srgb, var(--shadow-color) 50%, transparent);
+  display: flex; align-items: flex-start; /* Align icon and text */
+}
+/* Ensure proper spacing between icon and text content */
+.highlight > *:not(i[class*="fa-"]),
+.note > *:not(i[class*="fa-"]) {
+  flex-grow: 1;
+}
+
+/* Default Note Style (Info) */
+.note, .note.info { /* Add .info for explicitness */
+  border-left-color: var(--info-color); background-color: var(--info-bg-color);
+  color: color-mix(in srgb, var(--info-color) 80%, var(--text-color) 20%);
+}
+.note i[class*="fa-"], .note.info i[class*="fa-"] { color: var(--info-color); }
+html[data-theme="dark"] .note, html[data-theme="dark"] .note.info {
+  color: color-mix(in srgb, var(--info-color) 80%, var(--text-color) 20%);
+}
+
+/* Warning Note Style */
+.note.warning {
+  border-left-color: var(--warning-color); background-color: var(--warning-bg-color);
+  color: color-mix(in srgb, var(--warning-color) 90%, black 10%);
+}
+.note.warning i[class*="fa-"] { color: var(--warning-color); }
+html[data-theme="dark"] .note.warning {
+  color: color-mix(in srgb, var(--warning-color) 85%, white 15%);
+}
+
+/* Highlight Style (Uses Accent Color) */
+.highlight {
+  border-left-color: var(--accent-color);
+  background-color: color-mix(in srgb, var(--accent-color) 8%, var(--surface-color) 92%);
+}
+.highlight strong { color: var(--accent-color); }
+.highlight i[class*="fa-"] { color: var(--accent-color); }
+
+/*------------------------------------*\
+ * TUTORIAL IMAGES & FIGURES
+\*------------------------------------*/
+figure.tutorial-image-figure {
+  margin: var(--space-lg) 0; /* Vertical spacing */
+  padding: 0;
+  border-radius: 6px;
+  overflow: hidden; /* Clip image to rounded corners */
+  background-color: var(--surface-alt-color); /* Subtle background */
+  border: 1px solid var(--border-subtle-color);
+  box-shadow: 0 2px 6px var(--shadow-color);
+  transition: background-color var(--transition-speed-med) var(--transition-easing),
+              border-color var(--transition-speed-med) var(--transition-easing),
+              box-shadow var(--transition-speed-med) var(--transition-easing);
+  /* Inherits entrance animation from .section-animate class added in HTML */
+}
+
+img.tutorial-image {
+  display: block; /* Remove bottom space */
+  max-width: 100%; /* Responsive */
+  height: auto; /* Maintain aspect ratio */
+  border-bottom: 1px solid var(--border-subtle-color); /* Separator line */
+  transition: border-color var(--transition-speed-med) var(--transition-easing);
+}
+
+figure.tutorial-image-figure figcaption {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 0.9em;
+  text-align: center;
+  color: var(--figcaption-color); /* Use CSS variable */
+  font-style: italic;
+  background-color: var(--surface-alt-color); /* Match figure background */
+  transition: background-color var(--transition-speed-med) var(--transition-easing),
+              color var(--transition-speed-med) var(--transition-easing);
+}
+
+/*------------------------------------*\
+ * FOOTER
+\*------------------------------------*/
+footer {
+  margin-top: var(--space-xl); padding: var(--space-lg) 0 var(--space-md) 0;
+  border-top: 1px solid var(--border-color); text-align: center;
+  font-size: 0.85em; color: var(--text-muted-color);
+  transition: color var(--transition-speed-med) var(--transition-easing),
+              border-color var(--transition-speed-med) var(--transition-easing);
+}
+footer p { margin-bottom: var(--space-sm); } /* Consistent spacing */
+
+/* Style for ASCII art placeholder */
+footer p > strong {
+    display: block; margin-bottom: var(--space-sm); font-family: var(--font-family-mono);
+    color: var(--text-muted-color); font-weight: normal; white-space: pre;
+    line-height: 1.2; font-size: 0.9em; /* Slightly smaller */
+    opacity: 0.7; /* More subtle */
+    transition: opacity var(--transition-speed-med) var(--transition-easing),
+                color var(--transition-speed-med) var(--transition-easing);
+}
+footer:hover p > strong {
+    opacity: 0.9; color: var(--text-color); /* Enhance on footer hover */
+}
+
+/* Style for FA icon in footer */
+footer p > i.fa-laptop-code {
+  margin-inline: 0; color: var(--text-muted-color); opacity: 0.8; font-size: 1.5em; /* Larger icon */
+  transition: opacity var(--transition-speed-med) var(--transition-easing),
+              color var(--transition-speed-med) var(--transition-easing),
+              transform var(--transition-speed-fast) var(--transition-easing);
+}
+footer:hover p > i.fa-laptop-code {
+    opacity: 1; color: var(--accent-color); transform: scale(1.1);
+}
+
+/*------------------------------------*\
+ * THEME TOGGLE BUTTON
+\*------------------------------------*/
+.theme-toggle-button {
+  position: fixed; bottom: var(--space-md); right: var(--space-md); z-index: 1000;
+  background-color: var(--surface-color); border: 2px solid var(--accent-color);
+  border-radius: 30px; width: 70px; height: 38px; padding: 4px;
+  box-shadow: 0 3px 8px var(--shadow-hover-color); display: flex;
+  justify-content: center; align-items: center; cursor: pointer;
+  transition: background-color var(--transition-speed-med) var(--transition-easing),
+              border-color var(--transition-speed-med) var(--transition-easing),
+              transform var(--transition-speed-fast) var(--transition-easing),
+              box-shadow var(--transition-speed-med) var(--transition-easing);
+  overflow: hidden; -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+}
+.theme-toggle-button .icon { /* SVG icons inside */
+  width: 22px; height: 22px; position: absolute;
+  stroke: var(--button-icon-color); fill: var(--button-icon-fill);
+  transition: transform var(--transition-speed-slow) var(--transition-easing-elastic),
+              opacity var(--transition-speed-med) var(--transition-easing),
+              fill var(--transition-speed-med) var(--transition-easing),
+              stroke var(--transition-speed-med) var(--transition-easing);
+  pointer-events: none; /* Icons don't intercept clicks */
+}
+/* Specific theme state icon styles */
+html[data-theme="dark"] .theme-toggle-button .icon-moon { stroke: var(--button-icon-stroke-dark); }
+html:not([data-theme="dark"]) .theme-toggle-button .icon-sun { transform: translateX(0) rotate(0deg); opacity: 1; }
+html:not([data-theme="dark"]) .theme-toggle-button .icon-moon { transform: translateX(150%) rotate(90deg); opacity: 0; }
+html[data-theme="dark"] .theme-toggle-button .icon-sun { transform: translateX(-150%) rotate(-90deg); opacity: 0; }
+html[data-theme="dark"] .theme-toggle-button .icon-moon { transform: translateX(0) rotate(0deg); opacity: 1; }
+/* Hover effect */
+.theme-toggle-button:hover { transform: scale(1.08); box-shadow: 0 5px 12px var(--shadow-hover-color); }
+/* Subtle icon animation on button hover */
+.theme-toggle-button:hover .icon-sun { transform: rotate(15deg); }
+html[data-theme="dark"] .theme-toggle-button:hover .icon-moon { transform: translateX(0) rotate(-10deg); }
+
+/*------------------------------------*\
+ * RESPONSIVENESS
+\*------------------------------------*/
+@media (max-width: 768px) {
+  body { padding: 0; } /* Remove body padding on smaller screens */
+  .container {
+    padding: var(--space-md); margin: 0; border-left: none; border-right: none;
+    border-radius: 0; box-shadow: none; border-top: none; border-bottom: none; /* Full width */
+   }
+  .toc ul { columns: 1; } /* Single column TOC */
+  .theme-toggle-button { width: 60px; height: 34px; bottom: var(--space-sm); right: var(--space-sm); }
+  .theme-toggle-button .icon { width: 18px; height: 18px; }
+  pre { padding-left: var(--space-sm); padding-right: var(--space-sm); }
+  .code-block-header { top: var(--space-xs); right: var(--space-xs); } /* Adjust copy button pos */
+  .copy-button { padding: 0.25em 0.6em; font-size: 0.75em; }
+  figure.tutorial-image-figure { margin: var(--space-md) 0; } /* Less image margin */
+}
+
+@media (max-width: 480px) {
+  /* Adjust typography for very small screens */
+  h1 { font-size: 1.6rem; } h2 { font-size: 1.3rem; } h3 { font-size: 1.15rem; }
+  .header-graphic { max-width: 90%; } /* Allow graphic to be larger relative to small screen */
+  pre { padding-top: calc(var(--space-sm) + 2em); } /* Ensure space for copy button */
+  .copy-button { font-size: 0.75em; padding: 0.3em 0.7em; } /* Fine-tune copy button */
+}
+
+/*------------------------------------*\
+ * PRINT STYLES
+ * Optimize for printing, remove interactivity and unnecessary visuals.
+\*------------------------------------*/
+@media print {
+  body { background: #fff !important; color: #000; font-size: 11pt; font-family: 'Times New Roman', Times, serif; }
+  html { /* Reset print variables for black/white */
+    --bg-color: #fff; --bg-gradient: #fff; --surface-color: #fff; --text-color: #000; --text-muted-color: #333; --accent-color: #000; --accent-hover-color: #000; --code-bg-color: #eee; --code-text-color: #000; --border-color: #aaa; --border-subtle-color: #ccc; --link-color: #000; --link-hover-color: #000; --success-color: #000; --warning-color: #000; --error-color: #000; --info-color: #000; --icon-color-1: #000; --icon-color-2: #000; --icon-color-3: #000; --icon-color-4: #000; --fa-icon-color: #000; --toc-active-bg: transparent; --toc-active-text: #000; --shadow-color: transparent; --shadow-hover-color: transparent; --button-icon-color: #000; --button-icon-fill: none; --section-accent-color: #000; --figcaption-color: #333;
+  }
+  .container { box-shadow: none; border: 1px solid var(--border-color); padding: 1cm; max-width: 100%; border-radius: 0; margin: 0; }
+  /* Hide non-essential elements */
+  .main-header, .toc, footer, .theme-toggle-button, .code-block-header, .header-graphic, i[class*="fa-"], figure.tutorial-image-figure figcaption, .highlight i[class*="fa-"], .note i[class*="fa-"] {
+    display: none !important;
+  }
+  figure.tutorial-image-figure img.tutorial-image { display: block; max-width: 80%; margin: 1cm auto; } /* Show images but smaller */
+  main section { border-bottom: 1px solid var(--border-color); margin-bottom: 1.5cm; padding-bottom: 1cm; page-break-inside: avoid; }
+  main section:last-of-type { border-bottom: none; }
+  h1, h2, h3, h4, h5, h6 { page-break-after: avoid; border-bottom: 1px solid #000; font-family: 'Helvetica', Arial, sans-serif; display: block !important; /* Reset flex */ }
+  a { text-decoration: underline; color: #000; }
+  a[href^="#"] { display: none; } /* Hide internal links */
+  /* Show full URLs for external links */
+  a[href^="http"]:after, a[href^="https"]:after { content: " (" attr(href) ")"; font-size: 0.8em; color: #333; word-break: break-all; }
+  pre { overflow: visible; white-space: pre-wrap !important; word-wrap: break-word; background-color: var(--code-bg-color); border: 1px solid var(--border-color); padding: 0.5cm; font-size: 9pt; page-break-inside: avoid; font-family: 'Courier New', Courier, monospace; }
+  code { background: none; border: none; font-size: inherit; }
+  pre > code { white-space: pre-wrap !important; }
+  /* Simplify notes/highlights for print */
+  .highlight, .note { border-left: 2px solid #000; background: #f8f8f8; display: block !important; /* Reset flex */ padding: 0.5cm; }
+  li::marker { color: #000; } /* Black markers for print */
+}
+
+/* === END css/styles.css === */

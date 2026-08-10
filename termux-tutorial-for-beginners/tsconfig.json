@@ -1,0 +1,16 @@
+{
+	// Strict is now ENFORCED, not decorative: `typescript` and `@astrojs/check`
+	// are real devDependencies, `npm run check` runs the compiler, and CI runs
+	// that script before it builds. Before this, `astro build` was the only
+	// thing that ever read the code and it does not typecheck at all.
+	"extends": "astro/tsconfigs/strict",
+	"include": [".astro/types.d.ts", "**/*"],
+	"exclude": [
+		"dist",
+		// Vendored third-party JS (coi-serviceworker) and generated font
+		// binaries. Nothing in src imports from public/, and holding upstream
+		// code to this project's strictness only produces diagnostics nobody
+		// can act on — it reported one unused-variable hint on every run.
+		"public"
+	]
+}

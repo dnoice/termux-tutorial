@@ -1,0 +1,2666 @@
+/*
+ * Termux for Beginners — design system.
+ *
+ * ADOPTED from FIREWATCH Design Tokens v6: Parchment Dossier (light) +
+ * Sentinel Obsidian (cool-neutral dark) with brass gold as the single warm
+ * anchor. Fire Watch token names (--bg-*, --fg-*, --color-*, --shadow-*) are
+ * carried verbatim so the two systems stay in lockstep; Starlight's
+ * --sl-color-* and this site's --tmx-* helpers are bridged onto them.
+ *
+ * Type system mirrors Fire Watch's chrome/content split: Inter for UI chrome,
+ * Crimson Pro for editorial headings, Source Serif 4 for body prose,
+ * JetBrains Mono for code + terminals.
+ */
+/* NO @layer DECLARATION, DELIBERATELY.
+ *
+ * There used to be `@layer base, starlight, theme, components, utilities;` here.
+ * It was decorative: nothing in this file was ever placed in a layer, so all
+ * ~700 rules sat unlayered in one flat pile arbitrated purely by specificity —
+ * which is exactly what produced the invisible-CTA bug and forced four
+ * `!important` declarations.
+ *
+ * Unlayered is the RIGHT answer here, and now it is the honest one: unlayered
+ * CSS outranks every layered rule, and Starlight ships its own styles inside
+ * `@layer starlight.*`. That is precisely why this file can restyle Starlight
+ * without an escalating specificity war. Re-introducing a layer for these rules
+ * would put them BELOW Starlight's and break the whole theme.
+ *
+ * Tailwind was removed with it: it emitted 2.7 KB of utilities that no markup
+ * referenced (all false positives from its scanner matching word fragments like
+ * `display: 'flex'` inside .tsx inline-style objects), and any real utility
+ * would have silently lost to this file anyway. `@astrojs/starlight-tailwind`
+ * went too — it bridged 14 `--sl-*` vars, and the BRIDGE section below already
+ * defines all 14 (verified against the build before removal).
+ */
+
+/* ================================================================== *
+ * SHARED CONSTANTS (Fire Watch)
+ * ================================================================== */
+:root {
+	/* Type — four faces, named for the ROLE each one actually plays.
+	   --font-ui was called --font-body until this pass, which was the same
+	   lying-token pattern as the already-fixed --fg-body: it resolves to
+	   Inter, the UI chrome face, while the face that actually sets body prose
+	   is --font-detail (Source Serif 4) — as `.sl-markdown-content
+	   { font-family: var(--font-detail) }` further down this file proves.
+	   Renamed across all 13 consumers; the rename was safe to do in one pass
+	   because the React islands had just stopped reading it from inline style
+	   objects, leaving this file as its only consumer (verified by grep over
+	   src/, scripts/, astro.config.mjs and the root docs: 0 stragglers).
+	   FONT_FACES in astro.config.mjs keys off family NAMES, not token names,
+	   so it needed no mirroring edit. */
+	--font-heading: 'Crimson Pro Variable', 'Georgia', 'Cambria', serif;
+	--font-detail: 'Source Serif 4 Variable', 'Georgia', serif;
+	--font-ui: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono Variable', 'Fira Code', 'Cascadia Code', 'SF Mono', monospace;
+
+	/* Bridge Starlight's font vars to the Fire Watch stack. */
+	--sl-font: var(--font-ui);
+	--sl-font-mono: var(--font-mono);
+
+	/* Radii (Fire Watch) */
+	--radius-sm: 4px;
+	--radius-md: 6px;
+	--radius-lg: 8px;
+	--radius-xl: 12px;
+	--radius-full: 9999px;
+
+	/* Motion (Fire Watch) */
+	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+	--dur-fast: 120ms;
+	--dur-normal: 200ms;
+	--dur-slow: 350ms;
+	--tmx-ease: var(--ease-out); /* legacy alias */
+
+	/* Shape helpers used by this site's components. */
+	--tmx-radius: var(--radius-xl);
+
+	/* ---------------------------------------------------------------- *
+	 * TYPE SCALE — a real modular scale (1.25 / major third), replacing
+	 * twelve ad-hoc values of which five sat inside a 0.27rem band.
+	 * Sizes are roles, not measurements: pick by what the text IS.
+	 * ---------------------------------------------------------------- */
+	--text-2xs: 0.6875rem;  /* 11px — kickers, badges */
+	--text-xs: 0.8125rem;   /* 13px — meta, captions, chrome */
+	--text-sm: 0.9375rem;   /* 15px — dense UI, sidebar */
+	--text-base: 1.0625rem; /* 17px — body prose (editorial, generous) */
+	--text-md: 1.1875rem;   /* 19px — lede, card titles */
+	--text-lg: 1.5rem;      /* 24px — h3 */
+	--text-xl: 1.9375rem;   /* 31px — h2 */
+	--text-2xl: 2.4375rem;  /* 39px — h1 */
+	--text-3xl: 3.0625rem;  /* 49px — hero */
+
+	/* Line heights, paired to role: tighter as type gets larger. */
+	--leading-tight: 1.15;  /* display + headings */
+	--leading-snug: 1.35;   /* card/panel titles */
+	--leading-normal: 1.55; /* UI text */
+	--leading-prose: 1.7;   /* running body copy */
+
+	--weight-normal: 400;
+	--weight-medium: 500;
+	--weight-semibold: 600;
+	--weight-bold: 700;
+
+	/* Tracking. Large type needs negative tracking; small caps need positive. */
+	--tracking-display: -0.02em;
+	--tracking-heading: -0.01em;
+	--tracking-normal: 0;
+	--tracking-wide: 0.14em;
+
+	/* ---------------------------------------------------------------- *
+	 * VERTICAL RHYTHM — one block-spacing token. Rhythm used to be set in
+	 * SEVEN independent places (1 / 1.5 / 1.9 / 2.25 / 2.5rem), three of
+	 * them locked inside JSX where CSS could not reach them, so a lesson
+	 * page changed gap depending on which component came next.
+	 * ---------------------------------------------------------------- */
+	--space-block: 2rem;
+	--space-block-lg: 2.5rem;
+}
+
+/* ================================================================== *
+ * SENTINEL — Obsidian Night Ops (dark, the :root default to match
+ * Starlight's dark-first behaviour). Cool-neutral graphite canvas,
+ * brass gold the single warm anchor.
+ * ================================================================== */
+:root,
+:root[data-theme='dark'] {
+	color-scheme: dark;
+
+	/* Canvas */
+	--bg-canvas: #0e1014;
+	--bg-surface: #141820;
+	--bg-surface-alt: #1a1f28;
+	--bg-elevated: #222833;
+	--bg-hover: rgba(212, 177, 92, 0.07);
+	--bg-active: rgba(212, 177, 92, 0.12);
+
+	/* Borders */
+	--border-default: #2e3540;
+	--border-muted: #22272f;
+	--border-subtle: rgba(212, 177, 92, 0.1);
+
+	/* Text — parchment-cream family */
+	--fg-default: #e8dfcc;
+	--fg-body: #cfc5b0;
+	--fg-secondary: #b5ac99;
+	--fg-muted: #8e8676;
+	--fg-subtle: #6b6454;
+	--fg-on-emphasis: #0e1014;
+
+	/* Semantic (cool canvas tuning) */
+	--color-success: #5fb573;
+	--color-danger: #cc6449;
+	--color-warning: #d4b15c;
+	--color-info: #7fb6e0;
+	--color-accent: #c89aab;
+	--color-critical: #d94e3a;
+	--color-link: #7fb6e0;
+
+	/* Brand — brass gold */
+	--color-brand: #d4b15c;
+	--color-brand-muted: rgba(212, 177, 92, 0.14);
+	--color-brand-emphasis: #e8c878;
+
+	/* Shadows (neutral-cool) */
+	--shadow-sm: 0 1px 2px rgba(4, 6, 10, 0.4);
+	--shadow-md: 0 4px 8px rgba(4, 6, 10, 0.45), 0 0 1px rgba(4, 6, 10, 0.25);
+	--shadow-lg: 0 8px 24px rgba(4, 6, 10, 0.5);
+	--shadow-xl: 0 12px 40px rgba(4, 6, 10, 0.55);
+
+	/* Button sheen. This was a literal `color-mix(in srgb, #ffffff 40%, transparent)`
+	   inside the ::before rule — the ONE hex outside these two theme blocks. It is
+	   per-theme because the sweep has to contrast with the button surface, and the
+	   two themes' surfaces sit on opposite sides of mid-grey. On obsidian
+	   (--bg-surface #141820) a 40% white wipe reads clearly. */
+	--tmx-sheen: rgba(255, 255, 255, 0.4);
+	/* The primary button's fill is brass in BOTH themes, so its sweep is chosen
+	   against brass, not against the page. Identical to --tmx-sheen here; it is
+	   the light block where the two part company. */
+	--tmx-sheen-on-brand: rgba(255, 255, 255, 0.4);
+
+	/* Terminal screen (obsidian, one step off canvas). */
+	--tmx-screen: #0e1014;
+	/* Dark-LOCKED (identical in both themes). Any copy rendered on a --tmx-screen
+	   surface must use these: the panel stays obsidian while the theme flips, so
+	   theme-following --fg-* tokens drop to ~3:1 on it in light mode. */
+	/* The key row's label colour. Read four times by .tmx-terminal__key (the
+	   label plus three color-mix fills) and, until now, defined nowhere — an
+	   undefined custom property invalidates the whole declaration at
+	   computed-value time, so the labels fell back to the inherited colour and
+	   the fills to transparent. The row was legible by accident of inheritance
+	   rather than by design. #e8dfcc is the intended value: it is what
+	   TermuxTerminal.tsx passes to xterm as `foreground`, so the key labels and
+	   the text on the screen above them are now provably the same ink. */
+	--tmx-screen-ink: #e8dfcc;
+	--tmx-screen-muted: #8e8676;
+	--tmx-screen-brand: #d4b15c;
+
+	/* Scatter Field, dark ink — shows at full over the obsidian. */
+	--tmx-bg-image: url('../assets/linux_scatter_field_v1.svg');
+	/* Was 1. At full strength the field's monospace fragments read as CONTENT
+	   rather than texture — `drwxr-xr-x 2 user user 4096 …` landing on a prose
+	   baseline is the noise the deleted scrim was compensating for. Dimming the
+	   cause is cheaper than covering it. */
+	--tmx-bg-opacity: 0.55;
+	/* Inline-field ink. One token, one SVG, both themes. */
+}
+
+/* ================================================================== *
+ * PARCHMENT — Legal Archive (light)
+ * ================================================================== */
+:root[data-theme='light'] {
+	color-scheme: light;
+
+	--bg-canvas: #f5f0e8;
+	--bg-surface: #faf7f2;
+	--bg-surface-alt: #efe9de;
+	--bg-elevated: #ffffff;
+	--bg-hover: rgba(139, 115, 78, 0.06);
+	--bg-active: rgba(139, 115, 78, 0.1);
+
+	--border-default: #d4c9b5;
+	--border-muted: #e8e0d2;
+	--border-subtle: rgba(139, 115, 78, 0.08);
+
+	--fg-default: #2c2418;
+	--fg-body: #3d3d3d;
+	--fg-secondary: #4a4a4a;
+	--fg-muted: #6b5d4f;
+	--fg-subtle: #9c8e7c;
+	--fg-on-emphasis: #faf7f2;
+
+	--color-success: #3d7a45;
+	--color-danger: #8b2d2d;
+	--color-warning: #8b6914;
+	--color-info: #4a6fa5;
+	--color-accent: #6b4c8a;
+	--color-critical: #b22222;
+	--color-link: #4a6fa5;
+
+	/* #8b6914 measured 4.48:1 on the #f5f0e8 canvas — AA is 4.5:1, so brass as
+	   TEXT missed by 0.02, which is a fail however cosmetic it sounds. Stepped
+	   down the same hue to the first value clearing 4.5 on both light surfaces
+	   (4.63:1 on canvas, 4.92:1 on #faf7f2 cards). Visually indistinguishable;
+	   it just stops being a violation. */
+	--color-brand: #886713;
+	--color-brand-muted: rgba(136, 103, 19, 0.1);
+	/* "Emphasis" means FURTHER FROM THE CANVAS, not lighter. On the dark theme
+	   that happens to mean lighter (#e8c878); on parchment it must mean darker.
+	   The old #a67c1a was lighter than --color-brand, so it moved toward the
+	   cream canvas — prose links measured 3.35:1 and inline code 3.18:1, both
+	   under AA. #6f5310 is ~6.2:1 on #f5f0e8 and lifts links, inline code, the
+	   active TOC entry and the site title above AA in one edit. */
+	--color-brand-emphasis: #6f5310;
+
+	--shadow-sm: 0 1px 2px rgba(44, 36, 24, 0.08);
+	--shadow-md: 0 2px 8px rgba(44, 36, 24, 0.1), 0 0 1px rgba(44, 36, 24, 0.06);
+	--shadow-lg: 0 4px 16px rgba(44, 36, 24, 0.12);
+	--shadow-xl: 0 8px 32px rgba(44, 36, 24, 0.14);
+
+	/* See the dark block. On parchment the sweep has to be INK, not light: the
+	   ghost button's surface is --bg-surface #faf7f2, so the dark theme's 40%
+	   white wipe resolved to #fffdfb over #faf7f2 — a 1.02:1 step, i.e. no
+	   visible sweep at all. The light theme was silently missing an interaction
+	   affordance the dark theme had. Warm dark ink at 18% gives the same
+	   perceived sweep strength against cream. */
+	--tmx-sheen: rgba(44, 36, 24, 0.18);
+	/* ...but the PRIMARY button's fill is dark brass even here, so the parchment
+	   ink sweep would vanish on it. That one surface keeps the white wipe. */
+	--tmx-sheen-on-brand: rgba(255, 255, 255, 0.4);
+
+	/* Terminal screens stay obsidian even on parchment — inset devices. */
+	--tmx-screen: #0e1014;
+	/* Dark-LOCKED (identical in both themes). Any copy rendered on a --tmx-screen
+	   surface must use these: the panel stays obsidian while the theme flips, so
+	   theme-following --fg-* tokens drop to ~3:1 on it in light mode. */
+	/* The key row's label colour. Read four times by .tmx-terminal__key (the
+	   label plus three color-mix fills) and, until now, defined nowhere — an
+	   undefined custom property invalidates the whole declaration at
+	   computed-value time, so the labels fell back to the inherited colour and
+	   the fills to transparent. The row was legible by accident of inheritance
+	   rather than by design. #e8dfcc is the intended value: it is what
+	   TermuxTerminal.tsx passes to xterm as `foreground`, so the key labels and
+	   the text on the screen above them are now provably the same ink. */
+	--tmx-screen-ink: #e8dfcc;
+	--tmx-screen-muted: #8e8676;
+	--tmx-screen-brand: #d4b15c;
+
+	/* Scatter Field, sepia ink on parchment — the light-theme twin. */
+	--tmx-bg-image: url('../assets/linux_scatter_field_light.svg');
+	--tmx-bg-opacity: 0.8;
+}
+
+/* ================================================================== *
+ * BRIDGE — map Starlight --sl-color-* and this site's --tmx-* onto
+ * the Fire Watch tokens above (so both themes flow through one source).
+ * ================================================================== */
+:root,
+:root[data-theme='dark'],
+:root[data-theme='light'] {
+	--sl-color-white: var(--fg-default);
+	/* Starlight paints body prose from --sl-color-gray-2. That was bridged to
+	   --fg-secondary, so EVERY paragraph, card body, panel body and the lede all
+	   rendered one grey — a five-step ink ramp shipping as two — while the token
+	   literally named "body" was used only by a search input and a select.
+	   Shift the ramp one step so --fg-body does the job it is named for. */
+	--sl-color-gray-1: var(--fg-default);
+	--sl-color-gray-2: var(--fg-body);
+	--sl-color-gray-3: var(--fg-secondary);
+	--sl-color-gray-4: var(--fg-muted);
+	--sl-color-gray-5: var(--border-default);
+	--sl-color-gray-6: var(--bg-surface);
+	--sl-color-gray-7: var(--bg-surface-alt);
+	--sl-color-black: var(--bg-canvas);
+
+	--sl-color-accent: var(--color-brand);
+	--sl-color-accent-low: var(--color-brand-muted);
+	--sl-color-accent-high: var(--color-brand-emphasis);
+
+	--sl-color-bg: var(--bg-canvas);
+	--sl-color-bg-nav: var(--bg-surface);
+	--sl-color-bg-sidebar: var(--bg-surface);
+	--sl-color-hairline: var(--border-muted);
+	--sl-color-hairline-shade: var(--border-default);
+	--sl-color-text-accent: var(--color-brand-emphasis);
+
+	/* Starlight's SEMANTIC hue ramp. Previously unbridged, so aside RAILS came
+	   from the Fire Watch tokens while aside TITLES resolved against Starlight's
+	   stock palette — producing lilac titles over green rails, periwinkle over
+	   blue, pink over red, and five foreign accents leaking into a brass-only
+	   design. Bridging both halves to one source fixes rails, titles and badges
+	   together. */
+	--sl-color-blue: var(--color-info);
+	--sl-color-blue-low: color-mix(in srgb, var(--color-info) 20%, transparent);
+	--sl-color-blue-high: var(--color-info);
+	--sl-color-green: var(--color-success);
+	--sl-color-green-low: color-mix(in srgb, var(--color-success) 20%, transparent);
+	--sl-color-green-high: var(--color-success);
+	--sl-color-orange: var(--color-warning);
+	--sl-color-orange-low: color-mix(in srgb, var(--color-warning) 20%, transparent);
+	--sl-color-orange-high: var(--color-warning);
+	--sl-color-red: var(--color-critical);
+	--sl-color-red-low: color-mix(in srgb, var(--color-critical) 20%, transparent);
+	--sl-color-red-high: var(--color-critical);
+	--sl-color-purple: var(--color-accent);
+	--sl-color-purple-low: color-mix(in srgb, var(--color-accent) 20%, transparent);
+	--sl-color-purple-high: var(--color-accent);
+	/* Aside titles resolve against this. --fg-default keeps them legible in both
+	   themes; the coloured rail already carries the semantic signal. */
+	--sl-color-asides-text-accent: var(--fg-default);
+
+	/* Starlight's BADGE ramp. Previously unbridged, so the two sidebar badges
+	   were the only saturated cool-hue objects in the whole chrome: "Local"
+	   painted rgb(23,29,79) deep navy in dark and rgb(15,28,138) hard navy in
+	   light, "Interactive" rgb(64,34,78) / rgb(102,8,145) purple — each wrapped
+	   in a BRASS border, a visibly mixed signal, and each with a hard-coded
+	   #fff text colour. Starlight also swaps the fill to the fully saturated
+	   `-high` hue in light mode, which is why they screamed loudest on cream.
+	   `default`/`note`/`tip` are LABEL badges here ("Local", "Interactive") —
+	   they carry no state, so they go onto brass like every other accent. */
+	--sl-badge-default-border: var(--color-brand);
+	--sl-badge-default-bg: var(--color-brand-muted);
+	--sl-badge-default-text: var(--color-brand-emphasis);
+	--sl-badge-note-border: var(--color-brand);
+	--sl-badge-note-bg: var(--color-brand-muted);
+	--sl-badge-note-text: var(--color-brand-emphasis);
+	--sl-badge-tip-border: var(--color-brand);
+	--sl-badge-tip-bg: var(--color-brand-muted);
+	--sl-badge-tip-text: var(--color-brand-emphasis);
+	/* danger/success/caution DO carry state, so they keep their semantic hue —
+	   but as a low-alpha tint plus semantic ink, not a saturated slab. */
+	--sl-badge-danger-border: var(--color-critical);
+	--sl-badge-danger-bg: color-mix(in srgb, var(--color-critical) 14%, transparent);
+	--sl-badge-danger-text: var(--color-critical);
+	--sl-badge-success-border: var(--color-success);
+	--sl-badge-success-bg: color-mix(in srgb, var(--color-success) 14%, transparent);
+	--sl-badge-success-text: var(--color-success);
+	--sl-badge-caution-border: var(--color-warning);
+	--sl-badge-caution-bg: color-mix(in srgb, var(--color-warning) 14%, transparent);
+	--sl-badge-caution-text: var(--color-warning);
+
+	/* --tmx-* helpers (brass-anchored; NO second warm accent competing).
+	   The two trailing "legacy alias" comments that used to sit on this line
+	   were orphaned when the aliases they annotated were deleted — comments
+	   describing declarations that no longer exist. */
+
+	/* Restrained brass sheen — depth without a loud two-hue gradient. */
+	--tmx-grad: linear-gradient(120deg, var(--color-brand), var(--color-brand-emphasis));
+	--tmx-grad-soft: linear-gradient(
+		120deg,
+		color-mix(in srgb, var(--color-brand) 22%, transparent),
+		color-mix(in srgb, var(--color-brand-emphasis) 20%, transparent)
+	);
+
+	/* THE TOKEN NAME THAT LIED. This was `--tmx-glow-cyan` and holds no cyan —
+	   it is a brass hairline RING plus a brass glow. Half the fix had already
+	   landed (the `-cyan` was dropped); the remaining lie was structural: it is
+	   a box-shadow value living outside the --shadow-* ramp under a --tmx-*
+	   name, so nobody looking for "the brand shadow" would find it and the two
+	   button glows below were hand-rolled instead of reusing it. RENAMED rather
+	   than revalued — the value is correct and used, only its name was wrong.
+	   One definition, one consumer (.tmx-card--link:hover); both
+	   are in this file, so the rename is complete. */
+	--shadow-brand-ring: 0 0 0 1px var(--border-subtle),
+		0 10px 30px -12px color-mix(in srgb, var(--color-brand) 40%, transparent);
+
+	/* The two brand-glow button shadows were bespoke literals declared inline on
+	   .tmx-btn--primary and its :hover — the only box-shadows on the site that
+	   were not tokens, in the one place a designer is most likely to want to
+	   retune the brass. Same values, now named and adjacent to the ring above so
+	   the brand-shadow family reads as a family. */
+	--shadow-brand: 0 8px 22px -10px color-mix(in srgb, var(--color-brand) 70%, transparent),
+		var(--shadow-sm);
+	--shadow-brand-lift: 0 14px 30px -10px color-mix(in srgb, var(--color-brand) 60%, transparent);
+
+	/* ---------------------------------------------------------------- *
+	 * EXPRESSIVE CODE bridge. The Shiki THEME (Night Owl Light's
+	 * cornflower-blue keywords) lives in astro.config and is not ours to
+	 * change — but the FRAME is pure CSS custom properties, and it was
+	 * shipping stock. These are the parts CSS can reach.
+	 * Starlight declares all of these inside `@layer starlight.components`;
+	 * this file is deliberately unlayered, so these win everywhere without
+	 * a specificity war (see the note at the top of the file).
+	 * ---------------------------------------------------------------- */
+	/* EC computes its radius as calc(--ec-brdRad + --ec-brdWd) and Starlight
+	   ships --ec-brdRad: 0px — so every code block rendered at ~1px, visually
+	   square against the 8/10/12px radii used everywhere else. */
+	--ec-brdRad: calc(var(--radius-lg) - var(--ec-brdWd, 1px));
+	/* Was color-mix(gray-5, transparent 25%) with box-shadow: none — a 75%-alpha
+	   hairline over a ~6-level luminance step, which is why code blocks barely
+	   separated from cream (L11). Full-strength edge + a real shadow instead. */
+	--ec-brdCol: var(--border-default);
+	--ec-frm-frameBoxShdCssVal: var(--shadow-sm);
+	--ec-frm-edTabBarBrdCol: var(--border-default);
+	--ec-frm-edTabBarBrdBtmCol: var(--border-default);
+	--ec-frm-trmTtbBrdBtmCol: var(--border-default);
+	/* The static terminal frame's three dots were 75%-alpha grey while the live
+	   .tmx-terminal's are var(--border-default) (L10, closed). Same token, so
+	   the static and live terminal chromes finally read as one family. */
+	--ec-frm-trmTtbDotsFg: var(--border-default);
+	--ec-frm-trmTtbDotsOpa: 1;
+}
+
+
+/* ================================================================== *
+ * AMBIENT BACKGROUND — a real parchment sheet as the page canvas, tuned
+ * per theme, with a brand glow + aged vignette floating above it.
+ *
+ * Layer stack (bottom → top):
+ *   body               → flat --bg-canvas fill (fallback + tint the paper
+ *                        blends into)
+ *   body::before       → the parchment photo, fixed, blended into the canvas
+ *   body::after        → brand glow + vignette so edges settle and a warm
+ *                        highlight reads at the top
+ *   page content       → everything else
+ * ================================================================== */
+body {
+	background-color: var(--bg-canvas);
+}
+
+/* The terminal wallpaper — an obsidian screen shot used ATMOSPHERICALLY, not
+   as a literal backdrop. It sits far back and low-opacity; the scrim in
+   ::after keeps content legible so the terminal only ghosts through at the
+   margins. */
+body::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -2;
+	pointer-events: none;
+	/* Scatter Field SVG — vector, so it stays crisp at any size and ships in
+	   ~17 KB. Two variants (dark ink / sepia ink) swap with the theme via the
+	   --tmx-bg-image token below. */
+	background: var(--tmx-bg-image) center / cover no-repeat fixed;
+	background-color: var(--bg-canvas);
+	opacity: var(--tmx-bg-opacity, 1);
+}
+
+/* Brand glow + a soft vignette above the pattern, below content — settles the
+   edges and keeps a warm highlight up top. The pattern is already low-contrast,
+   so no heavy legibility scrim is needed. */
+body::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background-image:
+		/* Was 10% brass over 70x46rem — a soft blob big enough to read as a
+		   lens flare in the top-right rather than as ambient warmth. */
+		radial-gradient(
+			55rem 34rem at 88% -12%,
+			color-mix(in srgb, var(--color-brand) 5%, transparent),
+			transparent 60%
+		),
+		radial-gradient(
+			120% 95% at 50% 45%,
+			transparent 55%,
+			color-mix(in srgb, var(--bg-canvas) 55%, transparent)
+		);
+}
+
+/* Honour reduced-data / small screens: fixed cover is janky on mobile. */
+@media (max-width: 50rem) {
+	body::before {
+		background-attachment: scroll;
+	}
+}
+
+/* --- READING-COLUMN LEGIBILITY ------------------------------------
+   There WAS a feathered wash pseudo-element here, painting a 70%-canvas box
+   behind the prose column with all four edges masked out so it would "read as
+   atmosphere, not as a box". It did not. On the dark theme it rendered as a
+   blown-out grey smudge floating behind the hero and the intro copy — the
+   softness that was supposed to hide the edges is exactly what made it look
+   like a blurred shadow someone forgot to delete.
+
+   It was also solving the wrong problem. The audit measured body copy at
+   8.50:1 over plain canvas and 7.08:1 over the busiest patch of the scatter
+   field: never a contrast failure, only figure-ground NOISE from the SVG's
+   literal shell-text glyphs sitting at prose optical size.
+
+   Noise is fixed at the source — see --tmx-bg-opacity below, which now drops
+   the pattern to a genuine watermark instead of overlaying a second surface to
+   compensate for it being too loud. One layer removed, not one added.
+   ------------------------------------------------------------------ */
+
+/* ================================================================== *
+ * TYPOGRAPHY — editorial content voice, mono chrome for code.
+ * ================================================================== */
+.sl-markdown-content {
+	font-family: var(--font-detail);
+	font-size: var(--text-base);
+	line-height: var(--leading-prose);
+}
+/* Lists were falling through to --sl-font (Inter) while sibling paragraphs
+   rendered Source Serif, so bullets visibly switched face mid-prose. Restate
+   the editorial family and match the paragraph metrics. */
+.sl-markdown-content :is(p, li, td, th, dd, blockquote) {
+	font-family: var(--font-detail);
+}
+.sl-markdown-content li {
+	font-size: var(--text-base);
+	line-height: var(--leading-prose);
+}
+
+/* Starlight renders the lesson <h1 id="_top"> in the page frame, OUTSIDE
+   .sl-markdown-content, so it fell through to --sl-font (Inter). h5/h6 are
+   included because the previous rule stopped at h4, leaving a `#####` rendering
+   in the BODY face — and Starlight's markdown.css references --sl-text-h6,
+   which its props.css never defines. */
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6),
+.content-panel h1,
+h1#_top,
+.site-title,
+.hero h1,
+.tmx-card__title {
+	font-family: var(--font-heading);
+	font-weight: var(--weight-bold);
+	/* OPTICAL TRACKING, not one value for everything. This rule used to apply
+	   --tracking-heading (-0.01em) uniformly across a 2.6x size range — 1.19rem
+	   card titles through 3.06rem hero — which is backwards on both ends: at
+	   49px -0.01em is not enough to close the gaps the display face opens, and
+	   at 19px it is already tightening text that needs its counters. The base is
+	   now the neutral rung and each size band steps up from it below:
+	     --tracking-normal  (0)       h4/h5/h6, card + panel titles, site title
+	     --tracking-heading (-0.01em) h2, h3          (24-31px)
+	     --tracking-display (-0.02em) hero h1, lesson h1 (39-49px)
+	   All four values were already declared as tokens and only two were in use. */
+	letter-spacing: var(--tracking-normal);
+	text-wrap: balance;
+}
+/* The `:is(h1, h2)` qualifier this selector used to carry matched NOTHING:
+   Starlight's SiteTitle.astro renders `<a class="site-title sl-flex">`, an
+   anchor, so the wordmark never received Crimson Pro and quietly rendered in
+   the Inter chrome face while every other heading on the site was editorial.
+   Dropping the qualifier is the whole fix. */
+
+/* Scale + rhythm. Starlight ships margin-top only, so headings had air above
+   and none below. The old h1:h2 ratio was 42:35 — 83%, not a level change at a
+   glance — then a 2.14x cliff to body. */
+.sl-markdown-content :is(h2, h3, h4, h5, h6) {
+	margin-block-end: 0.6em;
+	line-height: var(--leading-tight);
+}
+/* h2 (31px) and h3 (24px) are the band where the display face's default fit is
+   loose enough to want closing up — one step of negative tracking, not the
+   display step. h4 and below keep the neutral base set above. */
+.sl-markdown-content h2 {
+	font-size: var(--text-xl);
+	margin-block-start: var(--space-block-lg);
+	letter-spacing: var(--tracking-heading);
+}
+.sl-markdown-content h3 {
+	font-size: var(--text-lg);
+	margin-block-start: var(--space-block);
+	letter-spacing: var(--tracking-heading);
+}
+.sl-markdown-content h4 {
+	font-size: var(--text-md);
+	margin-block-start: var(--space-block);
+}
+/* h5/h6 stay in the display face but drop to UI sizing, so they read as labels
+   rather than as another heading level. Tracking is inherited from the base
+   rule above (--tracking-normal) rather than restated here. */
+.sl-markdown-content :is(h5, h6) {
+	font-size: var(--text-sm);
+	font-weight: var(--weight-semibold);
+	color: var(--fg-secondary);
+}
+
+/* BLOCK-MASS RHYTHM. Walking the top-level children of .sl-markdown-content,
+   EVERY block-to-block gap measured 16px — paragraph to paragraph, paragraph to
+   a six-row table, paragraph to a 439px-tall interactive terminal — because
+   Starlight applies one flat `> * + *` margin of --sl-content-gap-y with a
+   single heading exception. Two values is not a rhythm, and it is why the heavy
+   interactive blocks read as pasted in rather than composed.
+
+   Three tiers now: 16px between lines of prose, --space-block (32px) around
+   anything with real mass, --space-block-lg (40px) before an h2 section break.
+   The terminals and .tmx-lesson-complete already carry --space-block on
+   themselves (their margins used to be hard-coded inline in JSX); they are not
+   listed here because <astro-island> is an inline element and block margins on
+   it would not apply. */
+.sl-markdown-content
+	> :is(table, .expressive-code, .starlight-aside, .tmx-grid, .tmx-panels, blockquote, figure) {
+	margin-block: var(--space-block);
+}
+
+/* Lesson title: was Inter 42px/600 against its own 35px h2. */
+.content-panel h1,
+h1#_top {
+	font-size: clamp(var(--text-xl), 4vw, var(--text-2xl));
+	line-height: var(--leading-tight);
+	letter-spacing: var(--tracking-display);
+}
+.hero h1 {
+	font-size: clamp(var(--text-2xl), 6vw, var(--text-3xl));
+	line-height: 1.05;
+	letter-spacing: var(--tracking-display);
+}
+:is(.tmx-terminal, .tmx-sandbox),
+.sl-markdown-content :is(code, pre),
+.tmx-kbd {
+	font-family: var(--font-mono);
+}
+
+/* `.tmx-hero-title` used to share this rule and appeared in no template, no
+   component and no .mdx file — declared once, used zero times. Deleted; the
+   splash hero's title is Starlight's own `.hero h1`, styled above. */
+.tmx-gradient-text {
+	background: var(--tmx-grad);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	font-weight: 800;
+}
+
+/* Animated brass underline on prose links.
+   :not(.tmx-btn) is load-bearing — without it this rule's `background`
+   SHORTHAND wipes the fill off any button rendered inside markdown content
+   (it resets background-size/-position/-repeat), leaving on-gold ink with no
+   gold behind it. That is what made the landing CTA render at 1.0:1. */
+.sl-markdown-content a:not(.card):not(.action):not(.tmx-btn):not(:where(.not-content *)) {
+	text-decoration: none;
+	color: var(--color-brand-emphasis);
+	background: linear-gradient(var(--color-brand), var(--color-brand)) no-repeat left bottom / 0% 1.5px;
+	padding-bottom: 1px;
+	transition: background-size var(--dur-slow) var(--ease-out), color var(--dur-normal) var(--ease-out);
+}
+.sl-markdown-content a:not(.card):not(.action):not(.tmx-btn):not(:where(.not-content *)):hover {
+	background-size: 100% 1.5px;
+}
+
+/* ================================================================== *
+ * CARD SYSTEM — depth + brass hairline + pointer spotlight.
+ *
+ * Starlight's own card classes (.card, .card-grid, .card .icon) used to be
+ * styled alongside .tmx-card here. They never rendered: <Card>/<CardGrid>/
+ * <LinkCard> are not imported anywhere — the only thing this site imports
+ * from @astrojs/starlight/components is <Steps> — and none of the 16 built
+ * HTML pages contains the string `card` outside .tmx-card/__title/__body.
+ * The Starlight halves are gone; the .tmx-* system they were paired with is
+ * untouched.
+ * ================================================================== */
+.tmx-card {
+	position: relative;
+	isolation: isolate;
+	border: 1px solid var(--border-default);
+	border-radius: var(--tmx-radius);
+	background: var(--bg-surface);
+	box-shadow: var(--shadow-md);
+	overflow: hidden;
+	transition: transform var(--dur-slow) var(--ease-out),
+		box-shadow var(--dur-slow) var(--ease-out), border-color var(--dur-slow) var(--ease-out);
+}
+/* Non-link cards get a gentle, STATIC presence — no lift, no pointer — so
+   they read as information, not buttons. Interactive affordances (lift,
+   spotlight, gradient top-edge) are reserved for cards that are real links. */
+.tmx-card:not(.tmx-card--link):hover {
+	border-color: color-mix(in srgb, var(--color-brand) 28%, var(--border-default));
+}
+
+/* Interactive cards: the opt-in .tmx-card--link modifier. `a.card` (Starlight
+   LinkCard) shared these rules and is gone with the rest of the unused
+   Starlight card styles — see the section header above. */
+.tmx-card--link {
+	cursor: pointer;
+}
+.tmx-card--link::after {
+	content: '';
+	position: absolute;
+	inset: 0 0 auto 0;
+	height: 2px;
+	background: var(--tmx-grad);
+	opacity: 0.55;
+	transition: opacity var(--dur-slow) var(--ease-out);
+}
+.tmx-card--link::before {
+	content: '';
+	position: absolute;
+	inset: -1px;
+	z-index: -1;
+	background: radial-gradient(
+		16rem 16rem at var(--px, 50%) var(--py, 0%),
+		color-mix(in srgb, var(--color-brand) 16%, transparent),
+		transparent 45%
+	);
+	opacity: 0;
+	transition: opacity var(--dur-slow) var(--ease-out);
+}
+.tmx-card--link:hover {
+	transform: translateY(-4px);
+	border-color: color-mix(in srgb, var(--color-brand) 50%, var(--border-default));
+	box-shadow: var(--shadow-xl), var(--shadow-brand-ring);
+}
+.tmx-card--link:hover::before,
+.tmx-card--link:hover::after {
+	opacity: 1;
+}
+
+/* ================================================================== *
+ * BUTTONS — brass primary + glass ghost, with a sheen sweep.
+ * ================================================================== */
+/* ONE button system.
+   `.sl-link-button` is Starlight's splash-hero action; it used to be a second,
+   parallel implementation (Inter 400, 56px tall, radius 15984px, flat
+   --sl-color-accent-high fill at 3.35:1) that read as a different product next
+   to the site's own .tmx-btn. It now shares this base and the --primary /
+   --ghost modifiers below. Layout lives here rather than on `a.tmx-btn` so
+   `<button class="tmx-btn">` arrives fully styled too. */
+.sl-markdown-content .action,
+.sl-link-button,
+.tmx-btn {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.65rem 1.35rem;
+	border-radius: var(--radius-full);
+	/* Buttons are UI chrome, not prose — Inter. Inside .sl-markdown-content they
+	   would otherwise inherit the body serif. */
+	font-family: var(--font-ui);
+	font-size: 1rem;
+	font-weight: 600;
+	line-height: 1.2;
+	letter-spacing: 0.01em;
+	white-space: nowrap;
+	text-decoration: none;
+	transition: transform var(--dur-normal) var(--ease-out),
+		box-shadow var(--dur-slow) var(--ease-out), filter var(--dur-slow) var(--ease-out);
+}
+.sl-markdown-content .action.primary,
+.sl-link-button.primary,
+.tmx-btn--primary {
+	background: var(--tmx-grad);
+	color: var(--fg-on-emphasis);
+	border: none;
+	box-shadow: var(--shadow-brand);
+}
+.sl-markdown-content .action.primary:hover,
+.sl-link-button.primary:hover,
+.tmx-btn--primary:hover {
+	transform: translateY(-2px);
+	filter: brightness(1.06);
+	box-shadow: var(--shadow-brand-lift);
+}
+.sl-markdown-content .action:active,
+.sl-link-button:active,
+.tmx-btn:active {
+	transform: translateY(0) scale(0.99);
+}
+.sl-markdown-content .action.minimal,
+.sl-link-button.minimal,
+.tmx-btn--ghost {
+	background: var(--bg-surface);
+	border: 1px solid var(--border-default);
+	color: var(--fg-default);
+}
+.sl-markdown-content .action.minimal:hover,
+.sl-link-button.minimal:hover,
+.tmx-btn--ghost:hover {
+	border-color: color-mix(in srgb, var(--color-brand) 55%, var(--border-default));
+	color: var(--color-brand-emphasis);
+	transform: translateY(-2px);
+}
+.sl-markdown-content .action::before,
+.sl-link-button::before,
+.tmx-btn::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background: linear-gradient(100deg, transparent 20%, var(--tmx-sheen) 50%, transparent 80%);
+	transform: translateX(-120%);
+	transition: transform 0.6s var(--ease-out);
+}
+.sl-markdown-content .action:hover::before,
+.sl-link-button:hover::before,
+.tmx-btn:hover::before {
+	transform: translateX(120%);
+}
+/* --tmx-sheen is tuned for each theme's PAGE surface, which is right for the
+   ghost button but wrong for the primary one: the primary fill is brass in both
+   themes, and on parchment that brass is DARK (#8b6914 -> #6f5310), so the
+   parchment sheen (dark ink) would vanish on exactly the button people click
+   most. Primary always sweeps with the on-brand variant instead. Custom
+   properties inherit into pseudo-elements, so setting it on the button reaches
+   the ::before that draws the gradient. */
+.sl-markdown-content .action.primary,
+.sl-link-button.primary,
+.tmx-btn--primary {
+	--tmx-sheen: var(--tmx-sheen-on-brand);
+}
+
+/* ================================================================== *
+ * ASIDES — semantic rails (tip=success, note=info, caution=brass,
+ * danger=critical). Cool/warm balanced per Fire Watch.
+ * ================================================================== */
+.sl-markdown-content .starlight-aside {
+	position: relative;
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-default);
+	border-left-width: 3px;
+	background: var(--bg-surface);
+	box-shadow: var(--shadow-md);
+}
+.sl-markdown-content .starlight-aside--tip {
+	border-left-color: var(--color-success);
+}
+.sl-markdown-content .starlight-aside--note {
+	border-left-color: var(--color-info);
+}
+.sl-markdown-content .starlight-aside--caution {
+	border-left-color: var(--color-warning);
+}
+.sl-markdown-content .starlight-aside--danger {
+	border-left-color: var(--color-critical);
+}
+/* Aside titles are a heading role — display family, not the body serif. The
+   rail carries the semantic colour; the title stays high-contrast. */
+.sl-markdown-content .starlight-aside__title {
+	font-family: var(--font-heading);
+	font-weight: 700;
+	color: var(--fg-default);
+}
+/* Danger and caution keep a coloured title: in a tutorial that tells people not
+   to install from the Play Store, those two carry a real safety signal. */
+.sl-markdown-content .starlight-aside--danger .starlight-aside__title {
+	color: color-mix(in srgb, var(--color-critical) 55%, var(--fg-default));
+}
+.sl-markdown-content .starlight-aside--caution .starlight-aside__title {
+	color: color-mix(in srgb, var(--color-warning) 55%, var(--fg-default));
+}
+
+/* Inline code — brass-tinted chip. */
+.sl-markdown-content :not(pre) > code {
+	background: color-mix(in srgb, var(--color-brand) 9%, var(--bg-surface));
+	border: 1px solid var(--border-subtle);
+	border-radius: var(--radius-md);
+	color: var(--color-brand-emphasis);
+	/* When a chip does wrap, both fragments keep their padding and rounded ends
+	   instead of the first one being sliced flat mid-token. `~/storage/external-1`
+	   was rendering as two client rects, 51px tall against ~24px for single-line
+	   chips, each with its own square-ended background. */
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
+}
+/* HEADING variant. The chip inherited the h2's full 35px font-size and 42px
+   line-height, then ADDED 2px 6px of padding — a 52px chip inside a 39px
+   heading box, 13px of overflow, with the parentheses in "Packages (`pkg`)"
+   visibly shoved apart. A relative size, line-height: inherit and em padding
+   keep it inside the line box at every heading level. */
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6) :not(pre) > code,
+.content-panel h1 :not(pre) > code {
+	font-size: 0.8em;
+	line-height: inherit;
+	padding: 0.1em 0.35em;
+	vertical-align: baseline;
+}
+
+/* ================================================================== *
+ * EXPRESSIVE CODE — the frame, not the syntax.
+ *
+ * The Shiki THEME (which paints the tokens) is set in astro.config and is
+ * being replaced separately; nothing here touches token colours. What CSS
+ * owns is the frame, and its variables are declared in the BRIDGE section
+ * above: --ec-brdRad onto --radius-lg (Starlight ships 0px, so every code
+ * block rendered at ~1px against the 8/10/12px radii used everywhere else),
+ * --ec-brdCol and the three frame border vars onto --border-default, and
+ * --ec-frm-trmTtbDotsFg onto --border-default so the STATIC terminal frame's
+ * three dots match the live .tmx-terminal's exactly — the two terminal
+ * surfaces on a terminal tutorial finally read as one family.
+ *
+ * The one thing left that is a rule rather than a variable: the copy button
+ * sat at full opacity permanently, so every code block carried a persistent
+ * chrome affordance competing with the code it belonged to. Fade at rest,
+ * full on hover or keyboard focus — never hidden, because a control that
+ * only exists on hover does not exist on a touch device, and this site's
+ * readers are largely on the phone they are installing Termux on.
+ * ================================================================== */
+.expressive-code .copy button {
+	opacity: 0.55;
+	transition: opacity var(--dur-normal) var(--ease-out);
+}
+.expressive-code figure:hover .copy button,
+.expressive-code .copy button:hover,
+.expressive-code .copy button:focus-visible {
+	opacity: 1;
+}
+/* Touch has no hover, so rest state IS the only state there. */
+@media (pointer: coarse) {
+	.expressive-code .copy button {
+		opacity: 1;
+	}
+}
+
+/* ================================================================== *
+ * TABLES — a real surface, one shared right edge, unbreakable command
+ * chips, and a scroll affordance on the phone.
+ *
+ * Starlight ships `display: block; overflow: auto` on every table: the
+ * standard responsive escape hatch. It has three costs this site was
+ * paying in full.
+ *
+ *  1. The <table> element becomes a 702px block while the ANONYMOUS
+ *     internal table box stays shrink-to-fit, so the ruled rows stopped
+ *     at 368-618px — six cheatsheet tables ending at six different right
+ *     edges. `min-width: 100%` cannot fix this: min-width is not an
+ *     inherited property and the anonymous box takes only inherited
+ *     properties from the block, so it restates the block's own 100% and
+ *     changes nothing. The internal box is unreachable from CSS.
+ *  2. table/th/td all computed background-color: rgba(0,0,0,0), so the
+ *     scatter field's monospace shell fragments ran under monospace table
+ *     cells — `drwxr-xr-x` overlapping the words "Best for" and "Notes" —
+ *     and read as duplicated or corrupted content, not as a watermark.
+ *  3. On a phone the table is its own scrollport with no scrollbar, no
+ *     fade and no shadow, so the storage table's third column was cut at
+ *     "Typica" with nothing saying more existed.
+ *
+ * So: a real surface at every width, and a real `display: table` above
+ * the phone band — where the 702px column is far wider than any of these
+ * tables' min-content width, so `width: 100%` finally lands on the box
+ * that actually draws the rules. Below it the scrollport stays (a real
+ * table there would push its min-content width onto the page and give
+ * the whole document a horizontal scrollbar) and gains an affordance.
+ * ================================================================== */
+.sl-markdown-content table:not(:where(.not-content *)) {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-sm);
+	border-spacing: 0;
+	/* Kept for engines that DO propagate it to the internal box; harmless where
+	   they do not. The media query below is what actually squares the edges. */
+	min-width: 100%;
+	max-width: 100%;
+}
+@media (min-width: 50rem) {
+	.sl-markdown-content table:not(:where(.not-content *)) {
+		display: table;
+		width: 100%;
+		table-layout: auto;
+		border-collapse: separate;
+	}
+	/* Zebra. The cheatsheet is a scanning surface and had no striping at all —
+	   only a 1px rule per row. Desktop-only because at phone width these cells
+	   sit over the scroll-shadow affordance below and would chop it up. */
+	.sl-markdown-content tbody tr:nth-child(even) :is(th, td):not(:where(.not-content *)) {
+		background-color: var(--bg-surface-alt);
+	}
+}
+/* Starlight zeroes the outer padding on first/last cells because its tables
+   have no surface to sit inside. Ours do, so restore it or the text touches
+   the frame. */
+.sl-markdown-content :is(th:first-child, td:first-child):not(:where(.not-content *)) {
+	padding-inline-start: 1rem;
+}
+.sl-markdown-content :is(th:last-child, td:last-child):not(:where(.not-content *)) {
+	padding-inline-end: 1rem;
+}
+.sl-markdown-content thead th:not(:where(.not-content *)) {
+	background-color: var(--bg-surface-alt);
+	border-bottom-color: var(--border-default);
+}
+/* The last row's rule would otherwise double up against the table's own bottom
+   border 1px below it. */
+.sl-markdown-content tbody tr:last-child :is(th, td):not(:where(.not-content *)) {
+	border-bottom: 0;
+}
+/* Cell backgrounds are not clipped by the table's border-radius, so the corner
+   cells have to carry the curve themselves or the header and the last stripe
+   poke out square. */
+.sl-markdown-content thead tr:first-child > :first-child {
+	border-start-start-radius: var(--radius-lg);
+}
+.sl-markdown-content thead tr:first-child > :last-child {
+	border-start-end-radius: var(--radius-lg);
+}
+.sl-markdown-content tbody tr:last-child > :first-child {
+	border-end-start-radius: var(--radius-lg);
+}
+.sl-markdown-content tbody tr:last-child > :last-child {
+	border-end-end-radius: var(--radius-lg);
+}
+
+/* Command chips must never break. At 390px the Command column squeezes to
+   157px and `pkg list-installed` broke AT THE HYPHEN into `pkg list-` +
+   `installed` — on a reference page whose entire job is accurate command
+   transcription. Same failure at desktop width on the storage page, where
+   `~/storage/external-1` split after the hyphen. The cell scrolls instead. */
+.sl-markdown-content :is(th, td):not(:where(.not-content *)) {
+	word-break: keep-all;
+}
+.sl-markdown-content :is(th, td) :not(pre) > code {
+	white-space: nowrap;
+	overflow-wrap: normal;
+}
+
+/* Phone: the scrollport needs to say it scrolls. Two `local` covers painted
+   over two `scroll` shadows — the covers travel with the content, so each
+   shadow only shows while there is more table left on that side. */
+@media (max-width: 49.99rem) {
+	.sl-markdown-content table:not(:where(.not-content *)) {
+		--_edge: color-mix(in srgb, var(--fg-default) 24%, transparent);
+		overflow-x: auto;
+		background-image: linear-gradient(to right, var(--bg-surface), transparent),
+			linear-gradient(to left, var(--bg-surface), transparent),
+			linear-gradient(to right, var(--_edge), transparent),
+			linear-gradient(to left, var(--_edge), transparent);
+		background-position: left center, right center, left center, right center;
+		background-size: 2rem 100%, 2rem 100%, 0.75rem 100%, 0.75rem 100%;
+		background-repeat: no-repeat;
+		background-attachment: local, local, scroll, scroll;
+	}
+}
+
+/* Active nav item. The soft gradient pill replaces Starlight's SOLID accent
+   fill, so the ink must be restated too — Starlight's default resolves to
+   --color-brand-muted (14% alpha brass) which was painting 1.31:1 in dark and
+   1.04:1 in light. The brass left rail means the active state never depends on
+   the low-contrast wash alone. */
+.sidebar-content a[aria-current='page'] {
+	background: var(--tmx-grad-soft);
+	border-radius: var(--radius-md);
+	color: var(--fg-default);
+	font-weight: 600;
+	border-left: 2px solid var(--color-brand);
+}
+/* Nested badges ("Interactive") inherited the same wash — reset them. */
+.sidebar-content a[aria-current='page'] .sl-badge {
+	background: transparent;
+	color: inherit;
+	border-color: currentColor;
+}
+.sl-badge {
+	border-color: color-mix(in srgb, var(--color-brand) 40%, transparent);
+	/* Was Starlight's --sl-font-system-mono, i.e. the OS default (ui-monospace),
+	   so the two sidebar badges rendered in a different mono face from every
+	   other mono element on the site — the kickers, the terminals, inline code.
+	   The FILLS are bridged onto brass in the BRIDGE section above. */
+	font-family: var(--font-mono);
+}
+
+/* ================================================================== *
+ * MDX LAYOUT HELPERS.
+ * ================================================================== */
+.tmx-lede {
+	font-family: var(--font-detail);
+	font-size: var(--text-md);
+	line-height: var(--leading-normal);
+	color: var(--fg-default);
+	/* The measure lives here, not in an inline style on index.mdx.
+	   It is load-bearing, contrary to the handoff that called it dead: the
+	   lede only ever renders on the splash page, and a splash carries no
+	   sidebar, so Starlight's Page.astro matches
+	   `html:not([data-has-sidebar])` and widens --sl-content-width from
+	   45rem to 67.5rem. Verified against the built output: dist/index.html's
+	   <html> has data-has-hero and NO data-has-sidebar, while every lesson
+	   page has data-has-sidebar. Without this cap the lede sets across
+	   ~1080px (roughly 150 characters at --text-md); 46rem holds it to ~736px
+	   and about 90, which is the same measure the lesson pages get for free. */
+	max-width: 46rem;
+}
+.tmx-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+	align-items: stretch;
+	gap: 1.25rem;
+	margin-block: var(--space-block);
+}
+.tmx-card {
+	padding: 1.4rem;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	gap: 0.65rem;
+}
+/* CARD TITLE — one role, one rule. Was three separate declarations of "a
+   card's heading" at two different sizes (1.1rem / 1.15rem / 1.15rem). */
+.tmx-card__title,
+.tmx-panel__title,
+.pagination-links .link-title {
+	margin: 0;
+	font-family: var(--font-heading);
+	font-weight: var(--weight-bold);
+	font-size: var(--text-md);
+	line-height: var(--leading-snug);
+	color: var(--fg-default);
+}
+/* Card and panel titles are now real <h3> elements. They used to be <p>, which
+   left the landing page with 3 headings for 8 content blocks and gave a screen
+   reader no way to skim it.
+
+   Promoting the tag is not free: the generic heading rule at the top of this
+   file, `.sl-markdown-content :is(h2, h3, …)`, scores (0,1,1) and
+   `.sl-markdown-content h3` scores (0,1,1) too — both BEAT the (0,1,0) class
+   rule directly above. Without this guard the titles silently inherited
+   font-size: --text-lg (up from --text-md), --leading-tight, a 0.6em bottom
+   margin and a --space-block top margin, i.e. the tag change would have been a
+   visual change. Re-assert the card values at matching specificity so the
+   rendered box is identical to the <p> version. */
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6).tmx-card__title,
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6).tmx-panel__title {
+	margin: 0;
+	font-size: var(--text-md);
+	line-height: var(--leading-snug);
+	/* 19px is the bottom of the type scale's heading range — negative tracking
+	   there closes counters rather than gaps. Neutral, matching the base rule. */
+	letter-spacing: var(--tracking-normal);
+	color: var(--fg-default);
+}
+/* CARD/PANEL BODY — one role, one rule. These were two byte-identical
+   declaration blocks 80 lines apart (margin/color/font-family/font-size/
+   line-height, all five the same), so a change to "secondary block copy" had to
+   be made twice or the two drifted. Merged; the genuinely local bits (the
+   panel's grid placement, the card's flex growth) stay on their own selectors.
+   The raw 0.98rem/1.55 are gone with it: 15.68px was an off-scale leftover from
+   before the type system existed, and 1.55 was --leading-normal spelled out.
+   Measured delta: 15.68px -> 15px. */
+:is(.tmx-card__body, .tmx-panel__body) {
+	margin: 0;
+	color: var(--fg-secondary);
+	font-family: var(--font-detail);
+	font-size: var(--text-sm);
+	line-height: var(--leading-normal);
+}
+.tmx-chip {
+	width: 2.7rem;
+	height: 2.7rem;
+	display: grid;
+	place-items: center;
+	border-radius: var(--radius-xl);
+	color: var(--color-brand);
+	background: var(--tmx-grad-soft);
+	border: 1px solid var(--border-subtle);
+	flex-shrink: 0;
+}
+.tmx-chip svg {
+	width: 1.35rem;
+	height: 1.35rem;
+}
+
+/* Informational "spec" panels — clearly NOT clickable. Left brass rail, a
+   fixed-height header row (chip + kicker + title) so side-by-side panels align
+   perfectly regardless of body length, and no lift/spotlight affordances. */
+.tmx-panels {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+	align-items: stretch;
+	gap: 1.25rem;
+	margin-block: var(--space-block);
+}
+.tmx-panel {
+	position: relative;
+	display: grid;
+	grid-template-columns: auto 1fr;
+	grid-template-rows: auto auto;
+	column-gap: 0.9rem;
+	row-gap: 0.5rem;
+	align-content: start;
+	padding: 1.3rem 1.4rem 1.3rem 1.5rem;
+	border: 1px solid var(--border-default);
+	border-left: 3px solid var(--color-brand);
+	border-radius: var(--radius-lg);
+	background: color-mix(in srgb, var(--bg-surface) 60%, transparent);
+	box-shadow: var(--shadow-sm);
+	cursor: default;
+	transition: border-color var(--dur-normal) var(--ease-out);
+}
+.tmx-panel:hover {
+	border-color: color-mix(in srgb, var(--color-brand) 30%, var(--border-default));
+	border-left-color: var(--color-brand-emphasis);
+}
+.tmx-panel .tmx-chip {
+	grid-row: 1 / span 1;
+	width: 2.4rem;
+	height: 2.4rem;
+}
+.tmx-panel__head {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-height: 2.4rem;
+	gap: 0.15rem;
+}
+/* EYEBROW — one role, one rule. Was duplicated byte-for-byte between the panel
+   kicker and the pagination label, differing only by 0.02rem (0.3px): an
+   accident, not a decision. */
+.tmx-panel__kicker,
+.pagination-links a > span:not(.link-title) {
+	font-family: var(--font-mono);
+	font-size: var(--text-2xs);
+	font-weight: var(--weight-semibold);
+	letter-spacing: var(--tracking-wide);
+	text-transform: uppercase;
+	/* CONTRAST HEADROOM, not a pass mark. This was --color-brand, which on the
+	   panel's effective light surface (--bg-surface at 60% over the canvas =
+	   rgb(248,244,238)) measured #8b6914 -> 4.64:1 — 0.14 above the 4.5:1
+	   requirement, on the smallest text on the site, in all-caps, at 0.14em
+	   tracking. That combination thins the strokes further, so it reads lighter
+	   than the number claims, and ANY future lightening of the panel surface or
+	   the brass token drops it under AA silently.
+	   --color-brand-emphasis measures 6.56:1 light / 11.28:1 dark on the same
+	   surfaces — 46% of headroom instead of 3%. The pagination eyebrow shares
+	   this rule and was in the same position on --bg-surface (4.79:1); it is
+	   lifted by the same edit. */
+	color: var(--color-brand-emphasis);
+}
+
+/* Type is set once, upstream, by the shared CARD/PANEL BODY rule. Only the grid
+   placement is local to the panel. */
+.tmx-panel__body {
+	grid-column: 1 / -1;
+}
+.tmx-kbd {
+	display: inline-block;
+	padding: 0.05em 0.5em;
+	border-radius: var(--radius-md);
+	border: 1px solid var(--border-default);
+	border-bottom-width: 2px;
+	background: var(--bg-surface-alt);
+	font: 600 0.85em/1.4 var(--font-mono);
+	color: var(--fg-default);
+}
+.tmx-rule {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	margin-block: var(--space-block-lg);
+	color: var(--color-brand);
+}
+.tmx-rule::before,
+.tmx-rule::after {
+	content: '';
+	height: 1px;
+	flex: 1;
+	background: linear-gradient(to var(--_d, right), transparent, color-mix(in srgb, var(--color-brand) 45%, transparent));
+}
+.tmx-rule::after {
+	--_d: left;
+}
+
+/* ================================================================== *
+ * REACT ISLAND CHROME
+ *
+ * Everything below used to live as inline `style={{}}` objects inside
+ * the React islands under src/components/ — 84 of them at the point this
+ * section was written (Avatar 1, LessonComplete 13, ProfileBadge 17,
+ * ProgressDashboard 29, LiveSandbox 16, TermuxTerminal 8). That was a
+ * second styling system the tokens could not reach: off-scale radii
+ * (10px, 3px), raw px type sizes, and per-theme decisions frozen in JS.
+ * The components now keep only genuinely dynamic values — the `height`
+ * prop, `width: ${percent}%`, `strokeDashoffset`, the name-derived
+ * avatar gradient — and carry state on data-/aria- attributes so the
+ * conditional branches are selectors here instead of ternaries there.
+ *
+ * Two measured consequences of the move:
+ *   1. The `!important` on the terminal box-shadow below is gone. It
+ *      existed only to beat LiveSandbox's inline
+ *      `boxShadow: '0 8px 30px rgba(0,0,0,0.35)'`; with that literal
+ *      deleted the plain declaration wins on its own.
+ *   2. The mobile full-bleed block (max-width: 30rem) finally applies.
+ *      `border-radius: 0` and `border-inline: none` were being written
+ *      into a stylesheet while the components set `borderRadius` and
+ *      `border` inline — which no non-!important rule can beat. Every
+ *      terminal on a phone was 100vw wide with a 12px radius and a 1px
+ *      hairline running off both edges of the viewport.
+ * ================================================================== */
+
+/* --- Shared island typography ---------------------------------------
+   Islands are wrapped in `.not-content`, which excludes them from
+   `.sl-markdown-content`'s `font-family: var(--font-detail)`. None of
+   them declared a family, so they all fell through to `body` → Inter —
+   including the two that live in the article flow. The decision is now
+   explicit and per-role rather than accidental:
+
+     .tmx-island        UI chrome            → --font-ui   (Inter)
+     .tmx-island__title a heading, so heading→ --font-heading (Crimson Pro)
+     .tmx-island__meta  chrome caption       → --font-ui
+     .tmx-island__prose running copy in flow → --font-detail (Source Serif)
+
+   Before: LessonComplete's title rendered Inter Bold 16px directly
+   under Source Serif prose at the foot of every lesson, and the
+   Progress page's section headers were Inter Bold 15px against Crimson
+   Pro 31px everywhere else on the site. */
+.tmx-island {
+	font-family: var(--font-ui);
+}
+.tmx-island__title {
+	font-family: var(--font-heading);
+	font-weight: var(--weight-bold);
+	font-size: var(--text-md);
+	line-height: var(--leading-snug);
+	letter-spacing: var(--tracking-heading);
+	color: var(--fg-default);
+}
+.tmx-island__meta {
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+	line-height: var(--leading-normal);
+	color: var(--fg-secondary);
+}
+/* Margin is declared because these are real <p> elements inside
+   `.not-content`, where Starlight's prose spacing does not reach — without
+   it they would fall back to the UA's 1em block margins. */
+.tmx-island__prose {
+	margin: 10px 0 0;
+	font-family: var(--font-detail);
+	font-size: var(--text-base);
+	line-height: var(--leading-prose);
+	color: var(--fg-secondary);
+}
+/* The same voice at caption size — the finish-line blurb sits inside a
+   card, not the column, so it takes the smaller step of the scale. */
+.tmx-island__prose--sm {
+	margin-top: 2px;
+	font-size: var(--text-xs);
+	line-height: var(--leading-normal);
+}
+/* Visually-hidden live region. Was an inline object on ProgressDashboard;
+   `clip` alone is deprecated, so the modern `clip-path` is paired with it. */
+.tmx-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* --- Avatar ---------------------------------------------------------
+   `size` drives width/height/font-size and the fallback background is
+   derived from the name, so those three stay inline. Everything else is
+   fixed. `50%` became --radius-full: identical rendering on a square
+   box, one fewer off-scale literal. */
+.tmx-avatar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--radius-full);
+	border: 2px solid var(--color-brand);
+	font-family: var(--font-ui);
+	font-weight: var(--weight-bold);
+	line-height: 1;
+	color: var(--fg-on-emphasis);
+	background: var(--bg-surface);
+	user-select: none;
+	flex-shrink: 0;
+}
+.tmx-avatar--flat {
+	border: none;
+}
+
+/* --- Terminal + sandbox frame ---------------------------------------
+   Both frames were inline, and they disagreed: the terminal used
+   --tmx-radius (12px) while the sandbox used a literal `10px` that
+   exists nowhere on the 4/6/8/12/9999 scale. One frame now, one radius. */
+.tmx-terminal,
+.tmx-sandbox {
+	overflow: hidden;
+	border: 1px solid var(--border-default);
+	border-radius: var(--tmx-radius);
+}
+.tmx-terminal__chrome,
+.tmx-sandbox__chrome {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 12px;
+	background: var(--bg-surface);
+	border-bottom: 1px solid var(--border-default);
+}
+.tmx-sandbox__chrome {
+	justify-content: space-between;
+	gap: 8px;
+}
+/* Replaces the three dots. Neutralising the traffic-light COLOURS left the
+   SHAPE, and the shape is what read as a desktop window — ambiguous at best on
+   a site about Android. A prompt glyph makes no OS claim at all. */
+.tmx-terminal__mark {
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+	font-weight: 700;
+	line-height: 1;
+	letter-spacing: -0.05em;
+	color: var(--color-brand);
+}
+/* The disambiguation itself, and the reason the mark is not doing this job
+   alone: a glyph says "terminal", it does not say "Android". Sits after the
+   wordmark and recedes, so it reads as a qualifier rather than a second title.
+   Hidden under 30rem, where the status strip needs the room more. */
+.tmx-terminal__os {
+	font-size: var(--text-2xs);
+	letter-spacing: 0.04em;
+	color: var(--fg-muted);
+}
+@media (max-width: 30rem) {
+	.tmx-terminal__os {
+		display: none;
+	}
+}
+.tmx-terminal__label,
+.tmx-sandbox__title,
+.tmx-sandbox__hint {
+	font-size: var(--text-xs);
+	color: var(--fg-secondary);
+}
+.tmx-terminal__label {
+	/* The 8px offset existed to clear the three dots. With the mark sitting
+	   directly beside it, the chrome's own 6px gap is the spacing. */
+	font-weight: 600;
+	color: var(--fg-secondary);
+}
+/* The accomplishment strip. min-width:0 is load-bearing: without it a
+   flex item overflows instead of ellipsising. */
+.tmx-terminal__status {
+	margin-left: auto;
+	min-width: 0;
+	font-size: var(--text-2xs);
+	letter-spacing: 0.02em;
+	color: var(--color-brand);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+/* The screen itself. Padding is NOT set here — it belongs to the
+   `:has(> .xterm)` rule below, which is the one place that knows
+   whether a terminal is actually mounted. */
+.tmx-terminal__screen,
+.tmx-sandbox__screen {
+	background: var(--tmx-screen);
+}
+.tmx-sandbox__screen {
+	transition: height var(--dur-normal) var(--ease-out);
+}
+
+/* ================================================================== *
+ * BOOT SPLASH — components/splash/BootSplash.astro
+ *
+ * A ~3.8s sequence: the window arrives, the session types itself out, the
+ * eight chips resolve around it, the wordmark tracks in, and the whole thing
+ * lifts away. Every guard rail is documented in the component; the one that
+ * matters here is that the page underneath is fully rendered and interactive
+ * the entire time — this is a curtain, not a loading gate.
+ *
+ * Everything animates opacity / transform / clip-path only, so the sequence is
+ * composited and never triggers layout while the real page paints beneath it.
+ * ================================================================== */
+.tmx-splash {
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	display: grid;
+	place-items: center;
+	padding: var(--space-block);
+	/* The artwork's own backdrop rect is stripped in the component, and its
+	   radial glow re-created here from the same stops (#101a26 → #0b111a →
+	   #070b11, centred at 50%/46%). On the overlay it covers the whole viewport
+	   instead of just the letterboxed art box, so there is no visible panel
+	   edge — and it sits over --bg-canvas, so a light theme still ends up on
+	   its own canvas rather than a hardcoded near-black. */
+	background:
+		radial-gradient(
+			ellipse 70% 70% at 50% 46%,
+			#101a26 0%,
+			#0b111a 60%,
+			#070b11 100%
+		),
+		var(--bg-canvas);
+	/* Not interactive: the skip listeners are on the window, so clicks land
+	   wherever the learner aimed rather than being eaten by the curtain. */
+	pointer-events: none;
+	animation: tmx-splash-in var(--dur-normal) var(--ease-out);
+}
+@keyframes tmx-splash-in {
+	from { opacity: 0; }
+}
+/* The exit. Lifts very slightly as it goes, so it reads as a curtain rising
+   rather than a layer being switched off. */
+.tmx-splash[data-leaving] {
+	animation: tmx-splash-out 500ms var(--ease-in-out) forwards;
+}
+@keyframes tmx-splash-out {
+	to {
+		opacity: 0;
+		transform: translateY(-1.5%) scale(1.02);
+	}
+}
+/* Scroll is locked only while the splash is actually up, and released the
+   instant it starts leaving — not when it finishes — so a learner who skips is
+   never briefly unable to scroll. */
+html[data-splash] {
+	overflow: hidden;
+}
+/* Height matters as much as width here: at 1100px wide the 1280×832 artwork is
+   ~715px tall, which overflowed a laptop viewport and cropped the top and
+   bottom chips clean off. Constraining BOTH axes lets the SVG's default
+   `preserveAspectRatio` (xMidYMid meet) letterbox it instead, so every chip is
+   always in frame no matter the window shape. */
+.tmx-splash__art {
+	width: min(94vw, 1100px);
+	max-height: 82vh;
+	height: auto;
+}
+
+/* 1. THE WINDOW — arrives first, everything else is staged around it. */
+.tmx-splash__window {
+	animation: tmx-splash-window 700ms var(--ease-out) both;
+	transform-box: fill-box;
+	transform-origin: center;
+}
+@keyframes tmx-splash-window {
+	from {
+		opacity: 0;
+		transform: scale(0.965) translateY(10px);
+	}
+}
+
+/* 2. THE SESSION TYPES ITSELF — a left-to-right reveal per line, which reads
+      as output arriving rather than as text fading up. 150ms apart, starting
+      once the frame has settled. */
+.tmx-splash__line {
+	animation: tmx-splash-type 300ms steps(24, end) both;
+	animation-delay: calc(650ms + var(--i, 0) * 165ms);
+}
+@keyframes tmx-splash-type {
+	from { clip-path: inset(0 100% 0 0); }
+	to { clip-path: inset(0 0 0 0); }
+}
+
+/* 3. THE CHIPS — the eight named tools resolve around the window. This is the
+      stretch the whole thing exists for, so it gets the time: 650ms each and
+      190ms apart, and they TRAVEL into place rather than just fading up. The
+      first pass ran them at 420ms/110ms and they arrived faster than the eye
+      could follow them individually, which defeats the point of having eight
+      distinct, individually-designed chips. */
+.tmx-splash__chip {
+	animation: tmx-splash-chip 650ms var(--ease-out) both;
+	animation-delay: calc(1500ms + var(--i, 0) * 190ms);
+	transform-box: fill-box;
+	transform-origin: center;
+}
+@keyframes tmx-splash-chip {
+	from {
+		opacity: 0;
+		transform: scale(0.78) translateY(16px);
+	}
+}
+
+/* 4. THE WORDMARK — tracks out as it fades in, landing on the letter-spacing
+      the artwork already specifies. Waits for the last chip to land. */
+.tmx-splash__wordmark {
+	animation: tmx-splash-word 750ms var(--ease-out) both;
+	animation-delay: 3550ms;
+}
+@keyframes tmx-splash-word {
+	from {
+		opacity: 0;
+		letter-spacing: 2px;
+	}
+}
+
+/* Belt and braces: the component already refuses to reveal itself under
+   reduced motion, but if it is ever mounted somewhere that bypasses that, this
+   makes it inert rather than a strobe. */
+@media (prefers-reduced-motion: reduce) {
+	.tmx-splash {
+		display: none;
+	}
+}
+
+/* LOAD-BEARING. `hidden` is a UA-stylesheet `display: none`, and ANY author
+   display rule outranks the UA sheet — so `.tmx-splash { display: grid }`
+   above silently defeats the attribute, and the whole "ships hidden, JS
+   reveals it, fails open without JS" guarantee evaporates: a visitor with no
+   JS would get a full-screen curtain and no way to dismiss it. This restores
+   it as an author-level rule that wins on specificity (0,2,0 vs 0,1,0). */
+.tmx-splash[hidden] {
+	display: none;
+}
+
+/* --- Practice section: instructions stay put while you type ----------
+   See components/lesson/PracticeSection.astro for the full reasoning. Short
+   version: the terminal parks against the BOTTOM of the viewport, so the
+   instructions above it stay readable, and the wrapper's own end releases it
+   at the next heading instead of letting it ride over the Recap.
+
+   Height matters here — a 400px terminal pinned to the bottom of a short
+   viewport would leave nothing above it to read, which trades one problem for
+   another. Only engage where there is genuinely room: tall viewports, on
+   pointer devices. Phones keep the plain stacked flow, where the soft keyboard
+   and the visualViewport handler already own the geometry. */
+@media (min-width: 72rem) and (min-height: 46rem) and (pointer: fine) {
+	.tmx-practice .tmx-terminal {
+		position: sticky;
+		bottom: 1rem;
+	}
+}
+/* A learner who asked for less motion did not ask for less LAYOUT, so this is
+   not gated on reduced-motion — sticky is a position, not an animation. */
+
+/* --- Touch key row ---------------------------------------------------
+   The keys the course teaches — Tab, the arrows, Ctrl — do not exist on
+   Gboard or the Samsung keyboard, so without this row every fish feature
+   the lessons market is unreachable on the phone the course is about.
+
+   Screen tokens, not surface tokens: the row reads as part of the device,
+   below the screen, the way Termux's own extra-keys row does. Those tokens
+   are dark-locked in both themes, which is why this needs no light variant. */
+.tmx-terminal__keys {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	padding: 6px;
+	background: var(--tmx-screen);
+	border-top: 1px solid var(--border-default);
+}
+.tmx-terminal__key {
+	flex: 1 1 auto;
+	/* 44px is the accessibility floor for a touch target, and this row exists
+	   entirely for touch — shrinking these to fit more keys would defeat it. */
+	min-width: 44px;
+	min-height: 44px;
+	padding: 0 10px;
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+	line-height: 1;
+	color: var(--tmx-screen-ink);
+	background: color-mix(in srgb, var(--tmx-screen-ink) 8%, transparent);
+	border: 1px solid color-mix(in srgb, var(--tmx-screen-ink) 16%, transparent);
+	border-radius: calc(var(--tmx-radius) / 2);
+	cursor: pointer;
+	transition:
+		background var(--dur-fast) var(--ease-out),
+		border-color var(--dur-fast) var(--ease-out);
+}
+.tmx-terminal__key:hover {
+	background: color-mix(in srgb, var(--tmx-screen-ink) 16%, transparent);
+}
+.tmx-terminal__key:active {
+	background: color-mix(in srgb, var(--tmx-screen-brand) 28%, transparent);
+}
+/* Armed CTRL is a MODE, not a hover — it persists until the next key, so it
+   gets the brass treatment rather than a subtle tint. */
+.tmx-terminal__key[data-armed] {
+	color: var(--tmx-screen);
+	background: var(--tmx-screen-brand);
+	border-color: var(--tmx-screen-brand);
+}
+
+/* --- Sandbox state chrome -------------------------------------------
+   Phase was a chain of ternaries choosing colours in JS. It is a state,
+   so it is a data attribute and the colour choice is a selector. */
+.tmx-sandbox__boot {
+	cursor: pointer;
+	/* Was 12px in an 85x53 box, wrapping to "Boot" / "Linux" — the
+	   smallest button on the page, for the headline feature. */
+	font-size: var(--text-sm);
+	padding: 8px 18px;
+	gap: 8px;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+.tmx-sandbox__state {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--text-xs);
+}
+.tmx-sandbox__state[data-phase='loading'] {
+	color: var(--color-warning);
+}
+.tmx-sandbox__state[data-phase='running'] {
+	color: var(--color-success);
+}
+.tmx-sandbox__pulse {
+	width: 8px;
+	height: 8px;
+	border-radius: var(--radius-full);
+	background: var(--color-success);
+	box-shadow: 0 0 8px var(--color-success);
+	animation: tmx-pulse 1.6s var(--ease-in-out) infinite;
+}
+.tmx-sandbox__message {
+	padding: 8px 12px;
+	font-size: var(--text-xs);
+	color: var(--fg-secondary);
+	background: var(--bg-surface);
+	border-bottom: 1px solid var(--border-default);
+}
+/* Was the hardcoded #fca5a5 (Tailwind red-300): 1.78:1 on parchment, so
+   the message explaining how to fix the page was unreadable to exactly
+   the person who needed it. */
+.tmx-sandbox__message[data-tone='error'] {
+	color: var(--color-danger);
+}
+.tmx-sandbox__foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 6px 12px;
+	background: var(--bg-surface);
+	border-top: 1px solid var(--border-default);
+}
+.tmx-sandbox__exit {
+	flex-shrink: 0;
+	padding: 4px 12px;
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-full);
+	background: transparent;
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-semibold);
+	color: var(--fg-secondary);
+	cursor: pointer;
+}
+/* The idle overlay is drawn ON the obsidian screen, which does not flip
+   with the theme — so it must use the dark-locked screen tokens. */
+.tmx-sandbox__idle {
+	padding: 18px 14px;
+	font-size: var(--text-xs);
+	line-height: var(--leading-normal);
+	color: var(--tmx-screen-muted);
+	background: var(--tmx-screen);
+}
+.tmx-sandbox__idle strong,
+.tmx-sandbox__idle-warn {
+	color: var(--tmx-screen-brand);
+}
+.tmx-sandbox__idle-warn {
+	margin-top: 10px;
+}
+.tmx-sandbox__idle-note {
+	margin-top: 4px;
+}
+
+/* --- ProfileBadge (sidebar) -----------------------------------------
+   Sidebar chrome, so Inter is correct here — but it is now SAID rather
+   than inherited by luck. The explicit line-heights are what make the
+   collapsed height deterministic; see .tmx-profile-slot for the sum. */
+.tmx-profile-badge {
+	padding: 10px 12px;
+	margin: 0 0 1rem;
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-lg);
+	background: var(--bg-surface);
+}
+/* min-height pins the row at the edit button's 44px touch target, so the
+   badge cannot grow if the name wraps a hair taller than expected. */
+.tmx-profile-badge__row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 44px;
+}
+.tmx-profile-badge__id {
+	min-width: 0;
+	flex: 1;
+}
+.tmx-profile-badge__name {
+	font-size: var(--text-sm);
+	font-weight: var(--weight-bold);
+	line-height: var(--leading-snug);
+	color: var(--fg-default);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.tmx-profile-badge__meta {
+	font-size: var(--text-xs);
+	line-height: var(--leading-normal);
+	color: var(--fg-secondary);
+}
+.tmx-profile-badge__edit {
+	display: grid;
+	place-items: center;
+	/* Was 22x33 — the smallest control on the site after the checklist
+	   glyph, and the entry point to the whole editor. */
+	min-width: 44px;
+	min-height: 44px;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-md);
+	background: none;
+	font-size: var(--text-base);
+	color: var(--fg-muted);
+	cursor: pointer;
+}
+.tmx-profile-badge__bar {
+	height: 6px;
+	margin-top: 10px;
+	border-radius: var(--radius-full);
+	background: var(--border-default);
+	overflow: hidden;
+}
+/* Was `linear-gradient(90deg, var(--color-brand), var(--color-brand-emphasis))`
+   written out by hand — a duplicate of --tmx-grad at a different angle.
+   On a 6px-tall, full-width bar the 120deg axis reads as horizontal, so
+   the duplicate bought nothing and cost a grep. */
+.tmx-profile-badge__bar-fill {
+	height: 100%;
+	border-radius: var(--radius-full);
+	background: var(--tmx-grad);
+	transition: width var(--dur-slow) var(--ease-out);
+}
+.tmx-profile-badge__editor {
+	margin-top: 12px;
+}
+.tmx-profile-badge__label,
+.tmx-profile-badge__group-label {
+	display: block;
+	font-size: var(--text-xs);
+	color: var(--fg-body);
+}
+.tmx-profile-badge__label {
+	margin-bottom: 4px;
+}
+.tmx-profile-badge__group-label {
+	margin: 10px 0 4px;
+}
+.tmx-profile-badge__field {
+	display: flex;
+	gap: 6px;
+}
+/* --border-default rather than the old --sl-color-gray-4 (= --fg-muted):
+   a TEXT token was being used as a border. This is the same hairline the
+   theme toggle and the search field use, so the three sidebar/header
+   controls finally agree. */
+.tmx-profile-badge__input {
+	flex: 1;
+	padding: 4px 8px;
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-md);
+	background: var(--bg-canvas);
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+	color: var(--fg-default);
+}
+.tmx-profile-badge__save {
+	padding: 4px 10px;
+	border: none;
+	border-radius: var(--radius-md);
+	background: var(--color-brand);
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-semibold);
+	/* Was the hardcoded #201509, which duplicated --fg-on-emphasis WRONGLY:
+	   it does not flip on parchment, where brass darkens to #8b6914. */
+	color: var(--fg-on-emphasis);
+	cursor: pointer;
+}
+.tmx-profile-badge__emoji-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+/* Selection was three conditional inline objects. aria-pressed already
+   carries the state in the DOM, so the stylesheet reads it directly and
+   the component stops branching. */
+.tmx-profile-badge__chip {
+	padding: 4px;
+	border: 1px solid transparent;
+	border-radius: var(--radius-md);
+	background: transparent;
+	font-size: var(--text-md);
+	line-height: 1;
+	cursor: pointer;
+}
+.tmx-profile-badge__chip--initials {
+	padding: 0 8px;
+	border-color: var(--border-default);
+	font-size: var(--text-2xs);
+	color: var(--fg-body);
+}
+.tmx-profile-badge__chip[aria-pressed='true'] {
+	border-color: var(--color-brand);
+	background: var(--color-brand-muted);
+	/* Non-colour cue as well as the colour one: the 2px inset ring thickens
+	   the selected chip so the choice survives greyscale and low vision. */
+	box-shadow: inset 0 0 0 2px var(--color-brand);
+}
+
+/* --- LessonComplete (foot of every lesson) --------------------------
+   Three inline background/border ternaries collapsed into one data
+   attribute with two modifier states. `done` used to mix its tint into
+   `transparent` (so it picked up the page canvas) while `finished` mixed
+   into --bg-surface — the same card at two different elevations. */
+.tmx-lesson-complete {
+	display: flex;
+	/* Column so the completion banner can sit UNDER the toggle row without
+	   disturbing it; with one child this renders as a single row. */
+	flex-direction: column;
+	gap: 12px;
+	padding: 14px 16px;
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-lg);
+	background: var(--bg-surface);
+}
+.tmx-lesson-complete[data-state='done'] {
+	border-color: var(--color-success);
+	background: color-mix(in srgb, var(--color-success) 12%, var(--bg-surface));
+}
+.tmx-lesson-complete[data-state='finished'] {
+	border-color: var(--color-brand);
+	background: color-mix(in srgb, var(--color-brand) 12%, var(--bg-surface));
+}
+.tmx-lesson-complete__row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.tmx-lesson-complete__mark {
+	display: grid;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-xl);
+	background: var(--bg-surface-alt);
+	color: var(--fg-secondary);
+	transition: color var(--dur-slow) var(--ease-out),
+		background var(--dur-slow) var(--ease-out),
+		border-color var(--dur-slow) var(--ease-out);
+}
+.tmx-lesson-complete:is([data-state='done'], [data-state='finished']) .tmx-lesson-complete__mark {
+	border-color: color-mix(in srgb, var(--color-success) 35%, var(--border-default));
+	background: color-mix(in srgb, var(--color-success) 16%, transparent);
+	color: var(--color-success);
+}
+.tmx-lesson-complete__copy {
+	flex: 1;
+}
+.tmx-lesson-complete__btn {
+	padding: 9px 16px;
+	font-size: var(--text-xs);
+	cursor: pointer;
+}
+.tmx-lesson-complete__banner {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding-top: 12px;
+	border-top: 1px solid color-mix(in srgb, var(--color-brand) 40%, transparent);
+}
+.tmx-lesson-complete__trophy {
+	margin-top: 2px;
+	color: var(--color-brand);
+}
+/* .not-content excludes this from Starlight's prose link styling, so
+   without a rule it renders as default browser blue — a second hue. */
+.tmx-lesson-complete__link {
+	color: var(--color-brand-emphasis);
+	text-decoration: underline;
+}
+
+/* --- ProgressDashboard ---------------------------------------------- */
+.tmx-dashboard {
+	position: relative;
+	margin-block: var(--space-block);
+}
+.tmx-dashboard__hero {
+	display: flex;
+	align-items: center;
+	gap: 18px;
+	padding: 18px;
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-xl);
+	background: var(--bg-surface);
+}
+.tmx-dashboard__hero-id {
+	flex: 1;
+}
+.tmx-dashboard__ring {
+	flex-shrink: 0;
+}
+.tmx-dashboard__ring-arc {
+	transition: stroke-dashoffset var(--dur-slow) var(--ease-out);
+}
+/* The percentage inside the ring is UI chrome, so Inter — and it was the
+   one piece of island text whose size lived in an SVG presentation
+   attribute rather than anywhere CSS could see. */
+.tmx-dashboard__ring-label {
+	font-family: var(--font-ui);
+	font-size: var(--text-md);
+	font-weight: var(--weight-bold);
+	fill: var(--fg-default);
+}
+.tmx-dashboard__section {
+	margin-top: 20px;
+}
+/* Was Inter Bold 15px in --fg-body, on the one page that is nothing but
+   sectioned lists, while every other section header on the site is
+   Crimson Pro 700. Same role, so the same treatment. */
+.tmx-dashboard__section-title {
+	margin: 0 0 8px;
+	font-family: var(--font-heading);
+	font-size: var(--text-md);
+	font-weight: var(--weight-bold);
+	line-height: var(--leading-snug);
+	letter-spacing: var(--tracking-heading);
+	color: var(--fg-default);
+}
+.tmx-dashboard__list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.tmx-dashboard__item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 12px;
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-lg);
+	/* Was --bg-canvas, so the checklist sat at canvas level while the
+	   avatar card above it sat on a surface. */
+	background: var(--bg-surface);
+}
+.tmx-dashboard__toggle {
+	display: grid;
+	place-items: center;
+	/* 44x44 hit area around a 20px control, so a miss can no longer land
+	   on the sibling link and navigate the learner off the dashboard. */
+	min-width: 44px;
+	min-height: 44px;
+	padding: 0;
+	margin: -12px 0 -12px -12px;
+	border: none;
+	background: none;
+	cursor: pointer;
+}
+.tmx-dashboard__check {
+	display: grid;
+	place-items: center;
+	width: 20px;
+	height: 20px;
+	border: 1.5px solid var(--border-default);
+	border-radius: var(--radius-sm);
+	background: transparent;
+	transition: background var(--dur-normal) var(--ease-out),
+		border-color var(--dur-normal) var(--ease-out);
+}
+.tmx-dashboard__toggle[aria-checked='true'] .tmx-dashboard__check {
+	border-color: var(--color-brand);
+	background: var(--color-brand);
+}
+.tmx-dashboard__link {
+	flex: 1;
+	color: var(--fg-default);
+	text-decoration: none;
+}
+.tmx-dashboard__item[data-done='true'] .tmx-dashboard__link {
+	color: var(--fg-secondary);
+}
+/* The completion moment — the only place brass is used as a full surface,
+   which is what makes it read as an event rather than another card. */
+.tmx-dashboard__done {
+	margin-top: 24px;
+	padding: 20px 18px;
+	border: 1px solid var(--color-brand);
+	border-radius: var(--radius-xl);
+	background: color-mix(in srgb, var(--color-brand) 12%, var(--bg-surface));
+}
+.tmx-dashboard__done-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.tmx-dashboard__trophy {
+	color: var(--color-brand);
+}
+.tmx-dashboard__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 14px;
+}
+.tmx-dashboard__note {
+	margin: 12px 0 0;
+	font-size: var(--text-xs);
+	color: var(--fg-muted);
+}
+.tmx-dashboard__transfer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-top: 24px;
+}
+.tmx-dashboard__bulk {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 16px;
+}
+.tmx-dashboard__status {
+	margin: 10px 0 0;
+	font-size: var(--text-xs);
+	color: var(--fg-secondary);
+}
+.tmx-dashboard__status[data-tone='bad'] {
+	color: var(--color-danger);
+}
+.tmx-dashboard__btn {
+	padding: 8px 14px;
+	font-size: var(--text-xs);
+	cursor: pointer;
+}
+/* Destructive, and it was visually IDENTICAL to the harmless button beside
+   it. Danger-coloured, ordered last, and the confirm state is an attribute
+   rather than two more inline ternaries. */
+.tmx-dashboard__reset {
+	margin-inline-start: auto;
+	padding: 8px 14px;
+	border: 1px solid color-mix(in srgb, var(--color-danger) 45%, var(--border-default));
+	border-radius: var(--radius-full);
+	background: transparent;
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-semibold);
+	color: var(--color-danger);
+	cursor: pointer;
+}
+.tmx-dashboard__reset[data-confirm='true'] {
+	border-color: var(--color-critical);
+	background: color-mix(in srgb, var(--color-critical) 14%, transparent);
+}
+
+/* The `!important` here is deliberately gone: it existed only to beat
+   LiveSandbox's inline `boxShadow: '0 8px 30px rgba(0,0,0,0.35)'`, which
+   the migration above deleted. Nothing else declares a box-shadow on
+   these two selectors, so the plain declaration wins unaided. */
+.tmx-terminal,
+.tmx-sandbox {
+	box-shadow: var(--shadow-xl), 0 0 0 1px var(--border-subtle);
+}
+/* xterm paints .xterm-viewport from its own JS theme, defaulting to pure #000,
+   which sat a black layer over the intended obsidian and made the scroll gutter
+   a black band beside an #0e1014 screen. Pin it to the token. */
+:is(.tmx-terminal, .tmx-sandbox) .xterm-viewport {
+	background-color: var(--tmx-screen) !important;
+}
+
+/* --- THE 8px CLIP (D10a) -------------------------------------------------
+   Measured: .tmx-terminal clientHeight 437 against scrollHeight 445, with
+   `overflow: hidden` on the wrapper — 8px of the last row cut off outright,
+   with no scrollbar to reveal it, on every terminal on the site.
+
+   The box maths, walking outward: both components render the xterm host as
+   `<div style={{ height, padding: 8 }}>`. Starlight's reset makes that
+   border-box, so a `height` of 400 became a 384px CONTENT box once the 8px of
+   top and bottom padding was subtracted — while xterm still laid out against
+   the 400px it was handed. The wrapper is auto-height (37px chrome bar + the
+   host), so it inherited the shortfall exactly.
+
+   The `height` prop is documented in TermuxTerminal.tsx as "Fixed height in CSS
+   pixels" — i.e. the SCREEN, not the screen minus its own gutter. content-box
+   makes the box agree with that contract: padding is additive again, the host
+   gets the full reserved height for rows, and the clip is gone. The reservation
+   itself is untouched, so CLS stays at 0.
+
+   Selected by :has(> .xterm) rather than a positional child selector because
+   the host is the last child in TermuxTerminal but NOT in LiveSandbox (a hint
+   footer and an idle overlay render after it).
+
+   The screen's 8px gutter now lives here too. It used to be inline in both
+   components — and in LiveSandbox it was computed in JS, by a useState + a
+   matchMedia listener duplicating the 30rem breakpoint below, because a
+   `> div:last-child` rule had been handed to the wrong element. :has(> .xterm)
+   fixes that structurally: it matches exactly when a terminal is mounted, so
+   the collapsed sandbox (height 0, no xterm) gets no padding without anyone
+   having to say so. That deleted one state, one effect and one listener. */
+:is(.tmx-terminal, .tmx-sandbox) > div:has(> .xterm) {
+	box-sizing: content-box;
+	padding: 8px;
+}
+
+/* ================================================================== *
+ * MOBILE / RESPONSIVE
+ *
+ * This site teaches an ANDROID app, so a large share of readers are on the
+ * phone they're installing Termux on. These rules exist because the audit
+ * measured real failures at 360-768px, not as speculative polish.
+ * ================================================================== */
+
+/* --- Tap targets (WCAG 2.5.8 / 2.5.5): nothing interactive below 44x44. ---
+   Measured before: hamburger 32x32, search 32x40, ProfileBadge pencil 22x33,
+   sidebar rows *x32, checklist control 25x18 (a quarter of the minimum, sitting
+   inside a row whose remaining area navigates away — so a miss cost the learner
+   their place). */
+@media (pointer: coarse), (max-width: 50rem) {
+	.sidebar-content a,
+	.mobile-starlight-toc button,
+	.sl-markdown-content .action,
+	.sl-link-button,
+	.tmx-btn,
+	button.tmx-tap,
+	a.tmx-tap {
+		min-height: 44px;
+	}
+	.sidebar-content a {
+		display: flex;
+		align-items: center;
+	}
+	/* Icon-only controls need both axes. */
+	.tmx-tap-icon {
+		min-width: 44px;
+		min-height: 44px;
+		display: inline-grid;
+		place-items: center;
+	}
+}
+
+/* --- ProfileBadge slot: reserve the box before React arrives ---------------
+   ProfileBadge is client:only, so the server ships an empty <astro-island> and
+   Starlight's nav sat 98px too high until hydration, then snapped down. That is
+   a layout shift at the top of the sidebar on every single page.
+
+   98px is the badge's collapsed height, now summed off .tmx-profile-badge in
+   the ISLAND CHROME section rather than off inline styles:
+     1 + 1   border
+    10 + 10  padding
+        44   avatar/name row — .tmx-profile-badge__row has min-height: 44px,
+             and the two text lines inside it measure
+             15px x 1.35 + 13px x 1.55 = 40.4px, so the row sits AT its
+             minimum rather than above it
+    10 +  6  progress bar margin-top + track
+    ------
+        82   content box
+      + 16   the badge's own `margin: 0 0 1rem`, which cannot collapse out of a
+             parent that has a non-zero min-height — so it is inside the box we
+             are reserving, not below it.
+
+   That 44 used to be an assumption, not a fact: the name/meta lines carried no
+   line-height, so they inherited Starlight's body 1.75 and measured
+   14 x 1.75 + 12 x 1.75 = 45.5px. The row was 45.5, the badge 99.5, and this
+   reservation was 1.5px short — a residual shift on every page, down from the
+   ~86px one before the slot existed. Explicit line-heights on
+   .tmx-profile-badge__name / __meta make the sum exact and, more usefully,
+   make it survive a change to Starlight's --sl-line-height.
+
+   min-height (not height) so the editor can still expand the badge on click. */
+.tmx-profile-slot {
+	min-height: 98px;
+}
+
+/* --- The interactive terminal at phone width. ---
+   At 390px the terminal measured 39 columns (35 at 360px) against ~80-column
+   authored output, so taught commands broke mid-token. Two levers here: escape
+   the prose gutter (full-bleed) and drop internal padding. The third lever —
+   font size — is applied in TermuxTerminal.tsx, since xterm sizes from JS. */
+@media (max-width: 30rem) {
+	.tmx-terminal,
+	.tmx-sandbox {
+		/* Full-bleed out of the prose column; every pixel is columns. */
+		margin-inline: calc(50% - 50vw);
+		width: 100vw;
+		max-width: 100vw;
+		/* These two were dead until the inline-style migration: both components
+		   set `borderRadius` and `border` in JS, and no ordinary rule beats an
+		   inline style. A phone therefore got a 100vw terminal that still had a
+		   12px radius and a hairline running off both edges. */
+		border-radius: 0;
+		border-inline: none;
+	}
+	/* Was `> div:last-child`, which is the xterm host in TermuxTerminal but the
+	   hint footer / idle overlay in LiveSandbox — so on the sandbox this rule
+	   squeezed the wrong element and left the screen gutter at 8px. Same
+	   :has(> .xterm) match as the clip fix above. The `!important` is gone with
+	   the inline padding it existed to beat. */
+	:is(.tmx-terminal, .tmx-sandbox) > div:has(> .xterm) {
+		padding: 4px;
+	}
+}
+
+/* --- Reading measure on tablets. ---
+   768px is the awkward band: Starlight's sidebar docks at 1024px, so between
+   those widths content took the full 720px = ~80 characters with
+   `max-width: none`. */
+@media (min-width: 30rem) and (max-width: 63.9rem) {
+	.sl-markdown-content {
+		max-width: 68ch;
+		margin-inline: auto;
+	}
+}
+
+/* --- Scatter field at portrait aspect ratios. ---
+   `cover` against a 1920x1080 source cropped ~74% of the artwork's width at
+   390x844, magnifying individual glyphs so ghost terminal strings landed on
+   running text at near-desktop size. Sizing by height keeps the motifs at their
+   intended fine-texture scale. */
+@media (max-aspect-ratio: 3 / 4) {
+	body::before {
+		background-size: auto 100%;
+		background-position: center top;
+	}
+}
+
+/* ================================================================== *
+ * MOTION — gated on preference.
+ * ================================================================== */
+@keyframes tmx-pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.55;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+	}
+	/* The link-card lift is declared on `.tmx-card--link:hover`, which outranks
+	   the plain `.tmx-card:hover` written here, so an opted-in link card still
+	   lifted 4px for a reduced-motion user. Listing both forms and matching the
+	   !important used by the rest of this block removes the arms race. (This
+	   used to also list the Starlight `.card` forms; those styles are gone —
+	   see the CARD SYSTEM header.) */
+	.tmx-card:hover,
+	.tmx-card--link:hover {
+		transform: none !important;
+	}
+	/* The blanket rule above only reaches animations and transitions, so it
+	   could not reach either of the next two — both were still running for
+	   users who asked for no motion.
+
+	   1. body::before is `background-attachment: fixed` (line 383). That is a
+	      parallax, not a transition: the parchment plate stays put while the
+	      page scrolls past it. Parallax is a documented vestibular trigger.
+	      It was already neutralised at line 421, but keyed on VIEWPORT WIDTH
+	      (a mobile-perf measure), so a reduced-motion user on a desktop got
+	      the full effect. */
+	body::before {
+		background-attachment: scroll !important;
+	}
+	/* 2. The button sheen (line 807) sweeps a white gradient across the button
+	      over 0.6s. Clamping that transition to 0.001ms does NOT suppress it —
+	      it compresses the whole sweep into a single frame, i.e. converts a
+	      smooth wipe into a hard flash. For a photosensitive user that is
+	      strictly worse than the original. Remove the pseudo-element. */
+	.sl-markdown-content .action::before,
+	.sl-link-button::before,
+	.tmx-btn::before {
+		display: none !important;
+	}
+	/* Remaining translate-on-hover lifts. `transform` is not a transition
+	   property, so the duration clamp above leaves the displacement itself
+	   intact — it just makes it instant. */
+	.pagination-links a:hover,
+	.sl-markdown-content .action:hover,
+	.sl-link-button:hover,
+	.tmx-btn:hover,
+	.tmx-btn:active {
+		transform: none !important;
+	}
+}
+
+/* ================================================================== *
+ * REFINEMENTS — equal-height grids, chrome polish, pagination.
+ * ================================================================== */
+
+/* --- Equal-height grid children -------------------------------------
+   `align-items: stretch` alone wasn't holding because Starlight's markdown
+   flow adds block margins to children. Force every grid item to fill its
+   track and zero the inherited margins. */
+.tmx-grid > *,
+.tmx-panels > * {
+	align-self: stretch;
+	height: 100%;
+	margin: 0 !important;
+}
+/* Push each card's body to fill remaining space so footers/edges line up. */
+.tmx-card__body {
+	flex: 1;
+}
+/* Titles occupy a consistent block so bodies start on the same line. */
+.tmx-card__title {
+	min-height: 2.6em;
+	display: flex;
+	align-items: flex-start;
+}
+/* Panels: body fills, keeping both panels' rails equal length. */
+.tmx-panel__body {
+	align-self: start;
+}
+.tmx-panel {
+	align-content: start;
+}
+
+/* DELETED: 34 lines styling `starlight-theme-select` (label, select, option,
+   .icon.caret). Every one of those selectors now matches nothing —
+   overrides/ThemeSelect.astro replaced the stock <select> with a single
+   `<button class="tmx-theme-toggle">`, so the `starlight-theme-select` custom
+   element is never rendered on any page. That block was the largest dead
+   region in the file and, worse, it was 34 lines describing a control the
+   design system no longer has, so it read as live documentation of a
+   dropdown that does not exist. Its replacement is the THEME TOGGLE section
+   at the end of this file. */
+
+/* --- Pagination (Prev / Next) --------------------------------------
+   Default Starlight renders a tiny "Next" over an oversized title. Rebuild
+   it as a proper card: small brass kicker, sensible title size, hover lift. */
+.pagination-links a {
+	border: 1px solid var(--border-default);
+	border-radius: var(--tmx-radius);
+	background: var(--bg-surface);
+	box-shadow: var(--shadow-sm);
+	padding: 0.85rem 1.1rem;
+	gap: 0.75rem;
+	transition: transform var(--dur-normal) var(--ease-out),
+		border-color var(--dur-normal) var(--ease-out),
+		box-shadow var(--dur-normal) var(--ease-out);
+}
+/* The landing page has no "previous", so its single NEXT card took the whole
+   1130px row with its label and arrow crammed against the far right edge —
+   ~900px of empty bordered box with the scatter field showing through, reading
+   as an unfinished container rather than a navigation affordance. Constrain the
+   lone card to half the row and justify it to the side it points toward, which
+   restores the interior pages' two-card balance. Grid tracks honour auto
+   margins, so no change to the grid itself is needed. */
+.pagination-links a:only-child {
+	max-width: 50%;
+}
+/* Below ~600px Starlight's own grid (min track 18rem + 1rem gap) can no longer
+   fit two cards side by side, so there is no sibling rhythm left to match and
+   half a phone row is not a card. Let it fill. */
+@media (max-width: 37.5rem) {
+	.pagination-links a:only-child {
+		max-width: none;
+	}
+}
+.pagination-links a:only-child[rel='next'] {
+	margin-inline-start: auto;
+}
+.pagination-links a:only-child[rel='prev'] {
+	margin-inline-end: auto;
+}
+.pagination-links a:hover {
+	transform: translateY(-2px);
+	border-color: color-mix(in srgb, var(--color-brand) 50%, var(--border-default));
+	box-shadow: var(--shadow-lg);
+}
+/* The "Next"/"Previous" eyebrow — small, brass, mono.
+   Its TYPE is set once, upstream, by the shared EYEBROW rule
+   (.tmx-panel__kicker, .pagination-links a > span:not(.link-title)); the page
+   title likewise by the shared CARD TITLE rule. This block used to restate both
+   in raw units — 0.68rem / 0.14em / 600 and 1.15rem / 1.2 — which, sitting
+   later in the file, silently won over the tokenised versions and quietly
+   reintroduced two off-scale sizes into a system that had just been put on a
+   modular scale. Only the layout that is genuinely local stays here. */
+.pagination-links a > span {
+	gap: 0.15rem;
+}
+.pagination-links a:hover .link-title {
+	color: var(--color-brand-emphasis);
+}
+.pagination-links svg {
+	color: var(--color-brand);
+	flex-shrink: 0;
+}
+
+/* --- CTA row (landing "Switch it on") ------------------------------- */
+.tmx-cta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.9rem;
+	margin-block: var(--space-block);
+}
+.tmx-cta__text {
+	margin: 0;
+	color: var(--fg-secondary);
+	font-family: var(--font-detail);
+}
+/* Layout now lives on the shared .tmx-btn base (so <button> gets it too).
+   Anchors only need to beat Starlight's prose-link background-image. */
+a.tmx-btn {
+	background-image: none;
+}
+a.tmx-btn--primary,
+a.tmx-btn--primary:hover {
+	/* No !important needed: the prose-link rule now excludes .tmx-btn. */
+	color: var(--fg-on-emphasis);
+	background: var(--tmx-grad);
+}
+
+/* Rhythm for the JS-rendered islands. These margins used to live inline in JSX
+   (1.5rem on both terminals, 2.5rem on LessonComplete), so the three components
+   that most need consistent framing were the only ones CSS could not tune. */
+.tmx-terminal,
+.tmx-sandbox {
+	margin-block: var(--space-block);
+}
+.tmx-lesson-complete {
+	margin-block-start: var(--space-block-lg);
+}
+
+/* ================================================================== *
+ * FOCUS — the system tokenised radii, motion, shadows and six text
+ * steps but defined no focus styling at all. Several custom controls
+ * actively fought the UA default (`background: none; border: none;
+ * padding: 0` — a bare glyph with no box for a ring to trace).
+ *
+ * :where() keeps specificity at 0, so components can override without
+ * an arms race, and the offset guarantees the ring stays visible even
+ * on the brass gradient buttons.
+ * ================================================================== */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+	outline: 2px solid var(--color-brand-emphasis);
+	outline-offset: 2px;
+	border-radius: var(--radius-sm);
+}
+/* Pill controls need a pill ring, not a rounded-rect one. */
+:where(.tmx-btn, .sl-link-button, .sl-markdown-content .action):focus-visible {
+	border-radius: var(--radius-full);
+}
+/* The terminal host is focusable; make that obvious. */
+:where(.tmx-terminal, .tmx-sandbox):focus-within {
+	outline: 2px solid var(--color-brand);
+	outline-offset: 2px;
+}
+
+/* ================================================================== *
+ * THEME TOGGLE (overrides/ThemeSelect.astro)
+ *
+ * Geometry is deliberately copied from the search field, which is the
+ * control it sits beside: 40px tall, --radius-lg, same surface, same
+ * hairline. The stock Starlight <select> measured 52px tall with a
+ * 9999px radius and sat 6px higher than search — the tallest element in
+ * a 64px header and the only pill in a UI whose radii are 8/10/12px.
+ * ================================================================== */
+.tmx-theme-toggle {
+	display: grid;
+	place-items: center;
+	/* Square: an icon-only control should not pretend to be a field. 40px
+	   matches search's height exactly; 44px min keeps the touch target legal
+	   on coarse pointers (see the tap-target block above). */
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-lg);
+	background: var(--bg-surface);
+	color: var(--fg-secondary);
+	cursor: pointer;
+	transition: color var(--dur-normal) var(--ease-out),
+		border-color var(--dur-normal) var(--ease-out),
+		background var(--dur-normal) var(--ease-out);
+}
+.tmx-theme-toggle:hover {
+	color: var(--color-brand-emphasis);
+	border-color: color-mix(in srgb, var(--color-brand) 50%, var(--border-default));
+	background: var(--bg-hover);
+}
+
+/* --- Reachability on the splash page (VISUAL M5) ---------------------
+   Starlight hides the header's right-group below `md` and expects the
+   SIDEBAR FLYOUT to host the theme control instead. The splash template has
+   no sidebar, so on the landing page at phone width the toggle existed in the
+   DOM at 0×0 with no way to reach it — a first-time visitor arriving in the
+   wrong theme had to navigate into a lesson to change it, which is precisely
+   the moment first-run theme choice matters most.
+
+   `html:not([data-has-sidebar])` is Starlight's own signal and means exactly
+   "there is no flyout to fall back to", so this un-hides the group only on the
+   pages that actually lost it. The social icons come back with it, which is a
+   bonus rather than a cost. Fits: 209px title + 32px search + the toggle is
+   comfortably under 390px. */
+@media (max-width: 50rem) {
+	html:not([data-has-sidebar]) .right-group {
+		display: flex;
+	}
+}
+.tmx-theme-toggle .tmx-theme-icon {
+	/* ONE weight for the single icon — the stock control drew two icons at
+	   14px/1.0 and 20px/0.7, so they read as different UI. */
+	width: 18px;
+	height: 18px;
+	grid-area: 1 / 1;
+	opacity: 1;
+}
+
+/* Reveal exactly the icon matching the CHOSEN mode (not the resolved theme:
+   on "auto" we show the monitor, whichever way the OS resolves it). The
+   default before the script runs is the auto/monitor glyph. */
+.tmx-theme-toggle .tmx-theme-icon {
+	display: none;
+}
+:root[data-tmx-mode='light'] .tmx-theme-toggle .tmx-theme-icon[data-mode='light'],
+:root[data-tmx-mode='dark'] .tmx-theme-toggle .tmx-theme-icon[data-mode='dark'],
+:root[data-tmx-mode='auto'] .tmx-theme-toggle .tmx-theme-icon[data-mode='auto'],
+:root:not([data-tmx-mode]) .tmx-theme-toggle .tmx-theme-icon[data-mode='auto'] {
+	display: block;
+}
+
+/* ================================================================== *
+ * BRASS HALATION ON DARK
+ *
+ * --color-brand-emphasis (#e8c878) is the brightest value in the palette.
+ * That is correct for small text and links, where it buys contrast — but on
+ * LARGE, bold, solid glyphs against the near-black canvas it blooms: the eye
+ * reads a halo around each letterform and the shape softens. The site
+ * wordmark was the worst case (24px / 700 / solid #e8c878 on #0e1014).
+ *
+ * Large brass text steps down one rung to --color-brand (#d4b15c). Still
+ * unmistakably brass, still 8.9:1 on the canvas — comfortably past AA — but
+ * it stops glowing. Light theme is untouched: dark ink on cream cannot halate,
+ * and #6f5310 is doing contrast work there.
+ * ================================================================== */
+:root[data-theme='dark'] .site-title,
+:root:not([data-theme='light']) .site-title {
+	color: var(--color-brand);
+}

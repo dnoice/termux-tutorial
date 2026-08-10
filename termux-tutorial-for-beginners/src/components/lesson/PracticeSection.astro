@@ -1,0 +1,28 @@
+---
+/*
+ * PracticeSection — keeps a lesson's instructions on screen while the learner
+ * works in its practice terminal.
+ *
+ * THE PROBLEM (audit: "The persistent side-by-side terminal"). A practice
+ * section is written instructions-then-terminal. Scroll down to type, and the
+ * instructions leave the screen at the exact moment they are needed.
+ *
+ * WHY THIS IS A WRAPPER AND NOT ONE CSS RULE. `position: sticky` is bounded by
+ * its containing block, so a bare rule on `.tmx-terminal` would be bounded by
+ * the whole article: once pinned, the terminal would ride along over the Recap
+ * and the Next/Prev cards for the rest of the page. Wrapping gives the sticky
+ * element a containing block that ENDS at the section, so it releases at the
+ * next heading on its own, with no scroll listener and no JS.
+ *
+ * WHY BOTTOM AND NOT TOP. The audit's phase 1 said `top: calc(nav + 1rem)`,
+ * which cannot work here: the prose sits ABOVE the terminal, so pinning the
+ * terminal to the top of the viewport lets the instructions scroll away behind
+ * it — the very failure being fixed. Anchoring to the BOTTOM parks the terminal
+ * against the lower edge and leaves the whole space above it for the prose,
+ * which is the actual goal. True side-by-side is phase 2 and needs a wider
+ * layout: the content column is 45rem, and splitting that leaves neither a
+ * readable measure nor the ~55 columns the lessons' output needs.
+ */
+---
+
+<div class="tmx-practice"><slot /></div>

@@ -1,0 +1,107 @@
+---
+/*
+ * ThemeSelect override — one button that cycles light → dark → system.
+ *
+ * WAS: Starlight's stock <select> in a label. Measured against its own header
+ * neighbours it was the odd one out on every axis:
+ *   theme control  52px tall, border-radius 9999px, top 6
+ *   search         40px tall, border-radius 8px,    top 12
+ *   GitHub icon    32px tall, border-radius 0,      top 16
+ * So it was the tallest thing in a 64px header, sat 6px higher than the field
+ * it should align with, and was the only pill in a UI whose radii are 8/10/12px.
+ * Internally it was worse: a 97px <select> inside a 100px label (3px of slack),
+ * with two absolutely-positioned icons at different sizes AND different
+ * opacities (14px @ 1.0 and 20px @ 0.7) — two icons in one control carrying
+ * different visual weight.
+ *
+ * NOW: a single 40px square-ish button matching the search field exactly, with
+ * ONE icon showing the current mode. Cycling keeps the three-way choice
+ * (including "system") without a dropdown for three items.
+ *
+ * Progressive enhancement: rendered as a real <button> so it is keyboard
+ * reachable and announced; the script only wires behaviour. Starlight's own
+ * ThemeProvider script has already applied the stored theme before this runs,
+ * so there is no flash.
+ */
+---
+
+<button
+	class="tmx-theme-toggle"
+	type="button"
+	aria-live="polite"
+>
+	{/* One icon per mode; CSS shows exactly the one matching :root's data-theme,
+	    so no JS is needed to swap icons and there is no flash on load. */}
+	<svg class="tmx-theme-icon" data-mode="light" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+		<circle cx="12" cy="12" r="4"></circle>
+		<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+	</svg>
+	<svg class="tmx-theme-icon" data-mode="dark" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+	</svg>
+	<svg class="tmx-theme-icon" data-mode="auto" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<rect x="2" y="4" width="20" height="13" rx="2"></rect>
+		<path d="M8 21h8M12 17v4"></path>
+	</svg>
+</button>
+
+<script>
+	// Mirrors Starlight's own contract: the 'starlight-theme' key holds
+	// 'light' | 'dark' | 'auto', and :root carries data-theme for the resolved
+	// value. Writing both keeps us interoperable with Starlight's ThemeProvider.
+	type Mode = 'light' | 'dark' | 'auto';
+	const ORDER: Mode[] = ['light', 'dark', 'auto'];
+	const LABEL: Record<Mode, string> = {
+		light: 'Light',
+		dark: 'Dark',
+		auto: 'System',
+	};
+
+	const stored = (): Mode => {
+		const v = localStorage.getItem('starlight-theme');
+		return v === 'light' || v === 'dark' || v === 'auto' ? v : 'auto';
+	};
+
+	const resolve = (m: Mode) =>
+		m === 'auto'
+			? window.matchMedia('(prefers-color-scheme: light)').matches
+				? 'light'
+				: 'dark'
+			: m;
+
+	function apply(mode: Mode) {
+		document.documentElement.dataset.theme = resolve(mode);
+		// data-tmx-mode drives which icon CSS reveals — it is the *chosen* mode,
+		// which differs from data-theme whenever the choice is "auto".
+		document.documentElement.dataset.tmxMode = mode;
+		try {
+			localStorage.setItem('starlight-theme', mode);
+		} catch {
+			// Storage can be blocked outright; the theme still applies for this
+			// page view, it just will not persist. Never throw from a click.
+		}
+		// Starlight renders this component TWICE — once in the desktop header,
+		// once inside the mobile menu — so every instance must be updated, and
+		// none of them may carry a shared id.
+		const next = ORDER[(ORDER.indexOf(mode) + 1) % ORDER.length];
+		for (const btn of document.querySelectorAll('.tmx-theme-toggle')) {
+			btn.setAttribute('aria-label', `Theme: ${LABEL[mode]}. Switch to ${LABEL[next]}.`);
+			btn.setAttribute('title', `Theme: ${LABEL[mode]}`);
+		}
+	}
+
+	apply(stored());
+
+	// Delegated: one listener on the document covers both instances and any
+	// that Starlight mounts later.
+	document.addEventListener('click', (event) => {
+		const target = event.target as HTMLElement | null;
+		if (!target?.closest('.tmx-theme-toggle')) return;
+		apply(ORDER[(ORDER.indexOf(stored()) + 1) % ORDER.length]);
+	});
+
+	// While on "auto", follow the OS if it changes mid-session.
+	window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+		if (stored() === 'auto') apply('auto');
+	});
+</script>

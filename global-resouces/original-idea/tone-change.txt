@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Termux Command Center: Own Your Android!</title>
+    <link rel="stylesheet" href="css/style.css">
+    </head>
+<body>
+
+    <div class="container">
+        <header class="main-header">
+            <h1>🚀 Termux Command Center: Own Your Android! 🚀</h1>
+            <p class="intro">Tired of the walled garden? Ready to unleash the *real* power lurking in your pocket? Termux is your key. Forget point-and-click limitations – this is where you take control. Let's dive in.</p>
+            <button id="darkModeToggle" class="theme-toggle-button" aria-label="Toggle dark mode">
+                <span class="icon-sun">☀️</span><span class="icon-moon">🌙</span>
+            </button>
+        </header>
+
+        <nav class="toc" aria-label="Table of Contents">
+            <h3>Mission Briefing:</h3>
+            <ul>
+                <li><a href="#step1">Step 1: The Setup Ritual (Don't Skip!)</a></li>
+                <li><a href="#step1-5">Step 1.5: Supercharge Your Shell: Enter the Fish 🐠</a></li>
+                <li><a href="#step2">Step 2: Mapping the Terrain (Navigation)</a></li>
+                <li><a href="#step3">Step 3: Building Your Base (Files & Folders)</a></li>
+                <li><a href="#step4">Step 4: Armory Upgrade (Installing Tools)</a></li>
+                <li><a href="#step5">Step 5: Edit Like a Boss (GUI Editor Hack)</a></li>
+                <li><a href="#step6">Step 6: Android Bending 101 (Termux API)</a></li>
+                <li><a href="#step7">Step 7: Breaching Storage Limits</a></li>
+                <li><a href="#step8">Step 8: Automate Your Power (Scripts)</a></li>
+                <li><a href="#tips">Elite Tactics & Shortcuts</a></li>
+                <li><a href="#next">Level Up: Where to Go Next</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <section id="step1">
+                <h2>Step 1: The Setup Ritual (Don't Skip!)</h2>
+                <p>First blood. Get Termux open and lay the groundwork.</p>
+                <ol>
+                    <li><strong>Launch Termux:</strong> Hit the icon. Stare into the void.</li>
+                    <li><strong>The Prompt Awaits:</strong> That blinking cursor after <code>$</code>? That's your command line. Home base is <code>~</code>.</li>
+                    <li><strong>Rule #1: Keep Your Tools Sharp:</strong> Update everything. No excuses. Run this command NOW:
+                        <pre><code>pkg update && pkg upgrade -y</code></pre>
+                        <p>This syncs with the software arsenal (<code>update</code>) and loads the latest versions (<code>upgrade</code>). <code>-y</code> means "Yeah, whatever, just do it." Give it a minute. If it asks about config files, just mash Enter (or type 'N' then Enter) – default is usually fine to start.</p>
+                        <p><strong>🔥 Baseline Secured. Let's move. 🔥</strong></p>
+                    </li>
+                </ol>
+            </section>
+
+            <section id="step1-5">
+                <h2>Step 1.5: Supercharge Your Shell: Enter the Fish 🐠</h2>
+                <p>Default Bash is okay, but Fish? Fish is your command-line co-pilot. It practically reads your mind. Upgrade now, thank us later.</p>
+                <p>Why Fish rocks:</p>
+                <ul>
+                    <li><strong>🧠 Psychic Autosuggestions:</strong> Start typing, it guesses the rest in gray. Hit Right Arrow (→) or Ctrl+F. BOOM. Done.</li>
+                    <li><strong>✅ Built-in Spellcheck (Sorta):</strong> Bad commands look different. Saves you from stupid typos.</li>
+                    <li><strong>💡 God-Tier Tab Completion:</strong> Hit Tab. Watch it complete commands, files, options like magic. Menus if needed.</li>
+                    <li><strong>🎨 Pimp Your Prompt:</strong> Clearer path info, looks cooler.</li>
+                </ul>
+                <p>Lock and load:</p>
+                <ol>
+                    <li><strong>Install Fish:</strong>
+                        <pre><code>pkg install fish</code></pre>
+                        (Hit <code>y</code> if it asks).
+                    </li>
+                    <li><strong>Make It Default:</strong> Tell Termux Fish is the new boss.
+                        <pre><code>chsh -s fish</code></pre>
+                    </li>
+                    <li><strong>Reload:</strong> Kill Termux completely (swipe it away in recent apps) and fire it back up.</li>
+                </ol>
+                <p>Your prompt should look different (maybe a <code>></code>). Try typing <code>ls</code>. See that syntax highlighting? Feel the power? That's Fish.</p>
+                <p><strong>💯 Welcome to the future. Command line just got badass.</strong></p>
+                <p><em>(Guide assumes Fish from here, but most basics are the same).</em></p>
+            </section>
+
+            <section id="step2">
+                <h2>Step 2: Mapping the Terrain (Navigation)</h2>
+                <p>Know your surroundings. Basic recon commands.</p>
+                <ul>
+                    <li><strong>Location Check (`pwd`):</strong> Print Working Directory. Where the hell are you?
+                        <pre><code>pwd</code></pre>
+                    </li>
+                    <li><strong>Intel Scan (`ls`):</strong> List files/folders. Fish might color-code it for you.
+                        <pre><code>ls</code></pre>
+                        <em>Pro Moves: <code>ls -l</code> (long format), <code>ls -a</code> (show hidden dotfiles).</em>
+                    </li>
+                    <li><strong>Move Out (`cd`):</strong> Change Directory. Your Fish prompt probably shows the path already.
+                        <ul>
+                            <li><code>cd ~</code> or <code>cd</code>: Back to Home Base.</li>
+                            <li><code>cd ..</code>: Up one level (parent folder).</li>
+                            <li><code>cd <foldername></code>: Dive in. (Type <code>cd pro</code> + Tab... see?)</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <section id="step3">
+                 <h2>Step 3: Building Your Base (Files & Folders)</h2>
+                <p>Carve out your own space.</p>
+                <ol>
+                    <li><strong>Create Territory (`mkdir`):</strong> Make a directory.
+                        <pre><code>mkdir projects</code></pre>
+                        (Check with <code>ls</code>).
+                    </li>
+                    <li><strong>Occupy (`cd`):</strong> Move into your new turf.
+                        <pre><code>cd projects</code></pre>
+                        (Prompt updates? Nice.)
+                    </li>
+                    <li><strong>Plant a Flag (`touch`):</strong> Create an empty file.
+                        <pre><code>touch notes.txt</code></pre>
+                        (Verify with <code>ls</code>).
+                    </li>
+                    <li><strong>Return to HQ (`cd`):</strong>
+                        <pre><code>cd ~</code></pre>
+                    </li>
+                </ol>
+            </section>
+
+            <section id="step4">
+                 <h2>Step 4: Armory Upgrade (Installing Tools)</h2>
+                <p>Stock up on essentials using <code>pkg</code>. Every operator needs their kit.</p>
+                 <ol>
+                    <li><strong>Recon (`pkg search`):</strong> Scout for available gear.
+                        <pre><code>pkg search network</code></pre>
+                    </li>
+                    <li><strong>Acquire (`pkg install`):</strong> Grab the goods. We need `termux-api` for Android bending and `nano` (a classic terminal editor - good to know it exists, but see Step 5 for a smoother mobile method).
+                        <pre><code>pkg install termux-api nano</code></pre>
+                        (Confirm with <code>y</code>).
+                    </li>
+                     <li><strong>Ditch Gear (`pkg uninstall`):</strong> If something sucks, remove it.
+                         <pre><code># Example: pkg uninstall bloatware</code></pre>
+                     </li>
+                </ol>
+            </section>
+
+            <section id="step5">
+                 <h2>Step 5: Edit Like a Boss (GUI Editor Hack) ⚡️</h2>
+                <p>Forget clunky terminal editors like `nano` or `vim` on your phone screen – that's a recipe for rage-quitting. We're gonna use a slick GUI editor for comfort, but bridge it back to Termux like a pro.</p>
+                <ol>
+                    <li><strong>Get a Real Editor:</strong> First, grab a decent *free* code editor app from the Play Store. **"QuickEdit Text Editor"** is a solid choice – it's fast and handles code nicely. Install it.</li>
+                    <li><strong>The `open` Command:</strong> Termux (especially with `termux-api` installed) gives you the `open` command (or `termux-open`). This tries to open a file using an appropriate Android app. Let's try it on the file we made:
+                        <pre><code># Make sure you're in the projects folder: cd ~/projects
+open notes.txt</code></pre>
+                    </li>
+                    <li><strong>Choose Your Weapon:</strong> Android will ask *how* you want to open the file. Select **QuickEdit** (or your chosen editor).</li>
+                    <li><strong>⚠️ The Catch (Android's Paranoia):</strong> Your file will open in QuickEdit, BUT Android's security often stops the editor from saving *directly* back to Termux's private space. It opens it read-only or saves copies elsewhere. Annoying? Yes. Dealbreaker? Hell no. We have a workaround.</li>
+                    <li><strong>The Save Hack (Copy/Paste Fu):</strong> This feels weird initially, but it's faster than fighting `nano` on mobile. GET THIS DOWN:
+                        <ol type="a">
+                            <li>Edit your file in QuickEdit. Make it awesome.</li>
+                            <li>When done, **SELECT ALL** text in QuickEdit (usually Menu -> Select All, or long-press options).</li>
+                            <li>**COPY** all that text to your clipboard (Menu -> Copy, or toolbar icon).</li>
+                            <li>Switch back to your Termux session.</li>
+                            <li>**CRITICAL STEP:** Use the `cat` command with output redirection (`>`). This **OVERWRITES** the original file completely. Be ready to paste! Type:
+                                <pre><code>cat > notes.txt</code></pre>
+                                (Hit Enter. Termux will just sit there, waiting...)
+                            </li>
+                            <li>**PASTE** your clipboard content into Termux. (Usually long-press on the screen -> Paste). You'll see your text appear.</li>
+                            <li>**IMMEDIATELY** press `Ctrl + D` in Termux. This tells `cat` "That's all, folks!" and saves the file. <strong>DON'T FORGET CTRL+D!</strong></li>
+                        </ol>
+                    </li>
+                    <li><strong>Verify the Kill:</strong> Check if your changes stuck using `cat` (this time *without* the `>`):
+                         <pre><code>cat notes.txt</code></pre>
+                         You should see your edited content right there in the terminal.
+                    </li>
+                </ol>
+                <p><strong>Master this copy/cat/paste dance.</strong> It bypasses Android's fussiness and lets you use a comfy editor. Way better than fat-fingering commands in `nano`. Trust.</p>
+            </section>
+
+            <section id="step6">
+                <h2>Step 6: Android Bending 101 (Termux API) ✨</h2>
+                <p>Time to make Android do your bidding using those <code>termux-</code> commands from the `termux-api` package.</p>
+                 <p><strong>Pay Attention:</strong> Android's gonna ask for permissions via the "Termux:API" app the first time. Slap **Allow**. Deny = Fail.</p>
+                <ul>
+                    <li><strong>Flash Message (`termux-toast`):</strong> Quick pop-up.
+                        <pre><code>termux-toast "System Override Engaged."</code></pre>
+                    </li>
+                    <li><strong>Power Levels (`termux-battery-status`):</strong> Juice check.
+                        <pre><code>termux-battery-status</code></pre>
+                    </li>
+                    <li><strong>Data Heist (Clipboard - `set`/`get`):</strong>
+                        <pre><code>termux-clipboard-set "Payload acquired from Termux."
+# Now copy something else...
+termux-clipboard-get</code></pre>
+                    </li>
+                    <li><strong>Interrogation (Dialog Box - `termux-dialog`):</strong> Make the system ask stuff.
+                        <pre><code>termux-dialog confirm -i "Proceed with extreme prejudice?" -t "Authorization Required"</code></pre>
+                    </li>
+                    <li><strong>Seismic Event (`termux-vibrate`):</strong> Make it shake.
+                         <pre><code>termux-vibrate -d 400 -f</code></pre>
+                         (400ms pulse. <code>-f</code> = Force. No excuses.)
+                    </li>
+                </ul>
+                 <p><em>Hack: Type <code>termux-</code> then spam Tab to see your arsenal. Add <code>--help</code> to any command for the manual (e.g., <code>termux-camera-info --help</code>).</em></p>
+            </section>
+
+            <section id="step7">
+                 <h2>Step 7: Breaching Storage Limits</h2>
+                <p>Termux lives in a sandbox. Let's punch some air holes to reach your main phone storage.</p>
+                 <ol>
+                    <li><strong>Request Access:</strong>
+                        <pre><code>termux-setup-storage</code></pre>
+                    </li>
+                    <li><strong>Grant Clearance:</strong> Android pops up. Hit **Allow**.</li>
+                    <li><strong>Locate Breach Point:</strong> Back home (<code>cd ~</code>), run <code>ls</code>. Spot the new <code>storage</code> directory. That's the gateway.</li>
+                    <li><strong>Infiltrate:</strong> <code>cd storage</code> then <code>ls</code>. You'll see links to your phone's zones:
+                        <ul>
+                            <li><code>dcim</code> (Camera Roll)</li>
+                            <li><code>downloads</code> (The usual dump ground)</li>
+                            <li><code>movies</code>, <code>music</code>, <code>pictures</code></li>
+                            <li><code>shared</code> (The main event - root internal storage)</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p>Now you can roam these folders (<code>cd downloads</code>) and drop command-line bombs: <code>ls</code>, <code>cp</code> (copy), <code>mv</code> (move/rename), <code>rm</code> (delete - **NO UNDO! AIM CAREFULLY!**).</p>
+                 <p><em>Exfil Op: Copy notes to Downloads:</em></p>
+                 <pre><code># Ensure you're home: cd ~
+cp projects/notes.txt storage/downloads/</code></pre>
+                 (Check your Downloads folder. Target acquired.)
+            </section>
+
+            <section id="step8">
+                 <h2>Step 8: Automate Your Power (Scripts)</h2>
+                <p>Chain commands together. Write scripts. Make Termux do your chores.</p>
+                 <ol>
+                    <li><strong>Return to HQ:</strong> <code>cd ~</code></li>
+                    <li><strong>Draft the Plan (`nano` or the GUI hack from Step 5):</strong> Create a script file. Use <code>.fish</code> extension for Fish scripts.
+                        <pre><code># Option 1: Use the GUI Hack
+touch my_killer_script.fish
+open my_killer_script.fish
+# ... then do the copy/paste/cat dance ...
+
+# Option 2: Use nano if you must
+# nano my_killer_script.fish</code></pre>
+                    </li>
+                    <li><strong>Script Content (Example):</strong> Paste this into your editor (via GUI hack or nano). First line tells it to use Fish.
+                        <pre><code>#!/data/data/com.termux/files/usr/bin/fish
+
+echo "Executing Protocol Omega..."
+termux-toast -b black -c yellow -g middle "OPERATION IN PROGRESS"
+echo "System Check:"
+echo " - User: "(whoami)
+echo " - Location: "(pwd)
+ls -l | grep .txt # List only text files here
+termux-vibrate -d 100; sleep 0.2; termux-vibrate -d 200
+echo "Protocol Omega Complete."</code></pre>
+                    </li>
+                    <li><strong>Save It!</strong> (Use the GUI hack's `cat > my_killer_script.fish` method or `Ctrl+O`, Enter, `Ctrl+X` in nano).</li>
+                    <li><strong>Grant Execution Rights (`chmod`):</strong> Make it runnable.
+                        <pre><code>chmod +x my_killer_script.fish</code></pre>
+                    </li>
+                    <li><strong>UNLEASH IT:</strong>
+                        <pre><code>./my_killer_script.fish</code></pre>
+                    </li>
+                </ol>
+                <p>Watch your creation execute! That's automation, baby.</p>
+            </section>
+
+            <section id="tips">
+                <h2>💡 Elite Tactics & Shortcuts (Fish Fuelled!) 💡</h2>
+                <ul>
+                    <li><strong>Psychic Suggestions:</strong> Grey text? Right Arrow (→) or Ctrl+F accepts. Use constantly.</li>
+                    <li><strong>Tab Completion Abuse:</strong> Hit Tab after *everything*. Commands, paths, options. Let Fish do the work.</li>
+                    <li><strong>History Surfing (Up Arrow ↑):</strong> Start typing -> hit Up Arrow. Cycles through matching past commands.</li>
+                    <li><strong>Volume Keys = Modifiers:</strong> Usually VolDown=Ctrl, VolUp=Alt.</li>
+                    <li><strong><code>Ctrl + C</code>:</strong> ABORT! ABORT! Stops runaway commands.</li>
+                    <li><strong><code>Ctrl + D</code>:</strong> Logout / End input (vital for the `cat >` hack!).</li>
+                    <li><strong><code>Ctrl + L</code>:</strong> Clear screen clutter.</li>
+                    <li><strong><code>Alt + .</code> (Period):</strong> Slap the last argument from the previous command onto the current line. Sweet.</li>
+                    <li><strong>Save Hack Reminder:</strong> Edit in GUI -> Select All -> Copy -> `cat > filename` -> Paste -> **Ctrl+D**. Burn it in.</li>
+                    <li><strong>Fish Help:</strong> Type <code>help</code> for Fish docs, <code>help command</code> for specific Fish commands.</li>
+                    <li><strong>GTFO (`exit`):</strong> Type <code>exit</code> or Ctrl+D to close the session.</li>
+                </ul>
+            </section>
+
+            <section id="next">
+                 <h2>Level Up: Where to Go Next 🗺️</h2>
+                <p>You've cracked the surface. The rabbit hole goes deep. Now:</p>
+                <ul>
+                    <li>Pimp your Fish shell: Run <code>fish_config</code> in Termux to explore themes and prompts visually.</li>
+                    <li>Master more commands: <code>grep</code> (search text), <code>find</code> (find files), <code>curl</code>/<code>wget</code> (download stuff), <code>sed</code>/<code>awk</code> (text manipulation ninjutsu).</li>
+                    <li>Code on the go: <code>pkg install python nodejs ruby golang rust php</code> - whatever your poison.</li>
+                    <li>Control your code: <code>pkg install git</code>.</li>
+                    <li>Rule remote servers: <code>pkg install openssh</code>.</li>
+                    <li>Explore the Termux Wiki & Fish docs online. Google is your friend.</li>
+                    <li>Script everything! Automate backups, notifications, file management... Sky's the limit.</li>
+                </ul>
+                <p><strong>The best way to learn is to break things (safely!) and figure out how to fix 'em. Experiment. Push the limits. Go build something awesome.</strong></p>
+            </section>
+        </main>
+
+        <footer>
+            <p>Termux: Command the code. Control the system. Own your device. 🤘</p>
+            <p><small>Guide forged on: <time datetime="2025-04-16">April 16, 2025</time></small></p> </footer>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

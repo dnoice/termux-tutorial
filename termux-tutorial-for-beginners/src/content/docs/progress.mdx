@@ -1,0 +1,27 @@
+---
+title: Your Progress
+description: Your local learning profile and course progress — stored only in this browser.
+sidebar:
+  order: 0
+  # The "Local" badge used to be declared HERE as well as in the sidebar array
+  # in astro.config.mjs — the same badge, from two sources, so editing one
+  # silently did nothing. The config copy is authoritative because that array
+  # is the curriculum (see CLAUDE.md gotcha #1) and check-curriculum.mjs reads
+  # it; this duplicate is gone.
+# Utility page, not a step: keep it out of the prev/next chain.
+prev: false
+next: false
+---
+
+import ProgressDashboard from '../../components/profile/ProgressDashboard.tsx';
+
+This is your personal dashboard. Set a display name and avatar, and check off
+lessons as you finish them.
+
+:::note[Everything here is local]
+Your profile and progress live in **this browser's local storage** — there's no
+account and nothing is sent anywhere. Clearing your browser data (or using a
+different device or private window) starts you fresh.
+:::
+
+<ProgressDashboard client:only="react" />

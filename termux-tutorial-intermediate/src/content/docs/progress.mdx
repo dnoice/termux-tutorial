@@ -1,0 +1,27 @@
+---
+title: Your Progress
+description: Your local learning profile and course progress — stored only in this browser.
+sidebar:
+  order: 0
+  # The "Local" badge is declared in the sidebar array in astro.config.mjs, not
+  # here: that array is the curriculum and check-curriculum.mjs reads it. A
+  # second copy in this frontmatter would silently win or silently do nothing,
+  # depending on which one you edited.
+# Utility page, not a step: keep it out of the prev/next chain.
+prev: false
+next: false
+---
+
+import ProgressDashboard from '../../components/profile/ProgressDashboard.tsx';
+
+This is your personal dashboard. Set a display name and avatar, and check off
+lessons as you finish them.
+
+:::note[Everything here is local, and separate from course one]
+Your profile and progress live in **this browser's local storage** — there's no
+account and nothing is sent anywhere. This course keeps its own store, so
+finishing the beginner course does not tick anything off here, and an exported
+progress file from that course will not import into this one.
+:::
+
+<ProgressDashboard client:only="react" />

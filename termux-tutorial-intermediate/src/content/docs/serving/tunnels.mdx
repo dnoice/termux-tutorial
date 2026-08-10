@@ -1,0 +1,348 @@
+---
+title: Opening a Door to the Internet
+description: Punch a safe outbound tunnel through your carrier's NAT with Cloudflare Tunnel or localtunnel, and close it again without leaving your phone exposed.
+sidebar:
+  order: 7
+# No `next: false` here on purpose: Where to Next is the sidebar item after this
+# one and carries the terminus itself, so Starlight derives the link.
+---
+
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+
+Last lesson ended with your phone serving a page to a laptop on the same Wi-Fi.
+Excellent trick — right up until the person who wants to see it is on a train.
+
+This lesson gets you a public HTTPS URL that points at your phone. It also
+spends more words than usual on shutting that URL down again, because this is
+the one lesson in the course where a mistake is visible to strangers.
+
+## Your router cannot help you
+
+On a desktop the classic answer is **port forwarding**: log into your router,
+map port 8080 on its public address to the machine inside, done. On a phone,
+that plan dies twice.
+
+On mobile data there is no router you own. Your carrier hands your phone a
+private address and puts thousands of customers behind a handful of public
+ones. This is **carrier-grade NAT** — CGNAT — and it exists because there are
+not enough IPv4 addresses to go round. There is no admin page. There is nobody
+to ask.
+
+You can see the shape of it from the shell. `curl` is probably already
+installed; this is harmless either way:
+
+```bash
+pkg install curl
+curl ifconfig.me
+```
+
+That prints the address the internet believes you are coming from. It is a real
+address, it is not yours, and a lot of other people are using it right now.
+Nothing you can type on this phone makes port 8080 on it arrive at your server.
+
+:::note[Even on your own Wi-Fi, forwarding is the wrong tool here]
+You *do* control your home router, so this is technically possible there. It is
+still a bad fit: your public address changes without warning, you would be
+punching a permanent hole in your home network for a page you want up for an
+hour, and it stops working the second you walk out the front door. The tunnel
+below works identically on Wi-Fi and on mobile data, which is the whole point.
+:::
+
+## The fix: open the door from the inside
+
+NAT and firewalls block connections coming **in**. Connections going **out**
+they wave straight through — otherwise your phone could not load a web page.
+
+So a tunnel does not wait to be called. It calls out:
+
+<Steps>
+
+1. A program on your phone dials a relay server that already has a public
+   address, and holds that connection open.
+
+2. The relay gives you a hostname. Anyone who visits it reaches the relay, not
+   you.
+
+3. The relay pushes each request back down the connection your phone opened,
+   and your local server on `127.0.0.1:8080` answers it.
+
+</Steps>
+
+Nothing ever connects *to* your phone. That is why it works, and it is also
+exactly why the next section exists — three things change the moment that
+connection is up:
+
+| What changed | What it means for you |
+| :----------- | :-------------------- |
+| NAT stopped protecting you | It was a wall. You just propped a door in it, from the inside, on purpose. |
+| Someone else terminates the HTTPS | Your visitor gets a padlock and a valid certificate — belonging to the relay operator, not to you. They can read every request in the clear. |
+| The URL is the only lock on the door | There is no password until you add one. Anyone holding the link is inside. |
+
+## Decide what you are serving *before* you open it
+
+:::danger[Never point a tunnel at `~` or `~/storage/shared`]
+**`~` is your home directory.** It holds `.ssh` keys, your shell history,
+`.gitconfig`, `.termux`, and whatever tokens past-you pasted into a file at
+2am. Python's built-in server does not hide dotfiles — its directory listing
+shows them exactly like everything else.
+
+**`~/storage/shared` is your entire internal storage.** Camera roll, downloads,
+screenshots, every app's saved media. One URL, all of it, no login.
+
+Serve a folder you made on purpose, containing only files you chose. There is
+no second chance on this one.
+:::
+
+So make that folder first. The `~` is **Volume Up + H** on a phone keyboard:
+
+```bash
+mkdir -p ~/www
+cd ~/www
+```
+
+Put your page in there, then look at what is actually in the directory — `-a`
+includes hidden files, which is the half people forget:
+
+```bash
+ls -a
+```
+
+Only then start the server, using the command from [A Web Server in Your
+Pocket](/serving/local-server/):
+
+```bash
+python -m http.server 8080 --bind 127.0.0.1
+```
+
+`--bind 127.0.0.1` matters here in a way it did not last lesson. Without it
+Python listens on **every** interface, so the folder is reachable over the Wi-Fi
+*as well as* through the tunnel — two open doors when you meant to open one.
+`cloudflared` connects from the phone itself, so localhost is all it needs.
+
+:::caution[Anything that can write needs auth in front of it]
+A static file server is read-only, and that is a feature today. The moment you
+expose something that accepts uploads, takes form input, exposes an API, or
+runs code, assume it will be found and prodded by software that does nothing
+else all day. Put a password in front of it, or do not expose it. "Nobody knows
+the URL" is not a password — see the last section for why.
+:::
+
+## `cloudflared`: the one that keeps working
+
+Cloudflare Tunnel's *quick tunnel* mode needs no account, no config file and no
+domain. It is the one to reach for first.
+
+<Steps>
+
+1. **Install it.**
+
+   ```bash
+   pkg install cloudflared
+   ```
+
+   If your mirror does not have it, check with `pkg search cloudflared` before
+   going hunting — Termux mirrors occasionally lag, and `pkg update` followed by
+   a retry fixes it more often than not.
+
+2. **Leave the server running** and open a **second session** — swipe in from
+   the left edge, then **New session**. The server has to keep running while
+   the tunnel talks to it, and a session that is showing you log output is a
+   session you cannot type in.
+
+3. **Start the tunnel.**
+
+   ```bash
+   cloudflared tunnel --url http://localhost:8080
+   ```
+
+   It will print a wall of `INF` log lines. That is normal; it is not an error
+   just because there is a lot of it.
+
+4. **Read your URL out of the box it draws.** Roughly this, boxed in `+---+`
+   characters:
+
+   ```text
+   Your quick Tunnel has been created! Visit it at:
+   https://some-random-words-here.trycloudflare.com
+   ```
+
+   The exact wording moves between versions. The `trycloudflare.com` line is
+   the one you want.
+
+5. **Open it from somewhere else.** Your own phone's browser is a real test —
+   the request genuinely goes out to Cloudflare and comes back down the tunnel
+   — but send it to someone on another network anyway, because that is the
+   claim you are making.
+
+</Steps>
+
+**Success looks like:** the same page you saw over Wi-Fi last lesson, now on
+`https://`, from a device that has never heard of your router.
+
+:::note[What a quick tunnel buys you, and what it doesn't]
+No account, no signup, no DNS. In exchange: **a brand new hostname every single
+time you start it**, and no uptime promise of any kind — Cloudflare documents
+quick tunnels as a testing tool, not a hosting product.
+
+The durable version is a *named* tunnel: `cloudflared tunnel login`, a
+Cloudflare account, and a domain you actually control, which then gives you a
+stable hostname that survives restarts. Worth it if this becomes something you
+run every day. Overkill for today.
+:::
+
+## `localtunnel`: the zero-signup one
+
+If you installed Node last lesson, this is two commands and no package manager
+argument:
+
+```bash
+npm install -g localtunnel
+lt --port 8080
+```
+
+It prints one line — `your url is: https://something.loca.lt` — and that is the
+whole interface.
+
+:::caution[Your visitor hits a gate before they hit your page]
+Browsers loading a `loca.lt` URL get an interstitial page asking for a "tunnel
+password" first. That password is the public address of the machine running
+`lt` — your phone. Print it and send it along with the link:
+
+```bash
+curl https://loca.lt/mytunnelpassword
+```
+
+It is the same address `curl ifconfig.me` gave you earlier. This is an
+anti-phishing speed bump, not security — treat it as one more thing to explain
+to whoever you sent the link to, not as protection.
+:::
+
+localtunnel is a free community service. Sometimes it is simply down, or slow,
+and there is nothing you can do about that from your side. That is the trade for
+asking you no questions.
+
+## ngrok, named honestly
+
+ngrok is the tool most tutorials reach for, so here is where it stands rather
+than a pretence that it doesn't exist:
+
+- **It will not run until you have an account.** You sign up, copy an
+  authtoken, and run `ngrok config add-authtoken …` before anything works.
+- **There is no `pkg install ngrok`.** You download and trust an ARM64 Linux
+  binary by hand, which is a thing you should do consciously.
+- **The free tier's hostname is random and changes on restart**, the same
+  weakness as a quick tunnel, plus a cap on how much traffic you may push, plus
+  a limit of one running agent at a time.
+- **Free-tier visitors see a browser warning page** before your content, in the
+  same spirit as the `loca.lt` gate.
+- **Its request inspector is genuinely excellent** — a local dashboard replaying
+  every request and response. That is the real reason people put up with the
+  rest, and it is a debugging feature, not a serving feature.
+
+None of that is disqualifying. It is just more setup and more limits than
+`cloudflared` asks for, to reach the same page. If you already have an ngrok
+account, use it. If you don't, don't open one for this.
+
+## Keeping it up on a phone
+
+Two processes now have to stay alive: the server and the tunnel. Android
+disagrees.
+
+- **Run them in two sessions**, not one. Closing a session kills what is in it.
+- **Android will put them to sleep or kill them outright.** Doze, App Standby
+  and the phantom process killer are all covered in [Making It Run
+  Itself](/automation/scheduling/) — the fixes there apply verbatim here.
+- **Take a wakelock** before you walk away, and give it back afterwards:
+
+  ```bash
+  termux-wake-lock
+  ```
+
+  It costs battery. It is doing exactly what it says.
+- **Mark Termux as unrestricted** in Android's battery settings — roughly
+  *Settings → Apps → Termux → Battery → Unrestricted*, though every manufacturer
+  renames it.
+- **Every byte your visitors download comes out of your data plan** when you are
+  on mobile. A page is nothing. A folder of videos is not nothing.
+- **If the tunnel process dies, you get a different URL when it comes back.**
+  With a quick tunnel that is not a bug you can fix; it is the deal. Treat the
+  URL as disposable and hand out a fresh one.
+
+## Closing the door
+
+The part people skip. Do it every time.
+
+<Steps>
+
+1. **Stop the tunnel.** In the session running `cloudflared` or `lt`, press
+   **Ctrl-C** — **Volume Down + C** on a phone keyboard, or **CTRL** then `C`
+   on your extra-keys row.
+
+2. **Stop the server.** Swipe back to the other session and do the same. Two
+   processes, two interruptions — stopping only the tunnel leaves a server
+   listening, which is tidier but not stopped.
+
+3. **Verify, rather than hoping.**
+
+   ```bash
+   pkg install procps
+   pgrep -a cloudflared
+   ```
+
+   No output means nothing is running. If something is listed, end it:
+
+   ```bash
+   pkill cloudflared
+   ```
+
+4. **Give the wakelock back.**
+
+   ```bash
+   termux-wake-unlock
+   ```
+
+5. **Retire the URL in your head too.** If you handed it out, assume it was
+   logged. Never treat an old tunnel hostname as a private address you can
+   quietly reuse later.
+
+</Steps>
+
+:::caution[The URL is public the second it prints]
+Paste it into a chat app and a link-preview bot fetches it before your friend
+has finished reading the message. Any third-party asset your page loads gets the
+hostname handed to it in a `Referer` header. Anything that links to it can be
+crawled.
+
+A random hostname is obscurity, and obscurity is not a lock. If what you are
+serving would be a problem in a stranger's browser, it should not be behind a
+tunnel at all.
+:::
+
+:::tip[It worked over Wi-Fi and fails through the tunnel?]
+Check the server is still running and still bound to `127.0.0.1:8080` *before*
+blaming the tunnel — that is exactly why the previous lesson came first. The
+[Troubleshooting](/reference/troubleshooting/) page has the rest.
+:::
+
+## Recap
+
+- Carrier-grade NAT means there is no port to forward on mobile data, and no
+  admin page to ask.
+- A tunnel is an **outbound** connection your phone opens to a public relay,
+  which is why NAT never sees it coming.
+- That relay terminates HTTPS, so the padlock is theirs and your traffic is
+  readable to them.
+- **Never serve `~` or `~/storage/shared`.** Make a folder on purpose, `ls -a`
+  it, and serve only that.
+- `cloudflared tunnel --url http://localhost:8080` is the no-account default.
+  `lt --port 8080` is the no-install-fuss alternative, with a password gate to
+  explain to visitors. ngrok wants an account first.
+- Anything that writes needs auth in front of it. The URL is not a password.
+- Ctrl-C (**Volume Down + C**) both sessions, confirm with `pgrep`, then
+  `termux-wake-unlock`. Close the door behind you.
+
+That is the last thing this course teaches you to build. Next: what to do with
+all of it, in [Where to Next](/where-next/).
+
+<LessonComplete client:only="react" slug="serving/tunnels" />

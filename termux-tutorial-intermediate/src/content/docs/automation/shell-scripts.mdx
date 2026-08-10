@@ -1,0 +1,622 @@
+---
+title: From Commands to Scripts
+description: Turn the commands you have been retyping into a real script — shebang, executable bit, arguments, exit codes — and debug it when it breaks.
+sidebar:
+  order: 4
+# No prev/next here: this lesson is registered in the Scripting & Automation
+# group in astro.config.mjs, between Talking Back to Android and Making It Run
+# Itself, so Starlight derives both ends of the chain from the array.
+---
+
+import LiveSandbox from '../../../components/terminal/LiveSandbox.tsx';
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+
+Three lessons in, you have a pattern. Check the battery. Look at the number.
+Decide whether you care. Do something about it. And every single time, you type
+all of it again — on a touchscreen, where `$`, `|` and `"` each live two taps
+deep.
+
+A **script** is that whole sequence saved as a file you can run by name. It is
+the skill course one never taught you, and it was held back until now on
+purpose: a first script is a much easier sell when you already have four
+commands you are sick of retyping.
+
+By the end of this page you will own a tool called `battery-check` that reads
+your phone's real battery, decides something, and tells you about it — and you
+will be able to find out why when it breaks.
+
+## What a script actually is
+
+Three things, and none of them are clever:
+
+| Part | What it is |
+| :--- | :--------- |
+| A plain text file | Lines of shell, one per line — the same lines you type at the prompt |
+| A **shebang** | The first line, starting `#!`, naming the program that runs the rest |
+| The **executable bit** | A permission flag that says "this file is a program, not a document" |
+
+Miss the shebang and the file might still run, unpredictably. Miss the
+executable bit and it will not run at all, and the error message is
+`Permission denied` — which sounds like Android taking something away from you
+and is nothing of the kind.
+
+## Your first script
+
+<Steps>
+
+1. **Make a folder for your tools and go there.**
+
+   ```bash
+   mkdir -p ~/bin
+   cd ~/bin
+   ```
+
+   `~/bin` is not special yet. It becomes special two sections down.
+
+2. **Write three lines into a file.**
+
+   ```bash
+   echo '#!/data/data/com.termux/files/usr/bin/sh' > greet.sh
+   echo 'echo "Hello from a script."' >> greet.sh
+   cat greet.sh
+   ```
+
+   One `>` creates the file, two `>>` append to it — the rule from Files &
+   Folders in course one. The `cat` at the end is not decoration: it is how you
+   confirm the file says what you think it says.
+
+3. **Try to run it. It will fail.**
+
+   ```bash
+   ./greet.sh
+   ```
+
+   ```text
+   sh: ./greet.sh: Permission denied
+   ```
+
+   That is the missing executable bit, and it is the single most common wall a
+   first script hits.
+
+4. **Set the executable bit and run it again.**
+
+   ```bash
+   chmod +x greet.sh
+   ./greet.sh
+   ```
+
+   ```text
+   Hello from a script.
+   ```
+
+</Steps>
+
+:::caution[Why `./` and not just `greet.sh`]
+The shell does not look in the folder you are standing in. It looks along
+`PATH`, a list of directories, and your current folder is deliberately not on
+it — otherwise a file called `ls` in a downloads folder could quietly replace
+the real `ls`.
+
+`./greet.sh` means *this exact file, right here*. Until the file is somewhere on
+`PATH`, the `./` is mandatory.
+:::
+
+### The shebang, and the one that only works on Termux
+
+That first line is a real path to a real program. Termux does not live in `/usr`
+like a desktop Linux does — it lives under `/data/data/com.termux/files/usr`,
+the directory you already know as `$PREFIX`.
+
+```bash
+#!/data/data/com.termux/files/usr/bin/sh
+```
+
+That is the form that always works on your phone. Two things people try that do
+not:
+
+- **`#!$PREFIX/bin/sh`** — the kernel reads the shebang before any shell sees
+  it, so `$PREFIX` is never expanded. It is treated as a literal folder name,
+  and the file will not start.
+- **`#!/bin/sh`** — correct on every other Linux and wrong here, because Termux
+  has no `/bin`. Termux ships a shim that rewrites the common Linux shebangs on
+  the fly, so this often works anyway. "Often" is doing a lot of work in that
+  sentence. Write the full path in scripts you author.
+
+:::tip[Someone else's script won't start?]
+If you download a script written for a desktop Linux, `termux-fix-shebang
+<file>` rewrites its first line to Termux's paths for you. That is exactly the
+job it exists for.
+:::
+
+### Writing a script on a phone without losing your mind
+
+`echo` lines into a file is fine for two lines and miserable for twenty. Use the
+paste trick from course one instead — it is far better suited to a script than
+to prose:
+
+<Steps>
+
+1. **Write the whole script in a normal Android text editor.** Real keyboard
+   layout, real cursor, real ability to see line 14 while editing line 3.
+
+2. **Select all, copy.**
+
+3. **In Termux, start the file:**
+
+   ```bash
+   cat > ~/bin/battery-check
+   ```
+
+   The cursor drops to a blank line and waits. That is correct.
+
+4. **Long-press the terminal and choose Paste.**
+
+5. **Press <kbd class="tmx-kbd">Ctrl-D</kbd>** — on a phone, **Volume Down +
+   D**. This writes the file. Skip it and nothing is saved.
+
+</Steps>
+
+:::note[The four keys this lesson needs most]
+Scripts are punctuation-heavy, and a phone keyboard buries all of it. From the
+extra-keys lesson in course one:
+
+| Press | Get |
+| :---- | :-- |
+| **Volume Up** + `L` | The pipe, &#124; — which you need in every jq line below |
+| **Volume Up** + `H` | `~` — as in `~/bin` |
+| **Volume Up** + `U` | `_` |
+| **Volume Down** + `C` | **Ctrl-C** — stops a script that has run away with itself |
+
+Volume **Down** turns any letter into Ctrl + that letter. Volume **Up** is a
+fixed list, and `L`, `H` and `U` are three of the entries on it worth
+memorising.
+:::
+
+:::caution[`!` in double quotes will bite you]
+In an interactive shell, `!` starts a history lookup. So this fails before it
+ever reaches the file:
+
+```bash
+echo "#!/data/data/com.termux/files/usr/bin/sh" > greet.sh
+```
+
+```text
+bash: !/data/data/com.termux/files/usr/bin/sh: event not found
+```
+
+Single quotes switch that off, which is why every `echo` above used them. The
+`cat >` and paste route sidesteps the problem entirely.
+:::
+
+## Practise the mechanics in a real Linux box
+
+Everything so far — files, the shebang, `chmod`, `./`, and everything in the
+next three sections — is plain POSIX shell. It has nothing to do with Android,
+so you can break it somewhere that does not matter.
+
+Below is a full **Debian VM running in this browser tab**: real filesystem, real
+permission bits, real error messages. Nothing touches your device, and it wipes
+clean when you refresh.
+
+:::caution[Before you boot it — this is a big download]
+The VM pulls **tens of megabytes** of disk image on first boot. **Use Wi-Fi if
+you're on mobile data.** It is entirely optional: every command on this page
+runs on your phone, which is where the lesson is going anyway.
+:::
+
+Inside it, `/bin/sh` is the right shebang — it is Debian, not Termux. Try this:
+
+```bash
+mkdir -p ~/bin && cd ~/bin
+cat > greet.sh
+```
+
+Then type these three lines, and finish with <kbd class="tmx-kbd">Ctrl-D</kbd>:
+
+```bash
+#!/bin/sh
+echo "Hello, ${1:-world}."
+```
+
+Then:
+
+```bash
+./greet.sh          # Permission denied — read it, it is the point
+chmod +x greet.sh
+./greet.sh          # Hello, world.
+./greet.sh Dennis   # Hello, Dennis.
+```
+
+<LiveSandbox client:only="react" />
+
+:::note[Why there is no practice terminal on this page]
+The scripted practice terminal from course one is a simulator with a fixed
+command list. It has no `jq`, no pipes and no `termux-*` anything, so on this
+lesson it would answer half the instructions with an error. A terminal that
+argues with the page it is on is worse than no terminal — so this page gets the
+real VM above and your real phone, and nothing in between.
+
+The VM has **no internet**, so `apt install` will not work in it either. It is
+here for shell mechanics, not for packages.
+:::
+
+## Give the script a name: `~/bin` on `PATH`
+
+`./greet.sh` is still a file path. A *tool* is something you type by name from
+anywhere. That is what `PATH` is for.
+
+<Steps>
+
+1. **Look at what you have now.**
+
+   ```bash
+   echo $PATH
+   ```
+
+   You will see Termux's own `bin` directory and probably a couple of Android
+   ones. `~/bin` is almost certainly not in there.
+
+2. **Add it.** Which line depends on the shell you settled on in course one:
+
+   ```bash
+   # bash
+   echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+   ```
+
+   ```bash
+   # fish
+   fish_add_path ~/bin
+   ```
+
+3. **Start a new session, or reload the file:**
+
+   ```bash
+   source ~/.bashrc
+   ```
+
+   `fish_add_path` needs neither — it writes the change immediately.
+
+4. **Check that the name now resolves to your file:**
+
+   ```bash
+   which greet.sh
+   ```
+
+   A path back means it worked. Nothing back means `PATH` did not take, and
+   `echo $PATH` will show you that `~/bin` is missing.
+
+</Steps>
+
+:::tip[Drop the `.sh` while you are here]
+The extension does nothing — the shebang decides what runs the file, not the
+name. `mv ~/bin/greet.sh ~/bin/greet` and you type `greet`, like every other
+command on the system. That is the whole difference between a file you made and
+a tool you own.
+:::
+
+:::caution[Put your tools in `~/bin`, not in `$PREFIX/bin`]
+`$PREFIX/bin` belongs to the package manager. Things you drop there can be
+overwritten by an upgrade without warning, and the whole directory goes when you
+uninstall Termux. `~/bin` is yours — and it is inside `~`, which means it lands
+in the same `tar` backup as the rest of your work.
+:::
+
+## Arguments, variables and quotes
+
+A script that always does exactly one thing is a shortcut. A script you can
+*ask* something is a tool.
+
+Inside a script, `$1` is the first thing typed after its name, `$2` the second,
+and `$#` is how many there were.
+
+```bash
+#!/data/data/com.termux/files/usr/bin/sh
+name="$1"
+echo "Hello, $name."
+```
+
+Run it as `greet Dennis` and `$1` is `Dennis`.
+
+Three rules that cover almost every quoting bug you will ever write:
+
+- **Wrap every variable in double quotes.** `"$name"`, not `$name`. Without
+  them, a value containing a space becomes two arguments, and an empty value
+  disappears entirely — which is how a line turns into a different, valid
+  command that does something you did not ask for.
+- **Double quotes expand, single quotes do not.** `"$name"` becomes the value;
+  `'$name'` stays the four characters `$name`.
+- **No spaces around `=`.** `name="$1"` assigns. `name = "$1"` tries to run a
+  command called `name`.
+
+:::tip[A default value for a missing argument]
+`"${1:-20}"` means *the first argument, or `20` if there isn't one*. It is the
+difference between a script that works when you type its name and a script that
+errors at you for being lazy.
+:::
+
+## Command substitution: putting output into a variable
+
+This is the one that makes scripts worth writing. `$(command)` runs the command
+and hands you back what it printed.
+
+```bash
+today=$(date +%Y-%m-%d)
+echo "Report for $today"
+```
+
+The command runs first, its output lands in the variable, and the rest of the
+line carries on. Anything that prints — including every `termux-*` command from
+the last three lessons — can be captured this way.
+
+## Decisions: `if`, `test` and exit codes
+
+Every command you have ever run returned a number when it finished. Zero means
+it worked. Anything else means it did not.
+
+```bash
+ls /nope
+echo $?
+```
+
+```text
+ls: cannot access '/nope': No such file or directory
+2
+```
+
+`if` is not asking a question about true and false. It runs a command and looks
+at that number.
+
+```bash
+if command; then
+	# ran fine
+else
+	# did not
+fi
+```
+
+The command you will use most is `[`, which is a real program whose name is a
+square bracket — which is exactly why the spaces inside it are not optional.
+
+| Test | True when |
+| :--- | :-------- |
+| `[ "$a" = "$b" ]` | Two strings match |
+| `[ "$n" -le 20 ]` | A number is less than or equal to another |
+| `[ -f "$path" ]` | That file exists |
+| `[ -z "$s" ]` | The string is empty |
+
+And your script returns a number too, with `exit`:
+
+```bash
+exit 0    # success
+exit 1    # something was wrong
+```
+
+That number is how the next lesson's scheduler, or any other script, finds out
+whether yours was happy. A script that ends without an `exit` returns whatever
+its last command returned, which is usually right and occasionally a surprise.
+
+:::note[`$?` is a bash thing]
+If you switched to fish in course one, the variable at the prompt is `$status`,
+not `$?`. Inside a script it does not matter at all — the shebang says which
+shell runs the file, so a script with `#!…/bin/sh` is read by `sh` no matter
+what shell you launched it from.
+:::
+
+## `set -eu`: two letters that stop the bleeding
+
+By default a shell script is relentlessly cheerful. A command fails? Carry on.
+A variable was never set? Treat it as empty and carry on. Both defaults turn a
+small mistake into a script that does the wrong thing confidently.
+
+```bash
+set -eu
+```
+
+- **`-e`** — stop the moment any command fails.
+- **`-u`** — stop if the script uses a variable that was never set. This is the
+  one that catches typos: `$levl` becomes an error instead of an empty string.
+
+Put it directly under the shebang, in every script, from now on.
+
+:::caution[What `set -eu` does *not* catch]
+An empty value is not an unset one. If a command succeeds but prints nothing,
+your variable is set, empty, and `-u` says nothing. That failure is a few
+paragraphs away — and it is worth meeting on purpose.
+:::
+
+## The real thing: a battery script
+
+Now put it together. This is the exact loop you have been doing by hand: ask the
+phone about its battery, pull one number out of the answer, decide, act.
+
+<Steps>
+
+1. **Install `jq`** — a tool that reads JSON and prints the piece you asked for.
+   Every `termux-*` command from the last two lessons speaks JSON, so this is
+   the missing half of that toolkit.
+
+   ```bash
+   pkg install jq
+   ```
+
+2. **Look at the raw answer again.**
+
+   ```bash
+   termux-battery-status
+   ```
+
+   ```text
+   {
+     "health": "GOOD",
+     "percentage": 42,
+     "plugged": "UNPLUGGED",
+     "status": "DISCHARGING",
+     "temperature": 28.6
+   }
+   ```
+
+   Your numbers will differ, and some devices print extra fields. The two that
+   matter here are `percentage` and `status`.
+
+3. **Pull one field out of it.** The `|` is a pipe — **Volume Up + L** — and it
+   means *send what that printed into this*.
+
+   ```bash
+   termux-battery-status | jq '.percentage'
+   ```
+
+   ```text
+   42
+   ```
+
+   `jq -r` gives you the **r**aw value with no quotes around it, which is what
+   you want for text fields:
+
+   ```bash
+   termux-battery-status | jq -r '.status'
+   ```
+
+   ```text
+   DISCHARGING
+   ```
+
+4. **Write the script.** Paste this in with `cat > ~/bin/battery-check`, then
+   **Ctrl-D** (**Volume Down + D**):
+
+   ```bash
+   #!/data/data/com.termux/files/usr/bin/sh
+   set -eu
+
+   # How low is "low"? First argument, or 20 if you didn't say.
+   limit="${1:-20}"
+
+   # One call, two answers — asking the battery twice can give you a level
+   # and a status that disagree, and it wakes the API app up twice.
+   battery=$(termux-battery-status)
+   level=$(echo "$battery" | jq -r '.percentage')
+   state=$(echo "$battery" | jq -r '.status')
+
+   # An empty level means the API never answered. Say so, instead of feeding
+   # nothing into a numeric comparison and blaming the maths.
+   if [ -z "$level" ]; then
+   	echo "No answer from Termux:API. Is the companion app installed?" >&2
+   	exit 1
+   fi
+
+   if [ "$level" -le "$limit" ] && [ "$state" = "DISCHARGING" ]; then
+   	termux-notification \
+   		--title "Battery at $level%" \
+   		--content "Below your $limit% line, and still draining."
+   	exit 1
+   fi
+
+   echo "Battery $level% ($state) — nothing to do."
+   exit 0
+   ```
+
+5. **Make it a tool.**
+
+   ```bash
+   chmod +x ~/bin/battery-check
+   battery-check
+   battery-check 90
+   ```
+
+   With no argument it uses 20. With `90` it will almost certainly fire, which
+   is the easiest way to prove the notification path works without waiting for
+   a flat battery.
+
+</Steps>
+
+Read that script again and count what is in it: a shebang, a seatbelt, an
+argument with a default, three command substitutions, a pipe, two tests, a
+notification and two different exit codes. Every one of those was a section on
+this page.
+
+:::note[`>&2` sends a message to the error channel]
+Commands have two output streams: normal output, and errors. `>&2` puts that
+line on the error one, so a script that pipes `battery-check` somewhere gets the
+answer without the complaint mixed into it. It is the same `>` you already know,
+pointed at a different destination.
+:::
+
+:::caution[If `termux-battery-status` just hangs]
+It is not this script. A `termux-*` command that sits there forever instead of
+erroring is the signature failure from the API setup lesson: the Termux:API
+companion app is missing, or was installed from a different source than Termux
+itself. Press **Ctrl-C** (**Volume Down + C**) and go and fix that first.
+:::
+
+## When it breaks: `sh -x`
+
+Scripts fail silently in a way that typed commands do not — you do not see the
+lines go past, so you cannot see which one went wrong. `-x` fixes that: it
+prints every line as it runs it, *after* the variables have been filled in.
+
+```bash
+sh -x ~/bin/battery-check 90
+```
+
+```text
++ limit=90
++ termux-battery-status
++ battery={
+  "health": "GOOD",
+  "percentage": 42,
+  ...
+}
++ echo {   "health": "GOOD",   "percentage": 42, ... }
++ jq -r .percentage
++ level=42
++ [ -z 42 ]
++ [ 42 -le 90 ]
+```
+
+Every line starting `+` is a line the shell actually ran. This is the fastest
+debugging tool in the shell, and it needs no changes to the file — you are just
+running it with a different `sh`.
+
+Three things it tells you immediately:
+
+- **A variable is empty.** You will see `+ [ -z ]` with nothing after the `-z`,
+  instead of a value.
+- **The script stopped early.** The trace ends at the line that failed, and with
+  `set -e` that is the whole explanation.
+- **A quote is in the wrong place.** The expanded line is printed, so a value
+  that split into two arguments is visible as two arguments.
+
+:::tip[Turn it on for part of a script]
+`set -x` inside the file starts the trace at that line, and `set +x` stops it.
+Handy when only one section is suspicious and the rest is noise.
+:::
+
+:::note[Reading the error message it leaves behind]
+A shell error is written by the shell, not by your script, so it opens with the
+shell's name or the script's path rather than anything you typed. Ignore that
+part. The **line number** in the middle of it is the line in *your* file, and it
+is the only thing in the message worth reading first. Go there, then let `sh -x`
+show you what the line before it was actually holding.
+:::
+
+## Recap
+
+- A script is a text file, a shebang, and the executable bit. Miss the last one
+  and you get `Permission denied`.
+- On Termux the shebang is `#!/data/data/com.termux/files/usr/bin/sh`. `$PREFIX`
+  does not expand there, and `/bin/sh` is not a real path on Android.
+- `./script` runs a file. Putting it in `~/bin` and adding that to `PATH` turns
+  it into a command you can type by name from anywhere.
+- `"$1"` is the first argument, `"${1:-20}"` gives it a default, and every
+  variable belongs in double quotes.
+- `$(command)` captures output into a variable.
+- Zero means success. `if` tests exit codes, `[ … ]` needs its spaces, and your
+  script should `exit` with a number that means something.
+- `set -eu` goes under the shebang in every script you write.
+- `sh -x script` prints every line as it runs. Reach for it first, not last.
+
+You now own a tool instead of a habit. Next: stop running it yourself — hand it
+to a scheduler and find out why Android keeps killing your jobs, in [Making It
+Run Itself](/automation/scheduling/).
+
+<LessonComplete client:only="react" slug="automation/shell-scripts" />

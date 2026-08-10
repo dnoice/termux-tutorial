@@ -1,0 +1,164 @@
+---
+title: Upgrade Your Shell to Fish
+description: Swap Termux's default bash for fish and get autosuggestions, syntax highlighting and tab completion — the features this whole course is built around.
+sidebar:
+  order: 4
+  badge:
+    text: Recommended
+    variant: tip
+---
+
+import TermuxTerminal from '../../../components/terminal/TermuxTerminal.tsx';
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+import PracticeSection from '../../../components/lesson/PracticeSection.astro';
+
+Termux ships with **bash**. It's powerful, it's everywhere, and it is completely
+fine. It's also plain: no suggestions, no colour, no help as you type.
+
+**fish** — the *Friendly Interactive SHell* — fixes that out of the box, with
+zero configuration. This is a five-minute change that will make everything else
+in this course easier.
+
+:::note[This is why the practice terminal looks the way it does]
+Every interactive terminal on this site imitates fish. That grey ghost text and
+the cyan/red command colouring? That's fish. Do this lesson and your real Termux
+will behave the same way. Skip it, and your phone will look plainer than these
+examples.
+:::
+
+## What you actually get
+
+- **🧠 Autosuggestions** — as you type, fish suggests a full command from your
+  history in faint grey. Press <kbd class="tmx-kbd">→</kbd> or
+  <kbd class="tmx-kbd">Ctrl-F</kbd> to accept it. You stop retyping things.
+- **✅ Syntax highlighting** — valid commands turn one colour, typos another.
+  You see a mistake *before* you press Enter.
+- **💡 Tab completion** — <kbd class="tmx-kbd">Tab</kbd> completes commands,
+  filenames and options, with a menu when there's more than one match.
+- **🎨 A clearer prompt** — shows where you are without you asking.
+
+:::note[On a phone, → and Tab aren't on your keyboard]
+Your soft keyboard has no arrows and no Tab, so accept a suggestion with
+**Volume Up + D** (that's →) or **Volume Up + T** (that's Tab).
+<kbd class="tmx-kbd">Ctrl-F</kbd> works too — **Volume Down + F**. The next
+lesson covers the rest of these; [Optimizing the
+Keyboard](/foundations/extra-keys/) puts them on a permanent button row.
+:::
+
+## Make the switch
+
+<Steps>
+
+1. **Install fish.**
+
+   ```bash
+   pkg install fish
+   ```
+
+   Press <kbd class="tmx-kbd">y</kbd> and Enter if it asks.
+
+2. **Set it as your login shell.**
+
+   ```bash
+   chsh -s fish
+   ```
+
+   `chsh` is *change shell*; `-s` sets which one.
+
+3. **Fully restart Termux — from the notification, not from recents.**
+
+   Pull down the notification shade, find the **Termux** notification, and tap
+   **Exit**. Then open Termux again from your launcher.
+
+   :::caution[Swiping it out of recent apps does not work]
+   Termux runs a foreground service *precisely so* Android won't kill it when
+   you swipe the task away. Do that and the old bash session is often still
+   alive: you reopen, see `$` again, and conclude `chsh` failed when it didn't.
+   The notification's **Exit** action is the supported way — or type `exit` in
+   every open session.
+   :::
+
+4. **Check it worked.** Your prompt should now end in `❯` instead of `$`:
+
+   ```text
+   ~ ❯
+   ```
+
+   Still showing `~ $`? A session was still running. Repeat step 3.
+
+</Steps>
+
+Now type a command you already know, like `ls` or `pwd`, and watch it colour
+itself as you go.
+
+<PracticeSection>
+
+Try the whole sequence right here first. This terminal deliberately **starts in
+bash**, so you can watch the prompt flip from `$` to `❯` — the same change
+you're about to make on your phone:
+
+<TermuxTerminal
+  client:only="react"
+  shell="bash"
+  hint="Try: pkg install fish → chsh -s fish  (watch the prompt change)"
+  height={380}
+/>
+
+</PracticeSection>
+
+:::tip[Changed your mind?]
+Nothing here is permanent. `chsh -s bash` puts you straight back.
+:::
+
+## About that prompt
+
+One thing that trips people up: the prompt changes shape.
+
+| Shell | Prompt looks like |
+| :---- | :---------------- |
+| bash (default) | `~ $` |
+| fish | `~ ❯` |
+
+Different symbol, same idea — the shell is telling you it's ready and showing
+which directory you're in. Every command *in this course* works identically in
+both.
+
+## fish is not bash (and one day that will matter)
+
+That scope matters, so here it is plainly: **fish is a different language from
+bash**, and most of the internet is written in bash.
+
+| A tutorial elsewhere says | In fish |
+| :------------------------ | :------ |
+| `export FOO=bar` | Fails — fish uses `set -x FOO bar` |
+| `FOO=x mycommand` | Fails — fish uses `env FOO=x mycommand` |
+| `$(date)` | Fails — fish uses `(date)` |
+| `~/.bashrc` | Never read — fish uses `~/.config/fish/config.fish` |
+
+You don't have to learn any of that today. You just have to recognise the
+symptom, and know the escape hatch:
+
+```bash
+bash
+```
+
+That drops you into a bash session for as long as you need it. `exit` brings you
+straight back to fish. Nothing is lost either way — and `chsh -s bash` makes the
+change permanent if you decide you prefer it.
+
+## Recap
+
+- Termux ships **bash**; **fish** adds suggestions, highlighting and completion.
+- `pkg install fish`, then `chsh -s fish`, then restart Termux **via the
+  notification's Exit action** — not by swiping it out of recents.
+- The prompt changes from `$` to `❯`. That's how you know it worked.
+- fish isn't bash: when a bash-shaped snippet from the internet complains, type
+  `bash`, run it, then `exit`.
+- `chsh -s bash` reverts it any time.
+
+Next, the other half of Termux — the Android app wrapped around the shell, where
+that **Exit** action lives: [Sessions, Copy &
+Paste](/start/sessions-and-copy-paste/).
+
+<LessonComplete client:only="react" slug="start/friendly-shell" />

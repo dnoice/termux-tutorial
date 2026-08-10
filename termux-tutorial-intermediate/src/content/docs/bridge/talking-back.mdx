@@ -1,0 +1,422 @@
+---
+title: Talking Back to Android
+description: Push notifications with tappable buttons, ask questions with real Android dialogs, and use the clipboard, vibration and speech from the shell.
+sidebar:
+  order: 3
+# No prev/next here: this lesson is registered in the Android Bridge group in
+# astro.config.mjs, between Reading the Device and From Commands to Scripts, so
+# Starlight derives both ends of the chain from that array.
+---
+
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+
+Everything in [Reading the Device](/bridge/reading-the-device/) pointed one way:
+you asked, the phone answered, you read the answer in the terminal. Which means
+all of it only exists while you are looking at a terminal.
+
+This lesson turns the arrow around. By the end you'll have something sitting in
+your notification shade that you can **tap to answer** — and at that point it has
+stopped being a command you ran and started being a small, ugly, extremely
+useful app.
+
+:::note[This is still the same bridge]
+Every command here comes from the `termux-api` package and needs the
+**Termux:API app** installed alongside it — the two halves from [Wiring Up
+Termux:API](/bridge/api-setup/). If a command below hangs forever instead of
+doing something, that's the same missing half, not a new problem.
+:::
+
+## The smallest possible notification
+
+```bash
+termux-notification --title "Backup done" --content "3 files, 41 MB"
+```
+
+**Success looks like:** the prompt comes straight back, and there is a new
+notification in your shade. Pull it down and look — that came out of a shell.
+
+:::caution[Android 13 and newer will silently swallow it]
+Notifications need permission now, and the app that actually posts yours is
+**Termux:API**, not Termux. If nothing appeared and the command printed no error,
+that's why.
+
+**Settings → Apps → Termux:API → Notifications → Allow**
+
+While you're there, check Termux's own notification settings too — a couple of
+manufacturer ROMs post it from there instead. Nothing in the terminal ever tells
+you this is off; the command just succeeds into the void.
+:::
+
+:::tip[If it seems to freeze, it's waiting for you]
+Leave `--content` off and `termux-notification` reads the body from standard
+input instead — so a bare `termux-notification --title "Hi"` sits there looking
+frozen while it waits for you to type. That's not a crash. Type the text and
+press <kbd class="tmx-kbd">Ctrl-D</kbd> — on a phone, **Volume Down + D** — or
+bail out with <kbd class="tmx-kbd">Ctrl-C</kbd> (**Volume Down + C**).
+
+It's genuinely useful once you know: any command's output can become the body of
+a notification.
+:::
+
+## Stop it stacking: `--id`
+
+Run that command three times and you get three notifications. Run it from
+something that checks your battery every ten minutes and you get a wall of
+identical junk that people learn to swipe away without reading.
+
+`--id` fixes it. Give a notification a name and re-posting **replaces** the old
+one instead of adding to it:
+
+<Steps>
+
+1. **Post one with an id.**
+
+   ```bash
+   termux-notification --id battery --title "Battery" --content "62%"
+   ```
+
+2. **Post it again with different content.**
+
+   ```bash
+   termux-notification --id battery --title "Battery" --content "58%"
+   ```
+
+   Still one notification in the shade. It just changed. That is the whole
+   difference between a status display and spam.
+
+3. **Take it away when it stops being true.**
+
+   ```bash
+   termux-notification-remove battery
+   ```
+
+</Steps>
+
+The id is any string you choose — `battery`, `backup`, `job-3`. Pick one per
+*thing you are reporting on*, not one per run, and write it down somewhere,
+because `termux-notification-remove` needs the exact same string back.
+
+## Buttons: the part that makes it a two-way street
+
+Here's the command this whole lesson exists for. `--button1` is the label;
+`--button1-action` is **a shell command Termux runs when you tap it**. There are
+three of them: `--button1` through `--button3`.
+
+```bash
+termux-notification \
+  --id water \
+  --title "Drink some water" \
+  --content "It has been two hours." \
+  --button1 "Done" \
+  --button1-action "termux-notification-remove water" \
+  --button2 "Later" \
+  --button2-action "termux-toast 'Fine. Ten minutes.'"
+```
+
+Post that, then go do something else. Open another app. The notification is
+still there, and tapping **Done** makes it disappear — because tapping it ran a
+Termux command, with no terminal on screen and nobody typing.
+
+That is the sentence worth rereading. Your shell is now reachable by a thumb.
+
+:::caution[The action produces no visible output. None.]
+Whatever the action prints goes nowhere — there's no terminal attached to a
+notification button. So an action of `date` looks *exactly* like an action that
+failed.
+
+Make the action do something you can see or keep: post another notification,
+fire a `termux-toast`, or write to a file with `>`. Debug it by running the
+action's command in the terminal first, on its own, until it works — then paste
+it in as the action.
+:::
+
+:::caution[Single quotes and double quotes mean different things here]
+The action is a string, and your shell reads it *before* Termux ever stores it:
+
+- `--button1-action "echo $HOME"` — your shell expands `$HOME` **now**, and the
+  stored action contains the finished path.
+- `--button1-action 'echo $HOME'` — single quotes keep it literal, and `$HOME`
+  is expanded **later**, when the button is tapped.
+
+Most of the time you want single quotes on the outside and doubles inside, as in
+the `--button2-action` above. Get it backwards and the button will happily run
+something you didn't mean.
+:::
+
+There's also `--on-delete`, which runs when you *swipe the notification away*
+rather than tapping a button — the "no, I'm ignoring you" answer:
+
+```bash
+termux-notification --id water --title "Water" --content "Still waiting." \
+  --on-delete 'termux-toast "Noted. Dehydrate in peace."'
+```
+
+:::note[If buttons do nothing, Android is the suspect]
+The tap has to wake Termux up to run the command, and Android is extremely keen
+on not letting apps wake up. Two fixes, in the order worth trying:
+
+1. **Battery optimisation.** Settings → Apps → Termux → Battery →
+   **Unrestricted** (the wording varies wildly by manufacturer).
+2. **Never force-stop Termux.** Force Stop in Android's app settings blocks
+   Termux from being woken at all until you open it by hand again. Swiping it
+   out of Recents is usually survivable; Force Stop is not.
+:::
+
+## The rest of the knobs
+
+You will not need most of these on day one, but you'll want to know they exist
+when a notification is too quiet, too loud, or won't stay put.
+
+| Flag | What it does |
+| :--- | :----------- |
+| `--priority high` | Makes it pop up over whatever's on screen instead of sliding quietly into the shade. Values: `max`, `high`, `default`, `low`, `min` |
+| `--sound` | Play the notification sound |
+| `--vibrate 500,1000,200` | Buzz pattern in milliseconds, comma separated |
+| `--ongoing` | Pins it — it can't be swiped away. For "this job is still running" |
+| `--alert-once` | Only make noise the first time. Pair it with `--id` so updates stay silent |
+| `--group backups` | Bundle notifications that share a group name |
+| `--icon battery_alert` | The little status-bar icon, named from Google's Material icon set |
+| `--image-path ~/shot.png` | Show an image in the expanded notification |
+| `--led-color ff0000` | Blink the notification LED in that colour |
+
+:::caution[`--led-color` needs an LED, and your phone probably hasn't got one]
+Notification LEDs quietly disappeared from mainstream phones around 2019–2020.
+On a device without one this flag is accepted, does nothing, and reports nothing
+— which is a miserable thing to debug. Even on a device that has one, it
+typically only blinks while the screen is off.
+
+Treat it as a bonus for older hardware, not as a signal you can rely on.
+:::
+
+That `~` in `--image-path` is **Volume Up + H**, by the way — it's one of the
+three punctuation keys the volume modifiers give you.
+
+## `termux-toast`, when a notification is too much
+
+A toast is the little grey bubble that floats over the screen for two seconds
+and then dies. Nothing to dismiss, nothing left in the shade — perfect for "yes,
+that worked".
+
+```bash
+termux-toast "Backup finished"
+termux-toast -s -g top "Short one, up the top"
+```
+
+- `-s` — show it briefly instead of the default longer stay
+- `-g top|middle|bottom` — where on screen it appears
+- `-b` and `-c` — background and text colour
+
+It also reads from standard input when you give it no text, which is where it
+gets good. That `|` is **Volume Up + L**:
+
+```bash
+termux-battery-status | jq -r .percentage | termux-toast
+```
+
+:::note[Don't build anything on toast colours]
+Newer Android versions draw toasts their own way and can ignore an app's
+styling, so `-b` and `-c` may quietly do nothing on your device while working
+fine on someone else's. The **text** always shows. That's the part to depend on.
+:::
+
+## `termux-dialog`, when you need an actual answer
+
+Notifications and toasts are output. `termux-dialog` is **input**: it puts a
+real Android dialog on the screen, waits, and prints what you chose as JSON.
+
+Four widgets cover almost everything:
+
+```bash
+termux-dialog text -t "Quick note" -i "What happened?"
+termux-dialog confirm -t "Delete old backups?" -i "This cannot be undone"
+termux-dialog radio -t "Which backup?" -v "daily,weekly,monthly"
+termux-dialog checkbox -t "Include" -v "photos,notes,configs"
+```
+
+- `-t` is the title, `-i` is the greyed-out hint inside the input box.
+- `-v` is a comma-separated list of choices — `radio` takes exactly one,
+  `checkbox` takes any number.
+
+There are more than four. `termux-dialog -l` lists every widget with its own
+options — dates, times, counters, a bottom sheet, even speech-to-text — and
+that listing is the honest reference, because the options differ per widget.
+
+### Reading the answer
+
+Everything comes back as JSON on one line, with the answer in a `text` field and
+a `code` field describing how the dialog was dismissed. So `jq` — the parser you
+installed in [Wiring Up Termux:API](/bridge/api-setup/) — does the rest:
+
+```bash
+termux-dialog text -t "Quick note" -i "What happened?" | jq -r .text
+```
+
+`-r` gives you the raw string with no quotes around it, ready to be written
+straight into a file:
+
+```bash
+termux-dialog text -t "Quick note" | jq -r .text >> ~/journal.txt
+```
+
+:::tip[Run each widget once and look at the raw JSON first]
+`checkbox` returns several selections, so it carries more than a single `text`
+field. Rather than trust anyone's description of the shape — including this one
+— run it bare, once, and read what your version actually prints:
+
+```bash
+termux-dialog checkbox -t "Include" -v "photos,notes,configs"
+```
+
+Then write the `jq` to match what you saw. This is a thirty-second habit that
+saves an hour of arguing with a filter.
+:::
+
+:::caution[Dismissing the dialog is an answer too]
+Press Back, or tap outside it, and the command still returns — with an empty
+answer. Anything you build on top of a dialog has to cope with "they told you
+nothing", or it will happily carry on with an empty filename.
+:::
+
+:::caution[A dialog needs to be in the foreground to appear]
+`termux-dialog` blocks the shell until it's answered, which is fine while you're
+sitting in Termux. But Android 10 and newer stop apps from throwing screens up
+when they aren't in front — so a dialog fired from a background job may never
+appear, and the job just waits forever.
+
+That is exactly what notification buttons are for. **Dialogs are for when you're
+there. Notifications are for when you aren't.** Keep that split and you'll skip a
+whole category of "why is nothing happening".
+:::
+
+## Three smaller doors: clipboard, buzz, voice
+
+### The clipboard
+
+```bash
+termux-clipboard-set "wifi password: hunter2"
+termux-clipboard-get
+```
+
+`termux-clipboard-set` also reads standard input, so anything you can print you
+can paste into another app:
+
+```bash
+termux-battery-status | jq -r .percentage | termux-clipboard-set
+```
+
+:::note[Two things Android does to the clipboard]
+**Reading it in the background doesn't work.** Since Android 10, only the app
+currently in front can read the clipboard — so `termux-clipboard-get` from a job
+running while your screen is off comes back empty rather than failing. Writing
+with `termux-clipboard-set` is fine either way.
+
+**Android 12 and newer announce the read.** You'll see a system toast saying
+Termux:API pasted from your clipboard. That's Android, not a bug in your command,
+and you can't turn it off from the shell.
+:::
+
+### Vibration
+
+```bash
+termux-vibrate -d 200
+termux-vibrate -d 1000 -f
+```
+
+`-d` is the duration in milliseconds. `-f` forces it to buzz **even in silent
+mode**, which is the difference between a reminder and a reminder you'll
+actually get.
+
+### Speech
+
+```bash
+termux-tts-speak "Backup finished"
+termux-tts-speak -r 1.4 -p 0.8 "Reading this faster and lower"
+```
+
+`-r` is rate and `-p` is pitch, both `1.0` by default. It reads standard input
+too, so `cat notes.txt | termux-tts-speak` works.
+
+:::caution[Silence has two boring causes]
+1. **No speech engine.** Text-to-speech is a separate Android component, and some
+   devices ship without one. `termux-tts-engines` lists what's installed — an
+   empty answer there means the phone has nothing to speak with, and no flag will
+   fix it.
+2. **Media volume is down.** Speech goes out over the media stream by default, so
+   it's inaudible if that's at zero, even with the ringer up.
+:::
+
+## Build the thing that answers back
+
+Put the pieces together. This uses `termux-battery-status` from the last lesson,
+`jq` from the first, and everything above:
+
+<Steps>
+
+1. **Grab the number first, so the notification title isn't a command.**
+
+   ```bash
+   PCT=$(termux-battery-status | jq -r .percentage)
+   ```
+
+2. **Post a notification with two real answers on it.**
+
+   ```bash
+   termux-notification \
+     --id battery \
+     --title "Battery: $PCT%" \
+     --content "Plug it in?" \
+     --priority high \
+     --button1 "Plugged in" \
+     --button1-action 'termux-notification-remove battery' \
+     --button2 "Leave me alone" \
+     --button2-action 'termux-toast -g top "Fine."'
+   ```
+
+   Typing that with the `\` continuations on a phone is miserable. The
+   backslashes are only there so it fits on the page — you can type the whole
+   thing as one long line and it behaves identically.
+
+3. **Now leave.** Press Home. Open a browser. Lock the screen if you like.
+
+4. **Pull the shade down and tap a button.** The notification obeys you with
+   Termux nowhere in sight.
+
+</Steps>
+
+Notice what you did *not* have to do: keep a terminal open, keep Termux in the
+foreground, or be the person who ran the command. The notification is a small
+interface, and the two buttons are its entire API.
+
+:::tip[Want it to feel finished? Give it a lifecycle]
+A notification that appears and never leaves is clutter. A good one has all
+three of: an `--id` so it updates in place, a button whose action calls
+`termux-notification-remove` on that id, and an `--on-delete` so swiping it away
+counts as a decision too. Three flags, and it stops feeling like debug output.
+:::
+
+## Recap
+
+- `termux-notification` posts to the shade; `--id` makes a re-post **replace**
+  instead of stack, and `termux-notification-remove <id>` takes it back down.
+- `--button1` / `--button1-action` (up to three) run a shell command on tap.
+  Actions show no output — make them post, toast, or write to a file.
+- Quote actions with **single** quotes to expand them at tap time, doubles to
+  expand them now.
+- `termux-toast` is the throwaway version; it reads standard input, so any
+  command's output can become a toast.
+- `termux-dialog text|confirm|radio|checkbox` asks a question and prints JSON —
+  `| jq -r .text` (pipe is **Volume Up + L**) gets you the answer. Handle the
+  empty answer, because Back is a valid response.
+- Dialogs need the foreground; notifications don't. That's the whole rule.
+- `termux-clipboard-set` / `-get`, `termux-vibrate -d -f` and `termux-tts-speak`
+  cover the small stuff — with real limits: no background clipboard reads, no LED
+  on modern phones, no speech without an engine.
+- If a button does nothing, suspect Android's battery optimisation before you
+  suspect your command.
+
+You now have a phone that talks to you and a thumb that talks back — all of it
+retyped by hand, every single time. Next: stop retyping it, in [From Commands to
+Scripts](/automation/shell-scripts/).
+
+<LessonComplete client:only="react" slug="bridge/talking-back" />

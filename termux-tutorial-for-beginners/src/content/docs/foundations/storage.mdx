@@ -1,0 +1,220 @@
+---
+title: Bridging Android Storage
+description: Run termux-setup-storage to safely connect Termux to your photos, downloads, and shared files — and learn where your data really lives.
+sidebar:
+  # Files & Folders is now order 2, so everything after it shifts down one.
+  order: 3
+# No explicit `prev`: Files & Folders is now registered in the sidebar array
+# directly before this lesson, so Starlight derives it.
+---
+
+import TermuxTerminal from '../../../components/terminal/TermuxTerminal.tsx';
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+import PracticeSection from '../../../components/lesson/PracticeSection.astro';
+
+Out of the box, Termux lives behind glass. Android drops it in a **private
+sandbox** — a walled-off folder the rest of your phone can't peek into. Great for
+security, useless the moment you want to touch a photo, a download, or that PDF
+you saved. So let's knock a door in the wall.
+
+## The one command that connects them
+
+```bash
+termux-setup-storage
+```
+
+This is the **one moment in the whole course** where Android asks you a question
+you can get wrong, so it gets its own steps.
+
+<Steps>
+
+1. **Run it.** Nothing happens in the terminal yet.
+
+2. **Android pops up a permission dialog.** The wording depends on your version:
+
+   - **Android 11–12:** *"Allow Termux to access photos, media and files on your
+     device?"* → **Allow**.
+   - **Android 13+:** it splits into *photos and videos*, *music and audio*, and
+     sometimes *files*. **Allow all of them** — Termux needs the lot for
+     `~/storage` to be fully wired up.
+
+3. **Approve it, and Termux creates a `~/storage` folder** full of shortcuts
+   (symlinks) into your shared storage.
+
+4. **Check it worked:**
+
+   ```bash
+   ls ~/storage
+   ```
+
+   Success looks like six names — `dcim  downloads  movies  music  pictures
+   shared`. An empty result, or "No such file or directory", means it didn't
+   take.
+
+</Steps>
+
+:::caution[Tapped Deny, or nothing appeared?]
+Running `termux-setup-storage` again reports that storage is already configured
+and does nothing — so it looks like the command is fine when it isn't. Fix the
+permission by hand first:
+
+**Settings → Apps → Termux → Permissions → Files and media → Allow**
+
+Then run `termux-setup-storage` again. Without this, every remaining command in
+this lesson fails with errors that never mention permissions.
+:::
+
+<PracticeSection>
+
+Try it in the practice terminal below. Run `termux-setup-storage`, then
+`ls ~/storage` to see what appeared:
+
+<TermuxTerminal
+  client:only="react"
+  boot={["termux-setup-storage"]}
+  hint="Now type: ls ~/storage"
+  height={400}
+/>
+
+</PracticeSection>
+
+## What each shortcut points to
+
+Two columns, because these lines are read on the phone you're configuring.
+
+| Shortcut | What's in it |
+| :------- | :----------- |
+| `~/storage/shared` | Internal storage root (`/sdcard`) — everything your file manager shows you |
+| `~/storage/downloads` | The **Download** folder: files you saved from the browser |
+| `~/storage/dcim` | **DCIM** — photos and videos from the camera |
+| `~/storage/pictures` | **Pictures** — screenshots and saved images |
+| `~/storage/music` | **Music** — audio files |
+| `~/storage/movies` | **Movies** — video files |
+
+:::note[What about `external-1`?]
+If you have an SD card, you may also see `~/storage/external-1`. It is **not**
+the whole card — it points at Termux's own private folder on it
+(`Android/data/com.termux/files`), which starts empty and is **deleted when you
+uninstall Termux**. Rarely what you want.
+:::
+
+:::tip[Try it]
+In the terminal above, run `cd ~/storage/downloads` then `pwd`. You've navigated
+straight into your Android Downloads folder — from a Linux shell.
+:::
+
+## The rule that saves your work
+
+Here's the part beginners learn the hard way.
+
+:::danger[Your home directory is not forever]
+Everything in Termux's private home folder (`~`) evaporates **the instant** you
+uninstall the app or clear its data in Android settings. Scripts, notes, that
+project you were proud of — gone, no undo, no recycle bin.
+
+`$PREFIX` goes with it. That's **every package you ever installed** — fish,
+git, python, the lot. Restore only your files and you'll have your scripts back
+with nothing left to run them, which is why the backup below saves a package
+list too. Treat `~` like a whiteboard, not a safe.
+:::
+
+So the obvious move is to just do everything in `~/storage/shared`, right?
+
+**No — and this is the trap.** Shared storage isn't a real Linux filesystem. It's
+an Android compatibility layer with **no Unix permission bits and no symlinks**.
+
+:::caution[Never put code in `~/storage/shared`]
+`chmod +x script.sh` there silently does nothing, so `./script.sh` returns
+*"Permission denied"* forever. `git clone` produces a repo that reports every
+file as changed. `python -m venv` and `npm install` fail or build trees that
+won't run. Nothing tells you why — it just quietly doesn't work.
+:::
+
+### The rule that actually works
+
+Split it by **what kind of file it is**:
+
+| What | Where | Why |
+| :--- | :---- | :-- |
+| Code, scripts, dotfiles | **`~`** (home) | The only filesystem with working permissions |
+| Documents, photos, media | **`~/storage/shared/`** | Reachable from other Android apps |
+| **Backups of your work** | **`~/storage/shared/`** | Survives uninstall |
+
+So you keep working in `~` where things run — and you protect it with backups.
+Every command here is one you met in [Files &
+Folders](/foundations/files-and-folders/); this is what they were for.
+
+<Steps>
+
+1. Work in your home directory, where permissions behave:
+
+   ```bash
+   mkdir ~/projects
+   cd ~/projects
+   ```
+
+2. Make a backup folder in shared storage:
+
+   ```bash
+   mkdir -p ~/storage/shared/termux-backups
+   ```
+
+3. Snapshot your work there whenever it matters:
+
+   ```bash
+   tar czf ~/storage/shared/termux-backups/projects-backup.tar.gz -C ~ projects
+   ```
+
+4. Save the list of packages to reinstall alongside it:
+
+   ```bash
+   pkg list-installed > ~/storage/shared/termux-backups/packages.txt
+   ```
+
+   Restoring files without this leaves you with code and nothing to run it. The
+   `>` sends the command's output into a file instead of onto the screen.
+
+</Steps>
+
+That archive lives in Android storage, so it survives an uninstall — while your
+actual code stays somewhere it can execute.
+
+:::tip[Why `-C ~ projects` and not `~/projects`]
+Both work. `tar czf … ~/projects` makes tar print
+*`Removing leading '/' from member names`* and stores the whole absolute path
+inside, so unpacking it later rebuilds a `data/data/com.termux/…` tree you then
+have to dig through. `-C ~ projects` means "change into `~` first, then archive
+`projects`" — no warning, and the archive contains a plain `projects/` folder.
+:::
+
+Practice the whole flow here — including the `tar` step, which is the one worth
+building muscle memory for:
+
+<TermuxTerminal
+  client:only="react"
+  hint="Try: termux-setup-storage → mkdir ~/projects → mkdir -p ~/storage/shared/termux-backups → tar czf ~/storage/shared/termux-backups/projects-backup.tar.gz -C ~ projects → tar tzf ~/storage/shared/termux-backups/projects-backup.tar.gz"
+  height={420}
+/>
+
+:::note[Try breaking it on purpose]
+Run the `tar` line *before* `termux-setup-storage` and read the error. That is
+exactly what your phone says when the storage bridge isn't there — and now
+you'll recognise it.
+:::
+
+## Recap
+
+- `termux-setup-storage` bridges Termux to your Android files via `~/storage`.
+- The symlinks map to real folders like Downloads, DCIM, and Pictures.
+- The private home directory (`~`) is **wiped** on uninstall — along with every
+  package you installed — but it's still the only place code can actually run.
+- **Code lives in `~`; backups live in `~/storage/shared/`.** Shared storage has
+  no permission bits, so scripts there can never be made executable.
+- Back up the archive *and* `pkg list-installed`, or you'll restore files you
+  can't run.
+
+Next: the tool you'll use in every single session — [Package Management with
+pkg](/foundations/packages/).
+
+<LessonComplete client:only="react" slug="foundations/storage" />

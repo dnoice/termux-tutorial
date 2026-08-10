@@ -1,0 +1,531 @@
+---
+title: Making It Run Itself
+description: Put your script on a schedule with cron, find out why Android keeps killing it, and hand the job to Android's own scheduler instead.
+sidebar:
+  order: 5
+---
+
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+
+Your script works. You ran it, it did the thing, you were pleased with
+yourself. Now you want it to do the thing at 7am, without you.
+
+On a laptop that's a five-minute job: install cron, add one line, done. On a
+phone you will do exactly that, put the phone in your pocket, and find in the
+morning that nothing ran. No error. No log. No clue. Nothing is broken —
+Android is working precisely as designed, and a large part of that design is
+*stopping things from running*.
+
+So this lesson comes in two halves. First cron, because it's the right tool
+whenever the phone is awake and you should know it properly. Then the reasons
+it goes quiet overnight, and the scheduler Android will not argue with.
+
+## The Linux answer: cron
+
+`cron` is a daemon that wakes up every minute, reads a table of times, and runs
+whatever is due. Termux has the real thing — `cronie`, the same implementation
+Fedora ships — plus `termux-services` to keep it running.
+
+<Steps>
+
+1. **Install both.**
+
+   ```bash
+   pkg install cronie termux-services
+   ```
+
+2. **Fully restart Termux.** Not a new session — exit every session and reopen
+   the app. `termux-services` starts its supervisor from your login profile, so
+   it is not running inside the session you just installed it in.
+
+3. **Enable the cron service.**
+
+   ```bash
+   sv-enable crond
+   ```
+
+   `sv-enable` starts it now *and* marks it to start with every future Termux
+   launch. `sv up crond` and `sv down crond` start and stop it by hand;
+   `sv-disable crond` undoes the enable.
+
+4. **Check it's actually up.**
+
+   ```bash
+   sv status crond
+   ```
+
+   Success looks like `run: crond: (pid 12345) 30s`. The word that matters is
+   **run**. `down: crond:` means it isn't running.
+
+</Steps>
+
+:::note[`sv` says the service doesn't exist?]
+Service definitions are installed by the packages themselves, so `crond` only
+appears once `cronie` is installed **and** Termux has been fully restarted.
+List what your device actually has:
+
+```bash
+ls $PREFIX/var/service
+```
+:::
+
+### Writing your first crontab
+
+<Steps>
+
+1. **Give cron an editor to open.** `crontab -e` launches whatever `$EDITOR`
+   says, and on a fresh Termux that variable is usually empty.
+
+   ```bash
+   export EDITOR=nano
+   ```
+
+   Put that line in `~/.bashrc` so you only do it once. (`~` is
+   **Volume Up + H**.)
+
+2. **Open your crontab.**
+
+   ```bash
+   crontab -e
+   ```
+
+3. **Add one line** — this one runs a script every fifteen minutes:
+
+   ```text
+   */15 * * * * /data/data/com.termux/files/home/bin/battery-check
+   ```
+
+4. **Save and exit.** In nano that's **Ctrl-O**, **Enter**, then **Ctrl-X** —
+   or **Volume Down + O**, **Enter**, **Volume Down + X** if you never built
+   that extra-keys row.
+
+5. **Confirm cron accepted it.** On exit, cron prints
+   `crontab: installing new crontab`. Read it back:
+
+   ```bash
+   crontab -l
+   ```
+
+   If cron complained about errors instead, your line has a syntax problem and
+   your **old** crontab is still installed — nothing changed.
+
+</Steps>
+
+Five fields, then the command. They are always in this order:
+
+| Field | Range |
+| :---- | :---- |
+| Minute | `0`–`59` |
+| Hour | `0`–`23`, 24-hour clock |
+| Day of month | `1`–`31` |
+| Month | `1`–`12` |
+| Day of week | `0`–`7` (both `0` and `7` mean Sunday) |
+
+`*` means "every". `*/n` means "every n". A comma lists values, a hyphen gives
+a range:
+
+| Line | Runs |
+| :--- | :--- |
+| `*/15 * * * *` | every 15 minutes |
+| `0 7 * * *` | 07:00, every day |
+| `30 22 * * 1-5` | 22:30, Monday to Friday |
+| `0 */6 * * *` | 00:00, 06:00, 12:00, 18:00 |
+| `0 9 1 * *` | 09:00 on the first of each month |
+
+:::caution[`crontab -r` deletes your crontab with no confirmation]
+It is one key away from `-e` on a soft keyboard and there is no undo. If you
+have anything worth keeping, back it up first — `crontab -l > ~/crontab.bak` —
+and restore with `crontab ~/crontab.bak`.
+:::
+
+### The three things that will bite you
+
+Every one of these produces the same symptom: a line that works perfectly when
+you type it, and does absolutely nothing on the schedule.
+
+#### 1. cron's PATH is not your PATH
+
+cron does not read your `.bashrc`, your `.profile`, or your fish config. It
+hands your command to a bare shell with a minimal environment, and a command it
+can't find fails silently.
+
+Don't guess what that environment looks like — ask it. Add this line, wait a
+minute, then take it out again:
+
+```text
+* * * * * env > /data/data/com.termux/files/home/cron-env.txt
+```
+
+Then `cat ~/cron-env.txt`. That file is the truth for *your* device, and it
+beats anything this page can tell you.
+
+Two habits make the whole problem go away: write absolute paths for everything,
+and declare a `PATH` at the top of the crontab.
+
+```text
+PATH=/data/data/com.termux/files/usr/bin
+0 7 * * * /data/data/com.termux/files/home/bin/battery-check
+```
+
+:::caution[Run `echo $PREFIX` — don't trust the path above]
+`/data/data/com.termux/files/usr` is correct for a standard Termux install. A
+fork installed under a different package name has different paths, and every
+line on this page changes with it.
+
+```bash
+echo $PREFIX
+echo $HOME
+```
+
+And note that writing `$PREFIX` *inside* a crontab line does not help: it's
+expanded by cron's shell, which has never heard of it, so you get an empty
+string and a broken path. Spell it out in full. Tab completion
+(**Volume Up + T**) will type most of it for you.
+:::
+
+#### 2. Output goes nowhere
+
+cron captures whatever your command prints and tries to mail it to you. There
+is no mail system on your phone, so it evaporates — including the error message
+explaining why the job failed.
+
+```text
+0 7 * * * /data/data/com.termux/files/home/bin/battery-check >> /data/data/com.termux/files/home/cron.log 2>&1
+```
+
+`>>` appends instead of overwriting. `2>&1` sends errors to the same place as
+normal output, and it must come **after** the `>>` — swap them and the errors
+still disappear, which is the exact thing you were trying to fix.
+
+:::tip[That's your script's log, not cron's]
+`termux-services` keeps a log for the service itself at
+`$PREFIX/var/log/sv/crond/current`. Look there to find out whether cron *tried*
+to run your job. Look in your own redirect file to find out what happened when
+it did.
+:::
+
+#### 3. `%` is not a percent sign
+
+In a crontab, an unescaped `%` ends the command — everything after it is fed to
+the command as standard input instead. The usual casualty is a date format:
+
+```text
+# Broken: cron cuts the command off at the %
+0 7 * * * /path/to/backup.sh --tag $(date +%F)
+
+# Correct
+0 7 * * * /path/to/backup.sh --tag $(date +\%F)
+```
+
+### Prove it before you trust it
+
+Set the job for two minutes from now, watch the log file appear, *then* move it
+to 07:00. A schedule you have never seen fire is a guess.
+
+## Then you put the phone in your pocket
+
+Here's where a phone stops being a small server. Your crontab is fine. `crond`
+is running. And the 03:00 job didn't happen.
+
+### Doze
+
+From Android 6 onward: screen off, unplugged, and stationary for a while puts
+the device into **Doze**. Background CPU and network are deferred into
+occasional maintenance windows, alarms are batched, and Google's own
+documentation is blunt about the part that matters here — in Doze, the system
+ignores wake locks. A daemon that wants to check the time every minute is
+exactly the behaviour Doze exists to prevent.
+
+### App Standby
+
+Separately, Android sorts apps into buckets by how recently you used them, and
+restricts the ones you rarely open. Termux is used in bursts — an hour of
+typing, then three days of nothing — which is perfect standby-bucket bait.
+
+### The phantom process killer
+
+This one is the reason for half the "Termux just closes" posts on the internet.
+
+Android 12 introduced a limit on **phantom processes**: child processes an app
+spawned itself rather than through Android's APIs. Every single thing you run
+in Termux is one of those. Once there are more than 32 across all apps, or one
+of them uses too much CPU in the background, the system kills them. What you
+see is `[Process completed (signal 9) - press Enter]` in a session you never
+touched.
+
+You cannot fix this from inside Termux. There is no package for it.
+
+- **Android 14 and newer:** enable Developer options, then turn on **Disable
+  child process restrictions** and reboot. Turn Developer options back off
+  later and that toggle silently goes with it.
+- **Android 12 and 13:** it takes `adb` from a computer.
+
+  ```bash
+  adb shell "/system/bin/device_config set_sync_disabled_for_tests persistent"
+  adb shell "/system/bin/device_config put activity_manager max_phantom_processes 2147483647"
+  adb shell "settings put global settings_enable_monitor_phantom_procs false"
+  ```
+
+  The first line is what makes the second survive; without it Android resets
+  the value on its own schedule.
+
+:::caution[No computer, or a device you can't put in developer mode?]
+Then this is a hard ceiling, and it's better to know now than to spend a week
+blaming your script. Design around it: short jobs that start, finish and exit
+quickly are far less likely to be noticed than one long-lived process, which is
+a large part of why the job scheduler below is the better fit on modern
+Android.
+:::
+
+On top of all of that, manufacturers add their own battery managers, and some
+of them are far more aggressive than stock Android. Start at
+**Settings → Apps → Termux → Battery → Unrestricted** (the wording varies), and
+if your phone is a Xiaomi, Samsung, Huawei, OnePlus or Oppo, look up your exact
+model at [dontkillmyapp.com](https://dontkillmyapp.com) — it's a catalogue of
+which switch each vendor hid where.
+
+### `termux-wake-lock`, and what it really costs
+
+```bash
+termux-wake-lock     # CPU stays on
+termux-wake-unlock   # let it sleep again
+```
+
+These two ship with Termux itself — no `termux-api` package, no companion app.
+While the lock is held, Termux's notification in your shade says so.
+
+**What it buys you:** the CPU doesn't sleep, so a job scheduled for 03:00 has a
+realistic chance of running at 03:00 instead of whenever the phone next wakes
+up on its own.
+
+**What it costs you:** letting the CPU sleep is the single largest battery
+saving Android has, and you are switching it off. Expect a visibly worse
+overnight drain. How much worse depends entirely on what your script does with
+the CPU time it's now allowed to use — a job that sleeps between one-second
+checks costs far less than one that never stops working — but it is never free,
+and holding the lock permanently "just in case" is how people end up at 40% by
+lunchtime.
+
+**What it does not buy you:** immunity from the phantom process killer, or from
+your manufacturer's battery manager. Those are separate problems with separate
+fixes, and no amount of wake lock touches either.
+
+:::tip[Hold it around the work, not around the day]
+Let the script take the lock and give it back, rather than leaving it held.
+`trap` runs the cleanup even when `set -eu` aborts the script early:
+
+```sh
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+termux-wake-lock
+trap termux-wake-unlock EXIT
+
+# ... the actual work ...
+```
+
+Honest caveat: `trap` fires on any normal or failed exit, but nothing fires if
+Android kills the process outright. If a stuck lock is a real risk for you, run
+`termux-wake-unlock` by hand when you notice, and it clears.
+:::
+
+## The Android answer: `termux-job-scheduler`
+
+cron asks Android to run something at a **time**. Android's own scheduler works
+the other way round: you describe the **conditions**, and the OS picks the
+moment. It's the same API every well-behaved Android app uses for background
+work — which is exactly why the OS doesn't fight it.
+
+It comes from `termux-api`: both halves, the package and the Termux:API app,
+set up back in [Wiring Up Termux:API](/bridge/api-setup/). If the command hangs
+forever instead of returning, that's the missing-app symptom you already know
+how to read.
+
+<Steps>
+
+1. **Make the script executable and note its absolute path.**
+
+   ```bash
+   chmod +x ~/bin/battery-check
+   ```
+
+2. **Schedule it.** Roughly every 15 minutes, but only on unmetered Wi-Fi,
+   only while charging, and surviving reboots:
+
+   ```bash
+   termux-job-scheduler \
+     --script /data/data/com.termux/files/home/bin/battery-check \
+     --job-id 1 \
+     --period-ms 900000 \
+     --network unmetered \
+     --charging true \
+     --persisted true
+   ```
+
+   Those trailing backslashes mean "the line continues", and — exactly as with
+   the extra-keys row — a single space after one breaks it. Typing it as one
+   long line is completely fine.
+
+3. **Check what you actually scheduled.**
+
+   ```bash
+   termux-job-scheduler --pending
+   ```
+
+4. **Cancel it when you're done experimenting.**
+
+   ```bash
+   termux-job-scheduler --cancel --job-id 1
+   ```
+
+   `--cancel-all` clears every job Termux has registered.
+
+</Steps>
+
+| Flag | What it does | Default |
+| :--- | :----------- | :------ |
+| `-s`, `--script <path>` | The script to run. Absolute path, executable bit set. | — |
+| `--job-id <int>` | Names the job. Scheduling again with the same id **replaces** it. | `0` |
+| `--period-ms <int>` | Repeat about every N milliseconds. `0` means run once. | `0` |
+| `--network <type>` | `any`, `unmetered`, `cellular`, `not_roaming` or `none` | `any` |
+| `--battery-not-low <bool>` | Skip while the battery is low. | `true` |
+| `--storage-not-low <bool>` | Skip while storage is low. | `false` |
+| `--charging <bool>` | Only while charging. | `false` |
+| `--persisted <bool>` | Survive a reboot. | `false` |
+| `-p`, `--pending` | List scheduled jobs. | — |
+| `--cancel` / `--cancel-all` | Cancel one (with `--job-id`) or all. | — |
+
+`not_roaming` needs an underscore, which is **Volume Up + U** — one of the
+three punctuation shortcuts worth memorising.
+
+:::caution[15 minutes is the floor, and "every" means "about every"]
+Android has enforced a minimum period of 900,000 ms — fifteen minutes — on
+repeating jobs since Android 7. Ask for `--period-ms 60000` and you do not get
+a minute; you get the floor, silently.
+
+Even then it's approximate. The whole point of JobScheduler is that it batches
+work from every app on the phone into shared wake-ups, so `--period-ms 3600000`
+means "roughly hourly", not "on the hour". If you genuinely need 09:00:00, you
+need cron and a wake lock, and you need to accept the battery bill that comes
+with them.
+:::
+
+:::note[The job gets no terminal either]
+A scheduled job runs with no session, no prompt and nowhere for output to go —
+the same discipline applies as with cron. Absolute paths inside the script, and
+redirect stdout and stderr to a file you can read afterwards. If your script
+finishes by calling `termux-notification`, you also get told on the lock screen
+that it ran, which beats going to look.
+:::
+
+## So which one?
+
+This is the whole decision, on one screen:
+
+| | `cron` | `termux-job-scheduler` |
+| :-- | :----- | :--------------------- |
+| **You specify** | an exact time | conditions to satisfy |
+| **Finest interval** | one minute | 15 minutes, enforced by Android |
+| **Punctuality** | to the minute, *if* the CPU is awake | approximate, always |
+| **Needs** | `cronie` + `termux-services` running | `termux-api` + the Termux:API app |
+| **Survives Doze** | no — needs a wake lock | yes; Android defers, then runs it |
+| **Survives reboot** | only via Termux:Boot | `--persisted true` |
+| **Wait for Wi-Fi / charging** | no | `--network`, `--charging` |
+| **A missed run** | skipped, silently | deferred, runs in the next window |
+| **Battery cost** | high, if you hold a wake lock | negligible — it's the OS's own queue |
+| **Feels like** | Linux | Android |
+
+The rule that follows from that table:
+
+- **Something must happen at a precise minute, on a phone that's plugged in or
+  in your hand** — cron. Screen-on automation, a job while you're working, a
+  minute-by-minute watcher on the charger.
+- **Something must happen a few times a day on a phone living its normal life**
+  — `termux-job-scheduler`. Backups, syncs, uploads, logging. Anything where
+  "sometime in the next hour, when there's Wi-Fi" is a perfectly good answer.
+
+Plenty of setups use both, and that's not a compromise — a nightly upload
+belongs to the scheduler whether or not a minute-by-minute cron job exists.
+
+## Surviving a reboot: Termux:Boot
+
+`crond` is just a process, and a reboot kills processes. A `--persisted true`
+job doesn't need any of this — that's precisely what persisted means — but
+anything cron-based does.
+
+<Steps>
+
+1. **Install Termux:Boot from the same source as Termux** — F-Droid or GitHub
+   releases, not a mix. Same signing-key rule as Termux:API: get it wrong and
+   it installs happily and then never runs, with nothing to tell you why.
+
+2. **Open the app once.** Android refuses to let an app run at boot until the
+   user has launched it at least once. It shows a blank screen; that is the
+   entire user interface, and it's all it needs to be.
+
+3. **Make the boot directory.**
+
+   ```bash
+   mkdir -p ~/.termux/boot
+   ```
+
+4. **Write a boot script** at `~/.termux/boot/start-services.sh`:
+
+   ```sh
+   #!/data/data/com.termux/files/usr/bin/sh
+   termux-wake-lock
+   sv up crond
+   ```
+
+5. **Make it executable** — without this it is quietly ignored:
+
+   ```bash
+   chmod +x ~/.termux/boot/start-services.sh
+   ```
+
+6. **Reboot and check.** After the phone comes back, open Termux and run
+   `sv status crond`. You want `run:`.
+
+</Steps>
+
+:::note[More than one boot script?]
+They run in filename order, so prefix them — `10-services.sh`, `20-sync.sh` —
+rather than hoping. And on Xiaomi, Oppo and similar, Termux:Boot additionally
+needs the vendor's own **Autostart** permission, which lives in the phone's
+security app rather than in Android's settings.
+:::
+
+## So what actually happened to your 7am job
+
+Nothing was wrong with the crontab. The phone was in Doze with the screen off,
+so `crond` was alive but never got the CPU time to notice the hour had come
+round; if the session had been open long enough, the phantom process killer had
+already taken it anyway. Both failures are silent by design, which is why the
+naive version doesn't even leave you an error to search for.
+
+The version that works either keeps the phone awake and pays the battery bill
+for it, or — far better — stops demanding a specific minute and lets Android
+choose one.
+
+## Recap
+
+- `pkg install cronie termux-services`, restart Termux, then `sv-enable crond`.
+- `crontab -e` edits, `crontab -l` reads back, and the five fields are minute,
+  hour, day of month, month, day of week.
+- **cron's environment is not yours.** Absolute paths, a `PATH=` line, and
+  `>> file 2>&1` or your output and your errors both vanish. Escape `%` as
+  `\%`.
+- Doze, App Standby and the phantom process killer are why a working crontab
+  goes quiet overnight. The last of those needs a Developer options toggle
+  (Android 14+) or `adb` from a computer (12 and 13).
+- `termux-wake-lock` keeps the CPU on and costs real battery; release it with
+  `termux-wake-unlock`, ideally from a `trap` in the script.
+- `termux-job-scheduler` describes conditions rather than times: `--period-ms`
+  (floor: 900000), `--network unmetered`, `--charging true`, `--persisted true`.
+  Approximate on purpose, and nearly free.
+- Termux:Boot restarts cron after a reboot; `--persisted true` jobs need no help.
+
+Next: your phone stops being just a machine that runs jobs and starts answering
+requests — [A Web Server in Your Pocket](/serving/local-server/).
+
+<LessonComplete client:only="react" slug="automation/scheduling" />

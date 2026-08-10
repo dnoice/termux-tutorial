@@ -1,0 +1,212 @@
+---
+title: Installing Termux Safely
+description: A step-by-step, source-consistent installation of Termux and its plugins on Android.
+sidebar:
+  order: 2
+---
+
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+
+Time to get it on your phone. We're going through **F-Droid** — the smart
+default for beginners. It updates Termux automatically and keeps every piece
+signed with a matching key, so you sidestep the signature trap from the last
+lesson entirely.
+
+:::note[Before you start — what your phone needs]
+**Android 7.0 or newer** (Termux dropped support below that), about **200 MB**
+free, and **Wi-Fi** for step 4, which pulls tens of megabytes. No root, no
+computer, no unlocked bootloader.
+
+On Android 5 or 6? The rest of this course still runs in your browser — every
+lesson has a practice terminal built in.
+:::
+
+## Step 1 — Install the F-Droid app store
+
+1. Open your browser and go to **[f-droid.org](https://f-droid.org)**. Check the
+   address bar reads exactly `https://f-droid.org` — lookalike domains serving
+   tampered APKs are a real thing.
+2. Tap **Download F-Droid** to get the `.apk` file.
+3. Open the downloaded file. Android will ask you to allow installing apps from
+   this source — grant it, then complete the install.
+4. **Now close the door behind you.** Go to **Settings → Apps → \[your browser\]
+   → Install unknown apps** and turn it **off**. F-Droid handles its own updates
+   from here, so you won't need that permission again.
+
+:::caution[Why step 4 matters]
+Leaving "install unknown apps" switched on means any page in that browser can
+prompt you to install an APK later. It takes ten seconds to revoke and removes a
+lasting attack surface — the same signature-and-trust thinking from the last
+lesson, applied to your browser.
+:::
+
+:::note[Why F-Droid?]
+F-Droid is an open-source app store focused on free software. Termux publishes
+official builds there, and installing every Termux component from F-Droid
+guarantees the [signature keys](/start/why-termux/#the-signature-key-rule)
+all match.
+:::
+
+## Step 2 — Install Termux
+
+This is five taps, not three — F-Droid asks Android for a permission of its own
+partway through, and the step used to skip straight past it.
+
+<Steps>
+
+1. **Open F-Droid and wait for "Updating repositories" to finish.** On a first
+   run this is a full index download and can take **several minutes** on a slow
+   connection — not "a minute". If the progress bar stalls or your search comes
+   back empty, pull down on the app list to refresh and wait again. Nothing is
+   wrong with your phone.
+
+2. **Search for `Termux`.**
+
+3. **Open the Termux entry** — the publisher reads *Fredrik Fornwall /
+   Termux* — and tap **Install**.
+
+4. **Android asks: "Allow F-Droid to install unknown apps?"** Allow it.
+
+   Yes, you just switched that same permission *off* for your browser one step
+   ago. That was deliberate and so is this: installing apps is F-Droid's entire
+   job, and it is the app that will keep Termux updated from here. A browser
+   with that permission is an attack surface; an app store with it is an app
+   store.
+
+5. **Confirm the installer sheet.** Android shows a package-installer
+   confirmation for this install and every update afterwards. Tap **Install**,
+   then **Open**.
+
+</Steps>
+
+You'll land on a black screen with a blinking prompt that looks like this:
+
+```text
+~ $
+```
+
+Two symbols, two facts. The `~` says you're in your **home folder** — the one
+place on the phone that belongs to Termux. The `$` says the shell is **waiting
+for a command**. You made it. 🎉
+
+:::note[Your prompt vs the practice terminals on this site]
+Fresh Termux runs **bash**, so you get a plain `~ $`. The interactive terminals
+in this course show `~ ❯` because they imitate **fish**, a friendlier shell we
+install [right after your first session](/start/friendly-shell/).
+
+Every command *in this course* works in both. fish is not bash, though — a
+tutorial elsewhere that tells you to run `export FOO=bar` will fail in fish, and
+that's why. Typing `bash` drops you into a bash session for those moments;
+`exit` brings you back.
+:::
+
+## Step 3 — (Optional) Install plugins from the same source
+
+You don't need these yet, but when you do, install them **from F-Droid too**:
+
+| Plugin | What it adds |
+| :----- | :----------- |
+| **Termux:API** | Battery, GPS, camera, notifications, clipboard |
+| **Termux:Styling** | Colour schemes and fonts |
+| **Termux:Widget** | Home-screen shortcuts to your scripts |
+| **Termux:Boot** | Run scripts when the phone starts |
+
+:::caution
+Installing a plugin from a different source than the main app is the single most
+common Termux failure. Same source, every time.
+:::
+
+## Step 4 — First update
+
+The very first thing to do in any fresh Termux install is refresh its package
+lists. This is also the first thing you'll do that downloads real megabytes, so
+read the whole step before you start it.
+
+:::caution[Use Wi-Fi for this one]
+A fresh `pkg upgrade` commonly pulls **tens of megabytes** and can run for
+several minutes. On mobile data that's a real bill. There's no hurry — the rest
+of this course runs in your browser.
+:::
+
+<Steps>
+
+1. **Run both commands at once.**
+
+   ```bash
+   pkg update && pkg upgrade
+   ```
+
+   That is one line with four parts, and `&&` is the first piece of shell
+   *syntax* — as opposed to a shell *command* — you'll meet:
+
+   | Part | What it is |
+   | :--- | :--------- |
+   | `pkg` | The command: Termux's package manager |
+   | `update` | Its subcommand: refresh the list of what's available |
+   | `&&` | Shell syntax: *"and if that worked, then do this"* |
+   | `upgrade` | The second subcommand: install newer versions of what you have |
+
+   Chaining with `&&` means the second half is skipped if the first half fails,
+   which is exactly what you want — upgrading against a stale list is how you
+   get errors that look like something else entirely.
+
+2. **Answer `y` to "Do you want to continue? [Y/n]".** That's the normal
+   confirmation, listing how much will be downloaded. Type `y` and press Enter.
+
+3. **If a *configuration file* prompt appears, press Enter — do not type `y`.**
+
+   It looks like this, and it is a different question entirely:
+
+   ```text
+   Configuration file '/data/data/com.termux/files/usr/etc/…'
+    ==> File on system created by you or by a script.
+    ==> File also in package provided by package maintainer.
+      What would you like to do about it ?  Your options are:
+       Y or I  : install the package maintainer's version
+       N or O  : keep your currently-installed version
+         D     : show the differences between the versions
+         Z     : start a shell to examine the situation
+    The default action is to keep your current version.
+   *** file.conf (Y/I/N/O/D/Z) [default=N] ?
+   ```
+
+   Here `y` **overwrites your own settings** with the package's defaults.
+   Pressing Enter takes the default — `N`, keep what you have — which is the
+   safe answer every time until you know why you'd want otherwise.
+
+4. **Wait it out.** Long silences with a moving progress line are normal. When
+   you get a fresh `~ $` back, it's done.
+
+</Steps>
+
+:::tip[`pkg` is Termux's app store]
+You'll type `pkg` more than any other command. You get its full tour in
+[Package Management with pkg](/foundations/packages/) — for now, `update` then
+`upgrade` is the whole ritual.
+:::
+
+## If something went wrong
+
+- **"App not installed" on the F-Droid `.apk`** — enable *Install unknown apps*
+  for your browser in Android settings, then retry.
+- **F-Droid finds no results for Termux** — the repository index hasn't
+  finished syncing. Pull to refresh and wait.
+- **A plugin does nothing** — you almost certainly mixed sources. Uninstall it
+  and reinstall from F-Droid.
+- **Stuck?** See the full [Troubleshooting guide](/reference/troubleshooting/).
+
+## Recap
+
+- Install **F-Droid** from `f-droid.org`, then revoke your browser's
+  install-unknown-apps permission — but **allow** F-Droid's, because that's how
+  it does its job.
+- Install Termux from F-Droid, and every Termux plugin from F-Droid too.
+- `~` is your home folder; `$` is the shell waiting for you.
+- `pkg update && pkg upgrade` first. `y` for "continue"; **Enter** for anything
+  mentioning a configuration file.
+
+Next: get your hands on the keyboard and run your first real commands in
+[Your First Session](/start/first-session/).
+
+<LessonComplete client:only="react" slug="start/installing" />

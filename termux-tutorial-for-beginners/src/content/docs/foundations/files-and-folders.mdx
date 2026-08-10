@@ -1,0 +1,278 @@
+---
+title: Files & Folders
+description: Create, read, copy, move and delete files in Termux — including the copy-paste editing trick that makes editing text on a phone bearable, and the one command that can wipe your install.
+sidebar:
+  # Inert while Foundations uses an explicit `items` array (CLAUDE.md gotcha #1),
+  # but kept honest: check-curriculum.mjs asserts these values ascend in the
+  # same sequence as the sidebar, so a future switch to `autogenerate` is safe.
+  order: 2
+# No prev/next here: this lesson is registered in the Foundations group in
+# astro.config.mjs, between Navigating the Filesystem and Bridging Android
+# Storage, so Starlight derives both ends of the chain from the array. Hand-
+# written links would be a fourth source of truth that nothing validates.
+---
+
+import TermuxTerminal from '../../../components/terminal/TermuxTerminal.tsx';
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+import PracticeSection from '../../../components/lesson/PracticeSection.astro';
+
+You can find your way around now. Time to stop being a tourist and start
+building. This lesson is the other half of the filesystem: **making** things,
+**reading** them, **moving** them — and deleting them, which is the one that
+bites.
+
+Everything in the next lesson (backing your work up to Android storage) assumes
+the six commands below. Learn them here and that lesson becomes a victory lap
+instead of a wall of unexplained syntax.
+
+## The six commands
+
+| Command | What it does |
+| :------ | :----------- |
+| `mkdir <dir>` | Make a directory |
+| `touch <file>` | Create an empty file (or update its timestamp) |
+| `cat <file>` | Print a file's contents to the screen |
+| `cp <src> <dst>` | Copy |
+| `mv <src> <dst>` | Move — **and** rename, they're the same operation |
+| `rm <file>` | Delete. **Permanently.** |
+
+## Make something
+
+<Steps>
+
+1. **Make a folder and step into it.**
+
+   ```bash
+   mkdir ~/projects
+   cd ~/projects
+   ```
+
+   `mkdir` is *make directory*. If you're already home, `mkdir projects` does
+   the same thing — `~/` just makes it work from anywhere.
+
+2. **Create an empty file.**
+
+   ```bash
+   touch notes.txt
+   ```
+
+3. **Check it's there.**
+
+   ```bash
+   ls
+   ls -l
+   ```
+
+   `ls -l` is the *long* listing: permissions, owner, size and date, one file
+   per line. It's how you check whether a file actually has anything in it —
+   a brand-new `touch`ed file shows a size of `0`.
+
+</Steps>
+
+:::tip[`mkdir -p` makes parents too]
+`mkdir ~/a/b/c` fails if `~/a` doesn't exist yet. `mkdir -p ~/a/b/c` creates
+every missing folder on the way down, and doesn't complain if they already
+exist. That's why the keyboard lesson uses `mkdir -p ~/.termux`.
+:::
+
+## Put something in it
+
+`cat` prints a file. Point it at `notes.txt` right now and you'll get nothing
+back — the file is empty, and that's `cat` telling you so honestly.
+
+The quickest way to put a line in a file is `>`, which sends a command's output
+into a file instead of onto the screen:
+
+```bash
+echo "shopping list" > notes.txt
+echo "coffee" >> notes.txt
+cat notes.txt
+```
+
+One `>` **overwrites** the file. Two `>>` **appends** to it. Get those the wrong
+way round and the file's previous contents are gone — this is the second most
+common way beginners lose work, after `rm`.
+
+### The phone trick: edit in a real app, save with `cat`
+
+Here is the most useful thing on this page, and it exists because typing code
+into a terminal on a touchscreen is miserable.
+
+`cat` with a `>` and **no filename to read from** does something different: it
+sits there and swallows whatever you type or paste, and writes it to the file
+when you tell it you're done. So you can edit in a comfortable Android text
+editor and then pour the result into Termux in one gesture.
+
+<Steps>
+
+1. **Edit the file in a normal Android app.** Any text editor will do. Type
+   your text there, with a real keyboard layout and a real cursor.
+
+2. **Select all, then copy.** The whole file, into the Android clipboard.
+
+3. **Switch back to Termux** and run:
+
+   ```bash
+   cat > notes.txt
+   ```
+
+   Press Enter. The cursor drops to a blank line and just waits. That's
+   correct — `cat` is listening.
+
+4. **Long-press the terminal and choose Paste.** Your text appears. (This is the
+   gesture from [Sessions, Copy &
+   Paste](/start/sessions-and-copy-paste/) — there is no Ctrl-V in a terminal.)
+
+5. **Press <kbd class="tmx-kbd">Ctrl-D</kbd>** — on a phone, **Volume Down +
+   D**. This is the step everyone forgets. `Ctrl-D` means *end of input*: it
+   tells `cat` the text is finished and the file is written. Skip it and
+   nothing is saved.
+
+6. **Verify** with `cat notes.txt` — no `>` this time, so it prints the file
+   back to you.
+
+</Steps>
+
+:::caution[`cat > file` overwrites from the first character]
+It replaces the whole file, not just the end of it. If you only meant to add a
+line, use `cat >> file` — same trick, appends instead.
+:::
+
+## Copy, move, rename
+
+```bash
+cp notes.txt notes-backup.txt     # copy
+mv notes.txt shopping.txt         # rename
+mv shopping.txt ~/                # move it home, keeping the name
+```
+
+There is no separate rename command in Linux. **Renaming is just moving a file
+to a new name in the same folder** — once that clicks, `mv` stops feeling
+strange.
+
+To copy a whole folder, `cp` needs `-r` (*recursive* — "and everything inside
+it"):
+
+```bash
+cp -r ~/projects ~/projects-copy
+```
+
+## Deleting — read this part twice
+
+```bash
+rm notes-backup.txt       # delete one file
+rm -r ~/projects-copy     # delete a folder and everything in it
+```
+
+:::danger[There is no recycle bin. None.]
+`rm` does not move things to trash. There is no undo, no "are you sure?", and
+nothing in Android's file manager to recover from. When `rm` returns you to the
+prompt with no output, that silence *is* the confirmation — the file is gone.
+
+Three habits that save you:
+
+1. **Run `ls` on the path first.** See exactly what you're about to delete.
+2. **Never type `-rf` on autopilot.** `-f` (*force*) switches off every warning
+   `rm` would otherwise give you, including "that doesn't exist" — so a typo
+   fails silently instead of stopping you.
+3. **Watch out for a stray space.** `rm -rf ~/ projects` is two arguments: it
+   deletes your entire home directory *and then* looks for `projects`.
+:::
+
+These are the ones that actually end badly. Do not run them:
+
+| Command | What it destroys |
+| :------ | :--------------- |
+| `rm -rf ~` | Your whole home directory — every script, config and project |
+| `rm -rf $PREFIX` | Every package you've installed. Termux stops working; you reinstall the app |
+| `rm -rf /` | Both of the above, plus everything else Termux can reach |
+
+:::note[`$PREFIX` is not a typo]
+`$PREFIX` is a variable holding `/data/data/com.termux/files/usr` — where every
+package you install actually lives. Run `echo $PREFIX` to see it. It's a
+one-word way to say "Termux's system folder", which is exactly why it shows up
+in dangerous commands copied off the internet.
+:::
+
+## Bundling it all up: `tar`
+
+Six loose files are annoying to move around. `tar` squashes a whole folder into
+**one** file — that's what a `.tar.gz` is — and it's how you'll back your work
+up in the next lesson.
+
+```bash
+cd ~
+tar czf projects.tar.gz -C ~ projects
+```
+
+Read it as three flags and two arguments:
+
+- `c` **create** an archive, `z` compress it with gzip, `f` write it to the
+  **f**ile named next.
+- `projects.tar.gz` — the archive to create. Note it's created *outside* the
+  folder being archived; putting it inside would mean packing the archive into
+  itself.
+- `-C ~` — change into `~` first, then archive `projects`. This is what keeps
+  the archive tidy: it stores `projects/notes.txt` rather than the full
+  `data/data/com.termux/files/home/projects/notes.txt`.
+
+To see inside an archive without unpacking it, swap `c` for `t` (**t**able of
+contents):
+
+```bash
+tar tzf projects.tar.gz
+```
+
+And `x` (e**x**tract) unpacks it again:
+
+```bash
+tar xzf projects.tar.gz
+```
+
+:::tip[If you leave `-C` off]
+`tar czf projects.tar.gz ~/projects` also works, but tar prints
+*`Removing leading '/' from member names`* and stores the whole absolute path
+inside. That warning is not an error — it's tar telling you it made your
+archive safe to unpack. Using `-C` avoids both the warning and the ugly path.
+:::
+
+## Do it for real
+
+<PracticeSection>
+
+Everything above runs in the practice terminal. Work through it end to end —
+make the folder, create a file, put a line in it, copy it, rename it, delete
+the copy, then archive the lot.
+
+<TermuxTerminal
+  client:only="react"
+  hint="Try: mkdir ~/projects → cd ~/projects → touch notes.txt → echo hello > notes.txt → cat notes.txt → ls -l"
+  height={420}
+/>
+
+</PracticeSection>
+
+:::note[One difference from your phone]
+The practice terminal has no Android clipboard, so `cat > notes.txt` here just
+creates the empty file and hands the prompt straight back rather than waiting
+for a paste. Use `echo … > notes.txt` to practise here; use the `cat >` +
+**Ctrl-D** (**Volume Down + D**) flow on your device.
+:::
+
+## Recap
+
+- `mkdir` makes folders, `touch` makes empty files, `cat` prints them.
+- `>` overwrites a file, `>>` appends to it.
+- `cat > file`, paste, then **Ctrl-D** (Volume Down + D) is the fastest way to
+  edit text on a phone.
+- `cp` copies and needs `-r` for folders; `mv` moves *and* renames, and never
+  needs `-r` — it just relinks the name, whatever is on the end of it.
+- `rm` is permanent. `ls` the path first, and never type `-rf` without reading
+  the line back.
+- `tar czf archive.tar.gz -C ~ folder` packs a folder into one file.
+
+Next: put that `tar` command to work and give your files somewhere safe to live
+— [Bridging Android Storage](/foundations/storage/).
+
+<LessonComplete client:only="react" slug="foundations/files-and-folders" />

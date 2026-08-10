@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="assets/logos/logo.png" type="image/png" />
+    <title><i class="fa-solid fa-rocket" aria-hidden="true"></i> Termux Guide: Level Up Your Android Game!</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="css/styles.css">
+
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+
+</head>
+<body>
+
+    <div class="container">
+
+        <header class="main-header">
+            <img src="assets/custom_image.png" alt="Danny's Termux Guide - Cyber Fish Graphic" class="header-graphic" loading="lazy"> <div class="header-intro">
+              <h1><i class="fa-solid fa-terminal" aria-hidden="true"></i> Termux Guide: Welcome to the Command Line!</h1>
+              <p class="intro">Alright Danny, here's your personalized guide to get started with Termux!</p>
+              <p>This will walk you through the basics step-by-step. Don't worry if it looks complicated at first – we'll make it feel like your phone's new control center!</p>
+            </div>
+        </header>
+        <nav class="toc" aria-label="Table of Contents">
+            <h3><i class="fa-solid fa-list-ol" aria-hidden="true"></i> Quick Jumps:</h3>
+            <ul>
+                <li><a href="#step1">Step 1: First Launch & Updates!</a></li>
+                <li><a href="#step1-5">Step 1.5: Upgrade Your Shell to Fish!</a></li>
+                <li><a href="#step2">Step 2: Finding Your Way Around</a></li>
+                <li><a href="#step3">Step 3: Making Folders & Files</a></li>
+                <li><a href="#step4">Step 4: Getting New Tools (Packages)</a></li>
+                <li><a href="#step5">Step 5: Editing Text (The Easy Way)</a></li>
+                <li><a href="#step6">Step 6: Talking to Android (Termux API)</a></li>
+                <li><a href="#step7">Step 7: Accessing Phone Storage</a></li>
+                <li><a href="#step8">Step 8: Running Simple Scripts</a></li>
+                <li><a href="#tips">Helpful Tips & Shortcuts</a></li>
+                <li><a href="#next">What's Next? Explore Further!</a></li>
+            </ul>
+        </nav>
+        <main>
+            <section id="step1">
+                <h2><i class="fa-solid fa-circle-play section-icon" aria-hidden="true"></i> Step 1: First Launch & Keeping Things Updated</h2>
+                <p>Let's get Termux open and do the essential first steps.</p>
+                <ol>
+                    <li><strong>Launch Termux:</strong> Tap the app icon. You'll see a black screen with text. This is the terminal!</li>
+                    <li><strong>The Command Prompt:</strong> That blinking cursor after the <code>$</code> sign is where you type commands. Think of it as asking Termux to do something. Your starting place is called the "home directory," represented by <code>~</code>.</li>
+                    <li><strong>Keep Your Tools Updated:</strong> Just like apps on your phone need updates for security and new features, Termux needs its tools updated too. This is very important! Run this command now by typing it exactly and pressing Enter:
+                        <pre><code>pkg update && pkg upgrade -y</code></pre>
+                        <p>Let's break that down:</p>
+                        <ul>
+                            <li><code>pkg</code>: This is Termux's "package manager" – think of it like an app store for command-line tools.</li>
+                            <li><code>update</code>: This checks the list of available software for any new versions.</li>
+                            <li><code>&&</code>: This symbol means "if the first command was successful, then run the next command."</li>
+                            <li><code>upgrade</code>: This downloads and installs the newer versions of any tools you already have.</li>
+                            <li><code>-y</code>: This automatically answers "yes" to any questions Termux might ask during the upgrade, making it faster.</li>
+                        </ul>
+                        <p>This might take a minute or two. If it asks about configuration files during the process, it's usually safe to just press Enter to accept the default option (or type 'N' and then Enter). Keeping the defaults is fine for now.</p>
+                        <p><strong><i class="fa-solid fa-fire" aria-hidden="true"></i> Great! Your Termux is now up-to-date and ready.</strong></p>
+                    </li>
+                </ol>
+            </section>
+            <section id="step1-5">
+                <h2><i class="fa-solid fa-fish-fins section-icon" aria-hidden="true"></i> Step 1.5: A Friendlier Command Line (Fish Shell)</h2>
+                <p>The default way you interact with Termux is called "Bash." It works, but there's a much more beginner-friendly option called "Fish" that we highly recommend installing.</p>
+                <p>Why use Fish? It helps you out!</p>
+                <ul>
+                    <li><strong><i class="fa-solid fa-brain" aria-hidden="true"></i> Auto-Suggestions:</strong> As you start typing a command you've used before, Fish suggests the rest in gray text. Just press the Right Arrow key () or Ctrl+F to accept it! Saves a lot of typing.</li>
+                    <li><strong><i class="fa-solid fa-check-double" aria-hidden="true"></i> Easier to Read:</strong> Fish often uses colors to make different parts of commands or file names stand out.</li>
+                    <li><strong><i class="fa-solid fa-lightbulb" aria-hidden="true"></i> Smart Tab Completion:</strong> Pressing the Tab key can automatically finish commands, file names, or options. If there are multiple choices, it might even show you a helpful list.</li>
+                    <li><strong><i class="fa-solid fa-palette" aria-hidden="true"></i> Nicer Prompt:</strong> The information shown before the blinking cursor (the prompt) is often clearer in Fish.</li>
+                </ul>
+                 <p>Let's install and switch to Fish:</p>
+                <ol>
+                    <li><strong>Install Fish using `pkg`:</strong>
+                        <pre><code>pkg install fish</code></pre>
+                        (Press <code>y</code> and Enter if it asks for confirmation).
+                    </li>
+                    <li><strong>Set Fish as Default:</strong> Tell Termux you want to use Fish every time you open the app. The command `chsh` means "change shell."
+                        <pre><code>chsh -s fish</code></pre>
+                    </li>
+                    <li><strong>Reload Termux:</strong> Close the Termux app completely (remove it from your phone's recent apps list) and then open it again.</li>
+                </ol>
+                <p>Your prompt should look different now (maybe ending in <code>&gt;</code> instead of <code>$</code>). Try typing <code>ls</code> and notice the colors. This is Fish helping you out!</p>
+                <p><strong><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Excellent! You've upgraded your command-line experience.</strong></p>
+                <p><em>(The rest of this guide assumes you're using Fish, but most basic commands work similarly in Bash too).</em></p>
+            </section>
+            <figure class="tutorial-image-figure section-animate">
+                <img src="assets/fish_shell_look.png" alt="Placeholder showing the improved look and feel of the Fish shell in Termux" class="tutorial-image" loading="lazy">
+                <figcaption>The Fish shell offers helpful features like syntax highlighting and auto-suggestions.</figcaption>
+            </figure>
+            <section id="step2">
+                <h2><i class="fa-solid fa-compass section-icon" aria-hidden="true"></i> Step 2: Finding Your Way Around (Navigation)</h2>
+                <p>Like navigating folders on a computer, you need commands to see where you are and move around in Termux.</p>
+                <ul>
+                    <li><strong>Where Am I? (`pwd`):</strong> This command stands for "Print Working Directory." It tells you the exact folder (or "directory") you are currently inside.
+                        <pre><code>pwd</code></pre>
+                    </li>
+                    <li><strong>What's Here? (`ls`):</strong> This command "lists" the files and sub-folders within your current directory. Fish might show folders, files, and other types in different colors.
+                        <pre><code>ls</code></pre>
+                        <em>Helpful variations: <code>ls -l</code> shows more details (like size, date). <code>ls -a</code> shows hidden files (names starting with a dot <code>.</code>).</em>
+                    </li>
+                    <li><strong>Move Somewhere Else (`cd`):</strong> This command means "Change Directory." You use it to move into different folders.
+                        <ul>
+                            <li><code>cd ~</code> (or just <code>cd</code>): Takes you back to your "home" directory (your starting place).</li>
+                            <li><code>cd ..</code>: Moves you "up" one level to the folder containing your current folder (the "parent" directory).</li>
+                            <li><code>cd &lt;foldername&gt;</code>: Moves you into the specified sub-folder. (Example: <code>cd projects</code> would move you into a folder named "projects" if it exists here). Remember Fish's Tab completion – type <code>cd pro</code> and hit Tab!</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p>Practice moving around! Use <code>pwd</code> to check where you are, <code>ls</code> to see what's there, and <code>cd</code> to navigate.</p>
+            </section>
+            <section id="step3">
+                 <h2><i class="fa-solid fa-folder-plus section-icon" aria-hidden="true"></i> Step 3: Making Folders & Files</h2>
+                <p>Let's create your own space to keep things organized.</p>
+                <ol>
+                    <li><strong>Make a Folder (`mkdir`):</strong> This command "makes a directory" (a folder). Let's create one for projects.
+                        <pre><code>mkdir projects</code></pre>
+                        (Use <code>ls</code> after running it to see your new "projects" folder).
+                    </li>
+                    <li><strong>Move Into It (`cd`):</strong> Now, let's navigate into the folder you just created.
+                        <pre><code>cd projects</code></pre>
+                        (Notice how your prompt might change to show you're inside "projects").
+                    </li>
+                    <li><strong>Create an Empty File (`touch`):</strong> This command creates a blank file with the name you give it.
+                        <pre><code>touch notes.txt</code></pre>
+                        (Use <code>ls</code> again to see "notes.txt" inside your "projects" folder).
+                    </li>
+                     <li><strong>Go Back Home (`cd`):</strong> Let's return to your main home directory.
+                        <pre><code>cd ~</code></pre>
+                    </li>
+                </ol>
+                 <p>You've successfully created a folder and a file using commands!</p>
+            </section>
+            <figure class="tutorial-image-figure section-animate">
+                <img src="assets/directory_structure.png" alt="stylized graphic design illustrating a simple directory structure with a 'projects' folder" class="tutorial-image" loading="lazy">
+                <figcaption>Creating folders helps organize your work within Termux.</figcaption>
+            </figure>
+            <section id="step4">
+                 <h2><i class="fa-solid fa-box-open section-icon" aria-hidden="true"></i> Step 4: Getting New Tools (Packages)</h2>
+                 <p>Termux comes with basic commands, but you can install many more tools (called "packages") using the <code>pkg</code> command we used earlier.</p>
+                 <ol>
+                    <li><strong>Search for Tools (`pkg search`):</strong> Want to know if a specific tool is available? Use search.
+                        <pre><code>pkg search network</code></pre>
+                         (This would list packages related to networking).
+                    </li>
+                    <li><strong>Install Tools (`pkg install`):</strong> To add new tools, use install. Let's get two useful ones:
+                        <ul>
+                            <li><code>termux-api</code>: A set of commands allowing Termux to interact with Android features (like battery status, clipboard, notifications).</li>
+                            <li><code>nano</code>: A simple text editor that runs inside the terminal. It's good to know, but we'll see an easier way to edit files next.</li>
+                        </ul>
+                        <pre><code>pkg install termux-api nano</code></pre>
+                        (Confirm with <code>y</code> and Enter if asked).
+                    </li>
+                     <li><strong>Remove Tools (`pkg uninstall`):</strong> If you install something you don't need later, you can remove it.
+                         <pre><code># Example: pkg uninstall some-tool-name</code></pre>
+                         </li>
+                </ol>
+                 <p>Now you know how to find, install, and remove extra command-line tools in Termux!</p>
+            </section>
+            <section id="step5">
+                 <h2><i class="fa-solid fa-keyboard section-icon" aria-hidden="true"></i> Step 5: Editing Text (The Easy Way)</h2>
+                 <p>While you can edit files directly in the terminal using tools like `nano` (which we just installed), it can be tricky on a small phone screen. Here's a much more comfortable method using a graphical app.</p>
+                <ol>
+                    <li><strong>Get a Text Editor App:</strong> Install a good, free text editor app from the Google Play Store. **"QuickEdit Text Editor"** is an excellent choice for this – it's simple and works well with code/text.</li>
+                    <li><strong>Open File from Termux (`open`):</strong> Termux has a handy `open` command (you might need `termux-api` installed for it to work best) that tries to open a file using a suitable Android app. Let's try opening the `notes.txt` file we created earlier. First, make sure you're in the right folder:
+                        <pre><code>cd ~/projects  # Go to your projects folder
+open notes.txt</code></pre>
+                    </li>
+                    <li><strong>Choose Your Editor:</strong> Android should pop up a menu asking which app to use. Select **QuickEdit** (or the editor you installed).</li>
+                    <li><strong><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Understand the Limitation (Android Security):</strong> The file will open in QuickEdit. However, Android's security often prevents apps like QuickEdit from directly saving changes back into Termux's private folders. The file might open as "read-only," or saving might create a copy elsewhere. This is normal Android behavior!</li>
+                    <li><strong>The Workaround (Copy & Paste Method):</strong> This might seem unusual at first, but it's often faster than fighting with terminal editors on mobile. Follow these steps carefully:
+                        <ol type="a">
+                            <li>Edit your `notes.txt` file in the QuickEdit app. Add some text.</li>
+                            <li>When finished editing, **Select All** the text within QuickEdit (usually via its Menu button or by long-pressing).</li>
+                            <li>**Copy** the selected text to your phone's clipboard (again, usually via QuickEdit's menu or toolbar).</li>
+                            <li>Switch back to the Termux app (make sure you're still in the `~/projects` directory).</li>
+                            <li>**Crucial Command:** Type the following command exactly. The `cat` command usually displays file content, but `cat > filename` tells it to take whatever you type (or paste) next and *overwrite* the file `filename` with that content.
+                                <pre><code>cat > notes.txt</code></pre>
+                                (Press Enter. Termux will just wait with a blank line.)
+                            </li>
+                            <li>**Paste** the text you copied from QuickEdit into Termux (usually by long-pressing on the terminal screen and choosing "Paste"). You should see your text appear.</li>
+                            <li>**The Final, Vital Step:** Press the `Ctrl` key (often Volume Down) and the `D` key simultaneously (`Ctrl + D`). This tells `cat` you're finished providing input, and it saves the pasted content to `notes.txt`. **If you forget Ctrl+D, the file won't save correctly!**</li>
+                        </ol>
+                    </li>
+                    <li><strong>Verify Your Changes (`cat`):</strong> To check if your edits were saved, use `cat` *without* the `>`. This command simply displays the file's content in the terminal.
+                         <pre><code>cat notes.txt</code></pre>
+                         You should see the text you edited in QuickEdit!
+                    </li>
+                </ol>
+                 <p class="note info"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> <strong>Practice Makes Perfect:</strong> This copy/paste/<code>cat ></code>/<code>Ctrl+D</code> technique is key for easy file editing in Termux using familiar graphical apps. Try it a few times!</p>
+            </section>
+            <section id="step6">
+                 <h2><i class="fa-brands fa-android section-icon" aria-hidden="true"></i> Step 6: Talking to Android (Termux API)</h2>
+                 <p>Remember installing `termux-api`? That package gives you special commands (mostly starting with `termux-`) that let your Termux terminal interact with Android features.</p>
+                 <p class="note warning"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> <strong>Permissions Required:</strong> The first time you use many of these commands, Android will ask for permission via the "Termux:API" app (a small companion app installed with the package). You generally need to **Allow** these permissions for the commands to work.</p>
+                 <p>Here are a few examples to try:</p>
+                <ul>
+                    <li><strong>Show a Quick Message (`termux-toast`):</strong> Displays a small pop-up notification on screen.
+                        <pre><code>termux-toast "Hello from Termux!"</code></pre>
+                    </li>
+                    <li><strong>Check Battery Status (`termux-battery-status`):</strong> Shows information about your phone's battery.
+                        <pre><code>termux-battery-status</code></pre>
+                    </li>
+                    <li><strong>Use the Clipboard (`termux-clipboard-set`/`get`):</strong> Copy text *to* the Android clipboard or get text *from* it.
+                        <pre><code>termux-clipboard-set "Text set via Termux"
+# Now go copy something else normally on your phone...
+termux-clipboard-get # This will display what's now on the clipboard</code></pre>
+                    </li>
+                    <li><strong>Show a Dialog Box (`termux-dialog`):</strong> Make Android show different kinds of dialog boxes.
+                        <pre><code>termux-dialog confirm -i "Is this guide helpful?" -t "Feedback"</code></pre>
+                    </li>
+                    <li><strong>Vibrate the Phone (`termux-vibrate`):</strong> Makes the phone vibrate.
+                         <pre><code>termux-vibrate -d 500 # Vibrate for 500 milliseconds</code></pre>
+                    </li>
+                </ul>
+                 <p><em>Tip: Type <code>termux-</code> and then press the Tab key twice quickly. Fish might show you a list of all available Termux API commands! You can get help on any command by adding <code>--help</code> after it (e.g., <code>termux-toast --help</code>).</em></p>
+            </section>
+            <figure class="tutorial-image-figure section-animate">
+                <img src="assets/termux_api_dialog.png" alt="a digital design illustration showing an example of a dialog box generated by a Termux API command" class="tutorial-image" loading="lazy">
+                <figcaption>The Termux API bridges the gap between the terminal and Android features.</figcaption>
+            </figure>
+            <section id="step7">
+                 <h2><i class="fa-solid fa-sd-card section-icon" aria-hidden="true"></i> Step 7: Accessing Your Phone's Storage</h2>
+                <p>By default, Termux operates in its own private storage area (a "sandbox") for security. To access files in your phone's main storage (like Downloads or Pictures), you need to grant permission.</p>
+                 <ol>
+                    <li><strong>Run the Setup Command:</strong>
+                        <pre><code>termux-setup-storage</code></pre>
+                    </li>
+                    <li><strong>Grant Permission:</strong> Android will pop up asking for permission to access files. You need to **Allow** this.</li>
+                    <li><strong>Find the Access Point:</strong> Go back to your home directory (<code>cd ~</code>) and list the contents (<code>ls</code>). You should now see a new folder named <code>storage</code>. This is your gateway!</li>
+                    <li><strong>Explore Your Storage:</strong> Move into the gateway folder: <code>cd storage</code>. Now run <code>ls</code> again. You'll see several links:
+                        <ul>
+                            <li><code>dcim</code>: Your camera photos folder.</li>
+                            <li><code>downloads</code>: Your phone's main Downloads folder.</li>
+                            <li><code>movies</code>, <code>music</code>, <code>pictures</code>: Standard media folders.</li>
+                            <li><code>shared</code>: This usually links to the main root of your phone's internal shared storage.</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p>Now you can use commands like <code>cd downloads</code> to enter these folders. Inside, you can use commands like <code>ls</code> (list), <code>cp</code> (copy files), <code>mv</code> (move or rename files), and <code>rm</code> (remove files).</p>
+                <p class="note warning"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> <strong>Use `rm` with Extreme Caution!</strong> Deleting files with `rm` from the command line is permanent. There is NO recycle bin or undo! Double-check before deleting anything important.</p>
+                 <p><em>Example: Copy your notes file to your phone's Downloads folder:</em></p>
+                 <pre><code># Make sure you're in your home directory first: cd ~
+cp projects/notes.txt storage/downloads/</code></pre>
+                 (You should now be able to find `notes.txt` in the Downloads folder using your phone's regular file manager app.)
+            </section>
+            <section id="step8">
+                 <h2><i class="fa-solid fa-file-code section-icon" aria-hidden="true"></i> Step 8: Running Simple Scripts</h2>
+                <p>Instead of typing commands one by one, you can save a list of commands in a file and run them all at once. This is called a "script." It's great for automating repetitive tasks.</p>
+                 <ol>
+                    <li><strong>Go Home:</strong> <code>cd ~</code></li>
+                    <li><strong>Create a Script File:</strong> Use the editing method from Step 5 (or `nano` if you prefer) to create a new file. Let's call it <code>hello.fish</code> (the <code>.fish</code> ending helps indicate it's a Fish script).
+                        <pre><code># Use GUI Hack (Step 5) or nano
+touch hello.fish
+# open hello.fish # then edit, copy, paste, cat > hello.fish, Ctrl+D
+# OR: nano hello.fish</code></pre>
+                    </li>
+                    <li><strong>Write Script Commands:</strong> Inside the file, type the commands you want to run, one per line. The very first line is special:
+                        <pre><code class="language-fish">#!/data/data/com.termux/files/usr/bin/fish
+
+# Lines starting with # are comments (ignored when run)
+echo "--- Running my first script! ---"
+echo "Hello, Danny!"
+echo "The current time is:"
+date # This command prints the date and time
+termux-toast "Script finished!"
+echo "--------------------------------"</code></pre>
+                        The `#!/.../fish` line (called a "shebang") tells Termux to use the Fish program to run the commands in this file. `echo` simply prints text to the screen.
+                    </li>
+                    <li><strong>Save the File:</strong> Use the `cat > hello.fish` method from Step 5, or press `Ctrl+O`, Enter, `Ctrl+X` if using `nano`.</li>
+                    <li><strong>Make it Executable (`chmod`):</strong> You need to give the file permission to be run as a program. `chmod +x` adds execute permission.
+                        <pre><code>chmod +x hello.fish</code></pre>
+                    </li>
+                    <li><strong>Run the Script:</strong> To run a script in your current directory, type `./` followed by the script's filename.
+                        <pre><code>./hello.fish</code></pre>
+                    </li>
+                </ol>
+                <p>You should see the output from your script! You've just automated a sequence of commands.</p>
+            </section>
+            <section id="tips">
+                <h2><i class="fa-solid fa-star section-icon" aria-hidden="true"></i> Helpful Tips & Shortcuts</h2>
+                <p>These will make using Termux (especially with Fish) much easier:</p>
+                <ul>
+                    <li><strong>Auto-Suggestions:</strong> Start typing a command; if you see gray text suggesting the rest, hit Right Arrow () or Ctrl+F to complete it.</li>
+                    <li><strong>Tab Completion:</strong> Press Tab constantly! After typing part of a command, filename, or folder name, hit Tab. It will try to complete it or show you options.</li>
+                    <li><strong>Command History (Up Arrow ):</strong> Press the Up Arrow key to cycle through commands you've previously typed. Start typing first to filter the history.</li>
+                    <li><strong>Volume Keys as Modifiers:</strong> Often, Volume Down acts like `Ctrl`, and Volume Up acts like `Alt`. Useful for shortcuts!</li>
+                    <li><strong>Stop a Command (`Ctrl + C`):</strong> If a command is running too long or you made a mistake, press `Ctrl+C` to try and stop it.</li>
+                    <li><strong>End Input / Logout (`Ctrl + D`):</strong> Used to signal the end when typing input (like for the `cat >` trick). Also often used to close the Termux session.</li>
+                    <li><strong>Clear the Screen (`Ctrl + L`):</strong> Cleans up a cluttered terminal screen.</li>
+                    <li><strong>Repeat Last Argument (`Alt + .`):</strong> Need to use the last filename or option from your previous command? Press `Alt+.` (Volume Up + Period) to insert it.</li>
+                    <li><strong>Editing Workaround (Step 5):</strong> Remember the GUI Edit -> Select All -> Copy -> `cat > file` -> Paste -> `Ctrl+D` flow for easy editing.</li>
+                    <li><strong>Get Help (`help`):</strong> Type <code>help</code> in Fish for its built-in help, or `command --help` for help on a specific command.</li>
+                    <li><strong>Exit Termux (`exit`):</strong> Type <code>exit</code> and press Enter (or use `Ctrl+D`) to close the current session.</li>
+                </ul>
+            </section>
+            <figure class="tutorial-image-figure section-animate">
+                <img src="assets/termux_power.png" alt="a custom graphic design image symbolizing the power and flexibility unlocked with Termux skills" class="tutorial-image" loading="lazy">
+                <figcaption>With these basics, you're ready to explore the vast possibilities of Termux.</figcaption>
+            </figure>
+            <section id="next">
+                 <h2><i class="fa-solid fa-graduation-cap section-icon" aria-hidden="true"></i> Level Up: Where to Go Next</h2>
+                <p>You've learned the fundamentals! The world of the command line is vast. Here are some ideas for what to explore next:</p>
+                <ul>
+                    <li><strong>Customize Fish:</strong> Run <code>fish_config</code> in Termux to easily change colors and the look of your prompt.</li>
+                    <li><strong>Learn More Commands:</strong> Look up commands like <code>grep</code> (search text in files), <code>find</code> (locate files), <code>curl</code> or <code>wget</code> (download files from the internet).</li>
+                    <li><strong>Programming:** Install programming languages like Python (<code>pkg install python</code>), Node.js, etc., and code directly in Termux.</li>
+                    <li><strong>Version Control (`git`):</strong> Use <code>pkg install git</code> to manage code projects or download code from sites like GitHub.</li>
+                    <li><strong>Connect Remotely (`ssh`):</strong> Use <code>pkg install openssh</code> to securely connect to other computers or servers.</li>
+                    <li><strong>Read Documentation:</strong> Explore the official Termux Wiki and Fish shell documentation online for more details and ideas.</li>
+                    <li><strong>Practice Scripting:</strong> Try automating simple tasks you do often!</li>
+                </ul>
+                <p><strong>Don't be afraid to experiment (carefully!). The best way to learn is by trying things out. Have fun exploring what you can do with Termux!</strong></p>
+            </section>
+            </main>
+        <footer>
+            <p>Termux: Command the code. Control the system. Own your device.</p>
+            <p><i class="fa-solid fa-laptop-code fa-lg" aria-hidden="true"></i></p>
+            <p><strong aria-hidden="true">
+  _____                       __  __      __
+ /_  __/___ _      ______ ___/ / / /___  / /_
+  / / / __ \ | /| / / __ `__ \ / / / __ \/ __/
+ / / / /_/ / |/ |/ / / / / / / /_/ / /_/ / /_
+/_/  \____/|__/|__/_/ /_/ /_/\____/\____/\__/
+            </strong></p>
+            <p><small>Guide forged for Danny on:  <time datetime="2025-04-27"><i>April 27, 2025</i></time></small></p>
+            <p><small>Document Version: Final 1.0</small></p> </footer>
+        </div> <button id="darkModeToggle" class="theme-toggle-button" aria-label="Toggle theme" aria-pressed="false" title="Toggle light/dark theme">
+        <svg class="icon icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <circle cx="12" cy="12" r="5"></circle> <line x1="12" y1="1" x2="12" y2="3"></line> <line x1="12" y1="21" x2="12" y2="23"></line> <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line> <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line> <line x1="1" y1="12" x2="3" y2="12"></line> <line x1="21" y1="12" x2="23" y2="12"></line> <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line> <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line> </svg>
+        <svg class="icon icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path> </svg>
+    </button>
+
+    <script src="js/scripts.js"></script>
+
+</body>
+</html>

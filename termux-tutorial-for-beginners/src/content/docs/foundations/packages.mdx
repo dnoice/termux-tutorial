@@ -1,0 +1,130 @@
+---
+title: Package Management with pkg
+description: Install, update, and search software in Termux with pkg — and try it for real in a live Debian VM.
+sidebar:
+  # Files & Folders inserted at order 2, so everything after it shifts down one.
+  order: 4
+---
+
+import TermuxTerminal from '../../../components/terminal/TermuxTerminal.tsx';
+import LiveSandbox from '../../../components/terminal/LiveSandbox.tsx';
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import PracticeSection from '../../../components/lesson/PracticeSection.astro';
+
+You've been using `pkg` since the install lesson — `pkg update && pkg upgrade`,
+then `pkg install fish`, then `pkg install git`. This is the full picture of the
+command you already type more than any other.
+
+Here's what it actually is: Termux shows up almost empty on purpose, and `pkg`
+is how you build it into the machine you want, one package at a time. It's a
+friendly wrapper over Debian's `apt`, so if you've spent any time on Ubuntu or
+Debian, you're already home.
+
+## The three you haven't met yet
+
+| Command | What it does |
+| :------ | :----------- |
+| `pkg search <term>` | Find packages by name or description — the answer to "is there a Linux tool for this?" |
+| `pkg list-installed` | Show everything you've installed. Worth saving to your backup folder. |
+| `pkg uninstall <name>` | Remove a package you no longer want. |
+
+`pkg search` is the one that changes how you use the phone. There are tens of
+thousands of packages; you find them by guessing a word and searching for it.
+
+## And the two you already know
+
+| Command | What it does |
+| :------ | :----------- |
+| `pkg update` | Refresh the list of available packages. **Run this first.** |
+| `pkg upgrade` | Install newer versions of what you already have. |
+| `pkg install <name>` | Install a package. |
+
+:::tip[Always update before installing]
+Package lists go stale. If `pkg install` ever fails with a "not found" error,
+run `pkg update` first — it fixes this the vast majority of the time.
+:::
+
+## Practice it here first
+
+<PracticeSection>
+
+Try the full rhythm: update, search, install, then look at what you've got. In
+the practice terminal below, run `pkg update`, then `pkg search python`, then
+`pkg install git`.
+
+<TermuxTerminal
+  client:only="react"
+  hint="Try: pkg update → pkg search python → pkg install git → pkg list-installed → pkg uninstall git"
+  height={400}
+/>
+
+</PracticeSection>
+
+## A starter toolkit
+
+Once you're comfortable, these are the packages most people install on day one:
+
+```bash
+pkg install git python nodejs vim openssh
+```
+
+| Package | Gives you |
+| :------ | :-------- |
+| `git` | Version control — clone and manage code repositories |
+| `python` | The Python 3 interpreter |
+| `nodejs` | JavaScript runtime (`node`, `npm`) |
+| `vim` (or `nano`) | A terminal text editor |
+| `openssh` | Connect to other machines with `ssh` |
+
+## Now do it for real
+
+The practice terminal above is scripted — great for muscle memory, but it's
+following a script. What's below is not: a full **Debian Linux VM running in
+your browser**, no device required, nothing installed on your machine. Real
+kernel, real filesystem, real binaries.
+
+:::caution[Before you boot it — this is a big download]
+The VM pulls **tens of megabytes** of disk image on first boot. **Use Wi-Fi if
+you're on mobile data.** It's entirely optional — every lesson in this course
+works without it.
+:::
+
+Once it's up, try these:
+
+```bash
+cat /etc/os-release      # which Debian are we on?
+python3 --version        # yes, Python is already here
+ls /usr/bin | wc -l      # how many commands ship in the base image
+uname -a                 # the kernel, running in your browser tab
+```
+
+<LiveSandbox client:only="react" />
+
+:::note[About the live sandbox]
+This is [WebVM](https://webvm.io) powered by CheerpX — a real x86 Linux VM
+compiled to WebAssembly, running entirely in your tab.
+
+**It has no internet connection.** So `apt update`, `apt install`, `curl` and
+`git clone` will *not* work here — there's nothing to reach out to. Explore what
+the image already ships with instead.
+
+To be completely clear: that limit belongs to **this live sandbox only**. It has
+nothing to do with the practice terminal above, and nothing to do with your
+phone — on a real device `pkg install` works exactly as this lesson describes.
+
+It needs a modern browser. If it won't start, refresh the page once so the
+cross-origin-isolation service worker can take effect, then press **Boot Linux**
+again. Everything else on this page works regardless.
+:::
+
+## Recap
+
+- `pkg update` first, then `pkg install <name>` to add tools.
+- `pkg search` finds packages; `pkg list-installed` shows what you have;
+  `pkg uninstall` removes one.
+- `pkg` is Termux's wrapper around Debian's `apt`.
+
+Next: make typing on a phone bearable with a [custom keyboard
+row](/foundations/extra-keys/).
+
+<LessonComplete client:only="react" slug="foundations/packages" />

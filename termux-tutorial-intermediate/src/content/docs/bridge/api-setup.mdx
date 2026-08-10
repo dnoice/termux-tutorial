@@ -1,0 +1,268 @@
+---
+title: Wiring Up Termux:API
+description: Install the termux-api package and its companion app from the same source, grant the permissions Android asks for, and prove the bridge works.
+sidebar:
+  order: 1
+---
+
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+
+{/* No <TermuxTerminal> on this page, deliberately. The practice shell knows
+    `pkg install termux-api` but has no branch for termux-battery-status or jq,
+    so it would answer "command not found" to this lesson's own instructions —
+    worse than no terminal at all. See the simulator note near the end. */}
+
+Everything in this course — every sensor reading, every notification, every
+script that reacts to your battery — runs through one bridge between the Linux
+side of your phone and the Android side. Building that bridge takes two
+installs, and they are not the same install.
+
+Get one and not the other and nothing announces the problem. That's what this
+lesson is really about: making both halves land, and recognising the specific
+silence that means only one did.
+
+## Two halves, one bridge
+
+| Half | What it is | How you install it |
+| :--- | :--------- | :----------------- |
+| `termux-api` | A **package** — the `termux-*` commands themselves, in `$PREFIX/bin` | `pkg install termux-api` |
+| **Termux:API** | An **Android app** — the part with actual permission to touch hardware | From F-Droid, like Termux itself |
+
+The package is only the front desk. Run `termux-battery-status` and the script
+fires an Android broadcast at the Termux:API app, then waits for the answer to
+come back down a named pipe. No app, no answer.
+
+:::caution[Both halves come from the same source. This is not a style preference.]
+Termux guards that channel with a **signature-level permission** — Android
+grants it only when both apps are signed by the same key. F-Droid, Google Play
+and the GitHub releases each sign with a **different** key, so a Termux from one
+and a Termux:API from another are, as far as Android is concerned, strangers.
+
+The broadcast is then dropped without a word, and since the CLI half is sitting
+on that pipe waiting, **it waits forever.** No error, no timeout, no exit — just
+a cursor that never comes back. This is the single most common way this course
+goes wrong, and its symptom looks nothing like its cause.
+:::
+
+:::note[If you installed Termux from Google Play]
+That build is **deprecated** — it stopped receiving updates years ago, and its
+plugins are a known mess. Uninstall it and install both apps from F-Droid.
+
+Before you do: uninstalling Termux **wipes your home directory and every package
+you have ever installed**, exactly as the beginner course's storage lesson
+warned. Back up first, and save `pkg list-installed` alongside it.
+:::
+
+## Install half one: the package
+
+<Steps>
+
+1. **Refresh the package lists first.** Same rule as always.
+
+   ```bash
+   pkg update
+   ```
+
+2. **Install the CLI half.**
+
+   ```bash
+   pkg install termux-api
+   ```
+
+3. **Confirm the commands exist.**
+
+   ```bash
+   which termux-battery-status
+   ```
+
+   You should get a path ending in `/bin/termux-battery-status`. Nothing back
+   means the package didn't install — re-run step 2 and read the output.
+
+</Steps>
+
+That's roughly forty new commands on your `PATH`, all of them named
+`termux-something`, and **not one of them works yet.**
+
+## Install half two: the app
+
+<Steps>
+
+1. **Open F-Droid** — the same app you installed Termux with.
+
+2. **Search for `Termux:API`** and install it. Watch the name: `Termux:API` is
+   the plugin. `Termux:Boot`, `Termux:Widget` and `Termux:Styling` are different
+   plugins and none of them does this job.
+
+3. **Don't go looking for its icon.** Termux:API has essentially no interface —
+   it exists to answer requests from Termux and nothing else. If you can't find
+   it in your app drawer, that is not a failed install. Check
+   **Settings → Apps** instead, where it will be listed by name.
+
+</Steps>
+
+:::tip[Installed Termux from the GitHub releases page instead?]
+Then get Termux:API from the **GitHub releases page too**, and specifically from
+the same release series. The rule isn't "use F-Droid" — it's "use one source for
+both."
+:::
+
+## Prove the bridge works
+
+`termux-battery-status` is the right first test for a reason that matters: it is
+one of the very few `termux-*` commands that needs **no Android permission at
+all**. So if it fails, the problem is the bridge itself, not a permission you
+forgot to grant.
+
+```bash
+termux-battery-status
+```
+
+**Success looks like JSON** — a few lines of `"key": value` pairs between curly
+braces:
+
+```json
+{
+  "health": "GOOD",
+  "percentage": 84,
+  "plugged": "UNPLUGGED",
+  "status": "DISCHARGING",
+  "temperature": 30.0
+}
+```
+
+Your exact fields will differ. Android version and manufacturer both change what
+the battery reports, and some devices add fields this list doesn't have. The
+four that show up everywhere are `percentage`, `status`, `plugged` and `health`.
+
+### Reading the three outcomes
+
+This is the table worth remembering. Each result points at exactly one half of
+the bridge:
+
+| What happens | What it means | What fixes it |
+| :----------- | :------------ | :------------ |
+| JSON prints, prompt returns | Both halves are in. You're done. | — |
+| `termux-battery-status: command not found` | The **package** is missing. | `pkg install termux-api` |
+| **Nothing. Forever.** | The **app** is missing, or signed by a different key. | Install Termux:API from the same source as Termux |
+
+:::caution[How to stop a hung command — and how to not sit through it]
+Press **Ctrl-C** to break out. No Ctrl key? **Volume Down + C** — Volume Down
+turns any letter into Ctrl + that letter, so it works whether or not you built
+an extra-keys row.
+
+Better, don't wait on it in the first place:
+
+```bash
+timeout 10 termux-battery-status
+```
+
+Ten seconds of nothing and you're back at the prompt with your answer: the app
+half isn't talking. That trick is worth keeping for every `termux-*` command in
+this course.
+:::
+
+## The permission prompts
+
+Battery status needs nothing. Almost everything else does — location, camera,
+microphone, contacts, SMS — and Android asks the **first time** you run a
+command that needs it. Approve it and the prompt never comes back.
+
+Here is the part that sends people in circles:
+
+:::caution[The permissions belong to Termux:API, not to Termux]
+Android attaches each grant to the app that asked, and the app that asks for
+hardware here is **Termux:API**. Looking at Termux's own permission screen shows
+you an almost empty list and tells you nothing about why a command failed.
+
+To review or re-grant:
+
+**Settings → Apps → Termux:API → Permissions**
+
+Some Android skins hide plugins one level deeper, under **See all apps**.
+:::
+
+Two behaviours to expect while you work through the rest of this course:
+
+- **Deny twice and Android stops asking.** From Android 11 on, a second refusal
+  is treated as "don't ask again" — the command then fails instantly with no
+  prompt at all, and the only way back is the Settings screen above.
+- **A prompt with the screen off goes nowhere.** A permission dialog needs
+  someone to tap it. Run each new `termux-*` command once by hand, with the
+  phone in front of you, before you ever put it in a script.
+
+## Install `jq` while you're here
+
+Every command in this bridge speaks JSON, and reading JSON with your eyes gets
+old within about ten minutes. `jq` is the tool that pulls a single value out of
+it, and the rest of this course leans on it constantly.
+
+```bash
+pkg install jq
+```
+
+Then pipe the battery output straight into it:
+
+```bash
+termux-battery-status | jq '.percentage'
+```
+
+```text
+84
+```
+
+The `|` is a pipe — it sends one command's output into the next instead of onto
+your screen. On a phone keyboard it's usually buried behind a symbol layer:
+**Volume Up + L** types it directly.
+
+:::tip[Use `-r` when the value is text]
+`jq '.status'` prints `"DISCHARGING"` — quotes and all, because that's valid
+JSON. Add `-r` for the raw value:
+
+```bash
+termux-battery-status | jq -r '.status'
+```
+
+```text
+DISCHARGING
+```
+
+Quotes are fine when you're reading. They are a bug the moment a script compares
+that value to something.
+:::
+
+:::note[Why the filter is in single quotes]
+`jq .percentage` works today. But real filters contain `|`, `[]` and `*`, all of
+which your shell wants to interpret before `jq` ever sees them — and fish and
+bash both do this. Quoting from the start means you never have to work out
+which filters need it.
+:::
+
+:::note[Not in the practice terminal]
+This lesson has no practice terminal, and that's on purpose. The simulator on
+the landing page is the beginner course's shell — it knows `pkg`, but there is
+nothing behind `termux-battery-status` or `jq` for it to fake. A hardware bridge
+is the one thing a browser tab genuinely cannot pretend to be.
+
+From here on, the phone is the terminal.
+:::
+
+## Recap
+
+- The bridge is **two installs**: the `termux-api` package for the commands, and
+  the **Termux:API app** for the hardware access.
+- Both must come from the **same source**. Mismatched signing keys mean Android
+  silently drops the request and the command **hangs forever**.
+- `command not found` = the package is missing. **Silence** = the app is missing
+  or mismatched. Those are the only two failures, and they're easy to tell apart.
+- `termux-battery-status` is the honest first test — it needs no permission, so
+  a failure can only be the bridge.
+- Permissions live under **Settings → Apps → Termux:API → Permissions**, not
+  under Termux.
+- `timeout 10 <command>` turns an infinite hang into a ten-second answer.
+- `jq` extracts one value from JSON; `-r` drops the quotes.
+
+Next: point the bridge at the rest of the phone — battery, network, sensors,
+location and camera, in [Reading the Device](/bridge/reading-the-device/).
+
+<LessonComplete client:only="react" slug="bridge/api-setup" />

@@ -1,0 +1,196 @@
+---
+title: Where to Next
+description: You finished course two. Here's what your phone can now do on its own, projects that combine it, and where the Termux series goes from here.
+sidebar:
+  order: 8
+  badge:
+    text: Finish
+    variant: success
+# The terminus. `prev` is left to Starlight now that this lesson is the last
+# item of the last group in astro.config.mjs — the sidebar array derives it, so
+# there is nothing to hand-maintain. `next: false` is what actually ends the
+# chain, and check-curriculum.mjs asserts that exactly the LAST lesson carries
+# it: put it on any other lesson and the course dead-ends early with a green
+# build.
+next: false
+---
+
+import { Icon } from 'astro-icon/components';
+import LessonComplete from '../../components/profile/LessonComplete.tsx';
+
+{/* Raw <a href> in MDX bypasses the rehypeBasePaths plugin, so internal links
+    inside the JSX blocks below are built from BASE_URL by hand. Same pattern as
+    index.mdx. Markdown-syntax links elsewhere on this page are rewritten by the
+    plugin and must stay root-relative. */}
+export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+{/* The sibling courses are separate repos and separate GitHub Pages sites, so
+    these are external URLs and check-links.mjs skips them. Course one is
+    finished and deployed, so it links to the live site. Course three is still a
+    shell, so it links to the repository rather than to a page that would 404. */}
+export const SERIES = {
+  beginner: 'https://dnoice.github.io/termux-tutorial/',
+  advanced: 'https://github.com/dnoice/termux-tutorial-advanced',
+};
+
+That's course two. You started it with a Linux box that happened to be running
+on a phone. You're finishing it with a phone that takes orders.
+
+## What you can actually do
+
+Seven lessons, and none of them were theory — you ran all of it on real
+hardware.
+
+- **Bridge the shell to Android, and diagnose it when it doesn't.** Both halves
+  installed — `pkg install termux-api` *and* the Termux:API app from the same
+  source — the permission prompts granted, and the one failure signature nobody
+  warns you about: a `termux-*` command that **hangs forever instead of
+  erroring** means the companion app is missing or came from somewhere else.
+  **Volume Down + C** gets you your prompt back.
+- **Read the device.** Battery, Wi-Fi, telephony, motion sensors, GPS, the
+  camera and the microphone — every one of them a command that prints JSON, and
+  `jq` to pull a single value out of it. You also know what a script pointed at
+  a camera really is, which is the part most tutorials skip.
+- **Make Android talk back.** `termux-notification` with a stable `--id` so it
+  replaces itself instead of stacking, buttons that run more of your script,
+  `termux-dialog` for a question a script can act on, plus the clipboard, the
+  vibrator and text-to-speech.
+- **Write a script instead of retyping a command.** Shebang, `chmod +x`, a
+  `~/bin` on your `PATH`, `"$1"`, `$(command substitution)`, `if` and exit
+  codes, `set -eu` — and `sh -x` when the thing runs but does the wrong
+  thing.
+- **Run it while you're asleep.** `cron` with absolute paths and its output
+  redirected somewhere real, and a straight answer for why it stopped
+  overnight: Doze, App Standby, and the phantom process killer. Wake locks and
+  what they cost you. `termux-job-scheduler`, where conditions beat clocks.
+  `termux-boot` for surviving a reboot.
+- **Serve a directory over HTTP.** `python -m http.server`, the difference
+  between listening on `0.0.0.0` and `127.0.0.1`, your phone's LAN address, and
+  a page loading on your laptop from a device in your pocket.
+- **Open a door to the internet, and shut it again.** Why your carrier's NAT
+  means port forwarding was never on the table, why the fix is an *outbound*
+  tunnel, and the rules that keep that from being a mistake: never serve `~`,
+  never serve `~/storage/shared`, assume the URL is public the second it prints.
+
+Your phone now senses, decides, notifies, schedules itself and publishes. That's
+not a terminal emulator any more.
+
+## Three projects that use all of it at once
+
+Pick one. Each of these deliberately spans several lessons, because that's where
+this course actually pays off — one command is a demo, five composed together is
+a tool.
+
+<div class="tmx-grid">
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:battery-half" aria-hidden="true" focusable="false" /></span>
+    <h3 class="tmx-card__title">1 · A battery watchdog that taps you on the shoulder</h3>
+    <p class="tmx-card__body">Pipe <code>termux-battery-status</code> through <code>jq</code> for <code>.percentage</code>, compare it in an <code>if</code>, and fire a <code>termux-notification</code> when it drops below 20 — or when it hits 80 and you should unplug. Give the notification a fixed <code>--id</code> so it updates in place rather than stacking twenty of itself, and hand the script to <code>termux-job-scheduler</code> so it keeps checking with the screen off. Lessons 1, 2, 3, 4 and 5, in about fifteen lines.</p>
+  </div>
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:location-dot" aria-hidden="true" focusable="false" /></span>
+    <h3 class="tmx-card__title">2 · A location logger on a schedule</h3>
+    <p class="tmx-card__body">A script that calls <code>termux-location</code>, pulls <code>.latitude</code> and <code>.longitude</code> with <code>jq</code>, and appends them to a CSV with a timestamp. Schedule it, and remember what lesson 2 said: this is a file that tracks a person. Keep it in <code>{'~'}</code>, keep it off any tunnel, and decide up front how long you keep it. A GPS fix can take a while and can fail indoors — the script has to survive an empty answer, not write a blank row.</p>
+  </div>
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:tower-broadcast" aria-hidden="true" focusable="false" /></span>
+    <h3 class="tmx-card__title">3 · A status page hosted on your pocket</h3>
+    <p class="tmx-card__body">Every few minutes, write battery and Wi-Fi readings into a small <code>index.html</code> in a directory that holds <strong>nothing else</strong> — say <code>{'~/status'}</code>. Serve that one directory on 8080, put the tunnel in front of it, and notify yourself with the URL. Lessons 1 through 7 in one loop. Then close it: stop the tunnel, stop the server, and confirm the URL is dead.</p>
+  </div>
+</div>
+
+:::caution[Project three is the one with teeth]
+The other two stay on your device. This one hands a public HTTPS URL to
+whoever finds it, and a directory that a script keeps overwriting is exactly
+the kind of thing that quietly grows a file you didn't mean to publish. Serve a
+directory built *for* serving, never a home or storage folder that happens to
+have an `index.html` in it — and stop the tunnel when you walk away.
+:::
+
+## Commands worth meeting next
+
+Four things that pair naturally with everything above. None of them are hard;
+they're just the next handful, and each one turns a phone-shaped limitation
+into a non-issue.
+
+| Command | What it's for |
+| :------ | :------------ |
+| `ssh` | Type into your phone from a real keyboard. `pkg install openssh`, run `sshd`, and connect on port **8022** — Termux's sshd doesn't use 22, because ports under 1024 need root |
+| `rsync` | Copy a folder between phone and laptop and sync only what changed. `pkg install rsync`; it rides over the ssh you just set up |
+| `tmux` | Keep a session alive when Termux is swiped away or Android reclaims it. `pkg install tmux`, then `tmux attach` to walk back into the job that's still running |
+| `sv` / `sv-enable` | Real service management from `pkg install termux-services` — start `crond` or `sshd` on launch instead of remembering to. **Restart Termux after installing it**, or the supervisor isn't running yet and nothing you enable starts |
+
+:::caution[tmux's prefix key on a phone]
+Every tmux command starts with its prefix, **Ctrl-B** — which is **Volume Down
++ B**. Not Volume Up + B: that sends **Alt+B**, and tmux will ignore it while
+you wonder what's broken. Volume Down is the general one and turns *any* letter
+into Ctrl + that letter; Volume Up is a short fixed list that does not include
+a Ctrl.
+:::
+
+:::note[The practice terminal doesn't come with you]
+The simulator on this site still only knows course one's command set — `pkg`,
+`ls`, `cd`, `cat`, `tar` and friends. It has no battery, no GPS and no network,
+so not one `termux-*` command from this course runs in it, and neither do the
+four above. That's not a gap to work around; it's the honest boundary. From
+here the real device *is* the practice environment.
+:::
+
+## The rest of the series
+
+This is course two of three. Each is self-contained, and each assumes the one
+before it.
+
+<div class="tmx-panels">
+  <div class="tmx-panel">
+    <span class="tmx-chip"><Icon name="fa6-solid:check" aria-hidden="true" focusable="false" /></span>
+    <div class="tmx-panel__head">
+      <span class="tmx-panel__kicker">Course 1 · Done</span>
+      <h3 class="tmx-panel__title">Beginner</h3>
+    </div>
+    <p class="tmx-panel__body">Install, shell, sessions and copy/paste, filesystem, files, storage, packages, keyboard. <a href={SERIES.beginner}>Go back to it</a> if any of that has gone fuzzy — this course leaned on all of it.</p>
+  </div>
+  <div class="tmx-panel">
+    <span class="tmx-chip"><Icon name="fa6-solid:flag-checkered" aria-hidden="true" focusable="false" /></span>
+    <div class="tmx-panel__head">
+      <span class="tmx-panel__kicker">Course 2 · You are here</span>
+      <h3 class="tmx-panel__title">Intermediate</h3>
+    </div>
+    <p class="tmx-panel__body">Termux:API, the sensors and the camera, notifications and dialogs, shell scripting, cron and Android's own scheduler, a local web server, and a tunnel to the open internet. Done.</p>
+  </div>
+  <div class="tmx-panel">
+    <span class="tmx-chip"><Icon name="fa6-brands:linux" aria-hidden="true" focusable="false" /></span>
+    <div class="tmx-panel__head">
+      <span class="tmx-panel__kicker">Course 3 · Next</span>
+      <h3 class="tmx-panel__title">Advanced</h3>
+    </div>
+    <p class="tmx-panel__body">Full distributions under PRoot, a graphical desktop over X11, audio bridging, and building packages of your own — the parts that stop treating Termux as a shell and start treating it as a computer. <a href={SERIES.advanced}>Follow the repo</a> — it's in build.</p>
+  </div>
+</div>
+
+## And when something breaks
+
+It will, and this course breaks in more interesting ways than the last one did —
+half of these failures are Android's opinion rather than your typo.
+
+- The [Command Cheatsheet](/reference/cheatsheet/) has every `termux-*` command,
+  cron field, scheduler flag and tunnel invocation from this course on one page.
+- [Troubleshooting](/reference/troubleshooting/) covers the failures this course
+  actually produces: the API command that hangs instead of erroring, a
+  permission denied once and never asked about again, the cron job that ran for
+  a day and then quietly stopped, the script that works by hand and not from
+  cron, the port that's already in use, and the tunnel that 502s because the
+  server behind it died.
+- The official [Termux Wiki](https://wiki.termux.com) documents every
+  `termux-api` command, and [r/termux](https://www.reddit.com/r/termux/) is
+  where the weirdness specific to one Android version gets worked out.
+
+<div class="tmx-cta">
+  <p class="tmx-cta__text">Course two complete —</p>
+  <a class="tmx-btn tmx-btn--primary" href={`${base}/progress/`}>
+    <span>See your progress</span>
+    <Icon name="fa6-solid:arrow-right" width="14" height="14" aria-hidden="true" focusable="false" />
+  </a>
+</div>
+
+<LessonComplete client:only="react" slug="where-next" />

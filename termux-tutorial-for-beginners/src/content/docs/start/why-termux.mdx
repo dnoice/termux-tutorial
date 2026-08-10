@@ -1,0 +1,92 @@
+---
+title: Why Termux (not the Play Store)
+description: Termux is a full Linux terminal environment for Android — and where you install it from decides whether it works at all.
+sidebar:
+  order: 1
+---
+
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+
+Termux turns your Android phone into a genuine Linux workstation — a terminal, a
+package manager, and thousands of command-line tools — all running **without
+root**, without a jailbreak, without voiding anything. It's the real deal in
+your pocket.
+
+But before you download a single byte, there's one landmine that catches almost
+every newcomer. Step around it now and you'll save yourself a weekend of
+head-scratching.
+
+## Never install Termux from the Google Play Store
+
+:::danger[The Play Store build is broken by design]
+The version of Termux that was on the Google Play Store is **deprecated and
+unmaintained**. Google's tightening Android API rules make it impossible to keep
+that build working, so it ships without critical features and silently fails on
+modern Android. Do not use it.
+
+**And don't go looking for a newer one.** There is no official Termux on the
+Play Store today. Anything you find there under that name — however polished the
+listing, however many stars — was published by somebody else. Do not install it.
+:::
+
+Install Termux from one of these instead:
+
+| Source | Best for | Notes |
+| :----- | :------- | :---- |
+| **[F-Droid](https://f-droid.org/packages/com.termux/)** | Most people | Automatic updates, matches the plugin signatures. **Recommended.** |
+| **[GitHub Releases](https://github.com/termux/termux-app/releases)** | Power users | Newest builds, but you update manually, you have to pick the right APK for your phone's CPU (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `universal`), and its signing key differs from F-Droid's — see [below](#if-you-already-installed-termux). |
+
+:::caution[The source you pick is a one-way door]
+F-Droid builds and GitHub builds are signed with **different keys**, so you
+can't switch later by just installing the other one — Android refuses the
+upgrade. Changing your mind later means uninstalling Termux *and every plugin*
+first. Pick F-Droid unless you have a specific reason not to.
+
+Picking the wrong architecture on GitHub gets you *"App not installed"* — same
+error message as an unrelated problem, which is why that route is not the
+beginner default.
+:::
+
+{/* Heading text is an ADDRESS: this slug is deep-linked from installing.mdx and
+    reference/troubleshooting.md. It used to read "(read this twice)", so the
+    anchor was #the-signature-key-rule-read-this-twice — an editorial aside
+    baked into two inbound URLs, which the next copy edit would have broken
+    with no build error. The joke moved into the body, where it costs nothing. */}
+
+## The signature key rule
+
+Read this one twice. Termux isn't just one app — it's an app **plus a family of
+plugins**:
+
+- `Termux:API` — access the camera, GPS, battery, and more
+- `Termux:Styling` — themes and fonts
+- `Termux:X11` — a graphical desktop
+- `Termux:Boot`, `Termux:Widget`, `Termux:Float` …
+
+On Android, every app is signed with a cryptographic key. Termux and its plugins
+**share data and a user ID**, and Android only lets apps cooperate like that when
+they're **signed with the exact same key**.
+
+:::caution[Don't mix sources]
+If you install the main app from **F-Droid** but grab a plugin from **GitHub**
+(or vice-versa), their signatures won't match. The plugin will install, but it
+will silently refuse to talk to the main app — a maddening, invisible failure.
+
+**Pick one source and use it for the app _and_ every plugin.**
+:::
+
+### If you already installed Termux
+
+If Termux is misbehaving, or you're not sure where you got it:
+
+1. Uninstall the main Termux app **and every Termux plugin**.
+2. Choose a single source (F-Droid is the easy default).
+3. Reinstall the app first, then any plugins you want — all from that same source.
+
+## What's next
+
+You know *where* to get Termux and *why* it matters. Next, we'll walk through the
+[installation itself](/start/installing/), step by
+step.
+
+<LessonComplete client:only="react" slug="start/why-termux" />

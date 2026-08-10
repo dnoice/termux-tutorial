@@ -1,0 +1,179 @@
+---
+title: Where to Next
+description: You finished the beginner course. Here's what you can now do, three starter projects to prove it, and where the Termux series goes from here.
+sidebar:
+  order: 6
+  badge:
+    text: Finish
+    variant: success
+# The terminus. `prev` is left to Starlight now that this lesson is the last
+# item of the Foundations group in astro.config.mjs — the sidebar array derives
+# it, so there is nothing to hand-maintain. `next: false` is what actually ends
+# the chain; extra-keys used to carry it as a placeholder and dead-ended the
+# course one lesson early. check-curriculum.mjs now asserts that exactly the
+# LAST lesson carries it.
+next: false
+---
+
+import { Icon } from 'astro-icon/components';
+import TermuxTerminal from '../../components/terminal/TermuxTerminal.tsx';
+import LessonComplete from '../../components/profile/LessonComplete.tsx';
+
+{/* Raw <a href> in MDX bypasses the rehypeBasePaths plugin, so internal links
+    in the cards below are built from BASE_URL by hand. Same pattern as index.mdx. */}
+export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+{/* All three courses live in ONE repo and deploy as ONE site, so these are
+    internal paths, not repository URLs. Built from BASE_URL for the same reason
+    as the cards below: a raw <a href> in MDX bypasses rehypeBasePaths.
+
+    This replaces two github.com links, one of which carried a misspelled repo
+    name that three separate audits flagged and nobody could resolve — because
+    the answer was that the sibling repos should not exist. */}
+export const SERIES = {
+  intermediate: `${base}/intermediate/`,
+  advanced: `${base}/advanced/`,
+};
+
+That's the whole beginner course. A few hours ago Termux was a black screen with
+a blinking cursor. Look at what it is now.
+
+## What you can actually do
+
+You didn't just read about these — you ran them.
+
+- **Install Termux without breaking it.** You know why the Play Store build is a
+  dead end, why every plugin has to come from the same source as the app, and
+  what a signature mismatch looks like from the outside (an app that installs
+  fine and then silently ignores you).
+- **Drive a shell.** `pwd`, `ls`, `cd`, and a fish prompt that suggests, colours
+  and completes as you type.
+- **Live in the app, not just the shell.** Several sessions at once from the
+  left-edge drawer, long-press to copy and paste, scrollback, and the
+  notification's **Exit** — plus the knowledge that `Ctrl-C` cancels and has
+  never once copied anything.
+- **Make and destroy things on purpose.** `mkdir`, `touch`, `cat`, `cp`, `mv`,
+  `rm` — plus the `cat >` + **Ctrl-D** (Volume Down + D) trick that turns any
+  Android text editor into your terminal editor, and enough respect for `rm -rf`
+  to check the path first.
+- **Reach your real files.** `termux-setup-storage`, the six symlinks it drops
+  in `~/storage`, and the rule that keeps your work alive: **code lives in `~`,
+  backups live in `~/storage/shared/`**.
+- **Install software.** `pkg update`, `search`, `install`, `list-installed`,
+  `uninstall` — a package manager with tens of thousands of packages behind it.
+- **Type on a phone without suffering.** A custom extra-keys row, and the volume
+  buttons standing in for Ctrl, Esc, Tab and the arrows.
+
+That is a working Linux environment and the literacy to use it. Most people who
+install Termux never get here.
+
+## Three projects to prove it
+
+Pick one. Each uses only what this course taught, plus one new package. Nothing
+here needs root, a computer, or money.
+
+<div class="tmx-grid">
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:box-archive" /></span>
+    <h3 class="tmx-card__title">1 · A one-command backup</h3>
+    <p class="tmx-card__body">Write a script that <code>tar czf</code>s your projects folder into <code>~/storage/shared/termux-backups/</code> with today's date in the filename, and dumps <code>pkg list-installed</code> beside it. <code>chmod +x</code> it, run it with <code>./backup.sh</code>, and you never think about backups again.</p>
+  </div>
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-brands:python" /></span>
+    <h3 class="tmx-card__title">2 · Something that runs</h3>
+    <p class="tmx-card__body"><code>pkg install python</code>, then write ten lines that do something you actually want — rename a folder of photos, total a column of numbers, print the weather. Your phone becomes a machine that runs your code, not just other people's apps.</p>
+  </div>
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-brands:git-alt" /></span>
+    <h3 class="tmx-card__title">3 · Put it somewhere safe</h3>
+    {/* Tildes go through JSX expressions: two bare `~` in one MDX paragraph are
+        parsed as strikethrough delimiters and swallow the closing </code>. */}
+    <p class="tmx-card__body"><code>pkg install git</code>, then <code>git init</code> in <code>{'~/projects'}</code> and commit. Do it in <code>{'~'}</code>, never in <code>{'~/storage/shared'}</code> — you already know why: no permission bits, so git reports every file as changed forever.</p>
+  </div>
+</div>
+
+## Commands worth meeting next
+
+None of these are hard; they're just the next handful everyone learns. The
+practice terminal doesn't run them — that's your device's job now.
+
+| Command | What it's for |
+| :------ | :------------ |
+| `grep` | Find text inside files |
+| `find` | Find files by name, size or age |
+| `curl` / `wget` | Fetch things off the internet from the terminal |
+| `ssh` | Log into another machine (`pkg install openssh`) |
+| `htop` | See what's running and what's eating your battery |
+| `man <cmd>` | The manual for any command (`pkg install man`) |
+
+:::tip[Two escape hatches you already have]
+In fish, `help` opens its own documentation. And if a tutorial you find online
+assumes bash, type `bash` to drop into a bash session for it, then `exit` to
+come back to fish. You don't have to choose one forever.
+:::
+
+## Keep the muscle memory
+
+The practice terminal isn't going anywhere. Every command from the course still
+runs here — come back and warm up before you try something on your real device.
+
+<TermuxTerminal
+  client:only="react"
+  hint="Try: pkg list-installed → tar czf ~/storage/shared/termux-backups/projects-backup.tar.gz -C ~ projects"
+  height={380}
+/>
+
+## The rest of the series
+
+This is course one of three. Each is self-contained, and each assumes the one
+before it.
+
+<div class="tmx-panels">
+  <div class="tmx-panel">
+    <span class="tmx-chip"><Icon name="fa6-solid:check" /></span>
+    <div class="tmx-panel__head">
+      <span class="tmx-panel__kicker">Course 1 · You are here</span>
+      <h3 class="tmx-panel__title">Beginner</h3>
+    </div>
+    <p class="tmx-panel__body">Install, shell, sessions and copy/paste, filesystem, files, storage, packages, keyboard. Done.</p>
+  </div>
+  <div class="tmx-panel">
+    <span class="tmx-chip"><Icon name="fa6-solid:mobile-screen-button" /></span>
+    <div class="tmx-panel__head">
+      <span class="tmx-panel__kicker">Course 2 · Next</span>
+      <h3 class="tmx-panel__title">Intermediate</h3>
+    </div>
+    <p class="tmx-panel__body">Termux:API — battery, clipboard, notifications, GPS, the camera. Shell scripting, cron-style automation, keeping long jobs alive, and reaching your phone over the network. <a href={SERIES.intermediate}>Follow the repo</a> — it's in build.</p>
+  </div>
+  <div class="tmx-panel">
+    <span class="tmx-chip"><Icon name="fa6-brands:linux" /></span>
+    <div class="tmx-panel__head">
+      <span class="tmx-panel__kicker">Course 3 · Later</span>
+      <h3 class="tmx-panel__title">Advanced</h3>
+    </div>
+    <p class="tmx-panel__body">Full distributions under PRoot, a graphical desktop over X11, audio bridging, and building packages of your own. <a href={SERIES.advanced}>Follow the repo</a> — it's in build.</p>
+  </div>
+</div>
+
+## And when something breaks
+
+It will. That's not a sign you did it wrong — it's Tuesday.
+
+- The [Command Cheatsheet](/reference/cheatsheet/) has every command from this
+  course on one page.
+- [Troubleshooting](/reference/troubleshooting/) covers the failures that
+  actually happen: mismatched signatures, stale package lists, "Permission
+  denied", and sessions that die in the background.
+- The official [Termux Wiki](https://wiki.termux.com) and
+  [r/termux](https://www.reddit.com/r/termux/) are both active and friendly to
+  beginners.
+
+<div class="tmx-cta">
+  <p class="tmx-cta__text">Course complete —</p>
+  <a class="tmx-btn tmx-btn--primary" href={`${base}/progress/`}>
+    <span>See your progress</span>
+    <Icon name="fa6-solid:arrow-right" width="14" height="14" />
+  </a>
+</div>
+
+<LessonComplete client:only="react" slug="where-next" />

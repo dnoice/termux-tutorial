@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Termux Guide: Level Up Your Android!</title>
+    <link rel="stylesheet" href="css/style.css">
+    </head>
+<body>
+
+    <div class="container">
+        <header class="main-header">
+            <h1>🚀 Termux Guide: Level Up Your Android! 🚀</h1>
+            <p class="intro">Ready to unlock the command-line magic on your Android? This guide will walk you through the essentials, making Termux feel less like a black box and more like your personal superpower!</p>
+            <button id="darkModeToggle" class="theme-toggle-button" aria-label="Toggle dark mode">
+                <span class="icon-sun">☀️</span><span class="icon-moon">🌙</span>
+            </button>
+        </header>
+
+        <nav class="toc" aria-label="Table of Contents">
+            <h3>Quick Jumps:</h3>
+            <ul>
+                <li><a href="#step1">Step 1: First Launch & Updates!</a></li>
+                <li><a href="#step1-5">Step 1.5: Upgrade Your Shell to Fish! (Highly Recommended)</a></li>
+                <li><a href="#step2">Step 2: Finding Your Way Around</a></li>
+                <li><a href="#step3">Step 3: Making Folders & Files</a></li>
+                <li><a href="#step4">Step 4: Getting New Tools (Packages)</a></li>
+                <li><a href="#step5">Step 5: Editing Text with Nano</a></li>
+                <li><a href="#step6">Step 6: Talking to Android (Termux API)</a></li>
+                <li><a href="#step7">Step 7: Accessing Phone Storage</a></li>
+                <li><a href="#step8">Step 8: Running Simple Scripts</a></li>
+                <li><a href="#tips">Essential Tips & Shortcuts</a></li>
+                <li><a href="#next">What's Next? Explore Further!</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <section id="step1">
+                <h2>Step 1: First Launch & Updates! (The Foundation)</h2>
+                <p>Let's get the basics sorted:</p>
+                <ol>
+                    <li><strong>Open Termux:</strong> Find and tap the icon.</li>
+                    <li><strong>The Prompt:</strong> You'll see a blinking cursor after a <code>$</code> sign. This is where you type commands. The <code>~</code> means you're "home".</li>
+                    <li><strong>Critical Update:</strong> Keep Termux fresh! Run this command (type it exactly and press Enter):
+                        <pre><code>pkg update && pkg upgrade -y</code></pre>
+                        <p>This fetches the latest software lists (<code>update</code>) and installs the newest versions of your tools (<code>upgrade</code>). The <code>-y</code> auto-confirms. This might take a few moments. If asked about config files, sticking with the default (often pressing Enter or 'N') is usually safe for now.</p>
+                        <p><strong>✅ Updates Complete! You're ready for the next step.</strong></p>
+                    </li>
+                </ol>
+            </section>
+
+            <section id="step1-5">
+                <h2>Step 1.5: Upgrade Your Shell to Fish! 🐠 (Highly Recommended)</h2>
+                <p>The default Termux shell is Bash, which is powerful but basic. Let's switch to <strong>Fish (Friendly Interactive SHell)</strong>. It offers amazing features right out of the box:</p>
+                <ul>
+                    <li><strong>🧠 Autosuggestions:</strong> As you type, Fish suggests commands based on your history in faint text. Press the Right Arrow key (→) or Ctrl+F to accept!</li>
+                    <li><strong>✅ Syntax Highlighting:</strong> Valid commands look different from typos, saving you time.</li>
+                    <li><strong>💡 Tab Completion:</strong> Press Tab to complete commands, filenames, or options, with helpful menus.</li>
+                    <li><strong>🎨 Prettier Prompt:</strong> Often includes the current directory path clearly.</li>
+                </ul>
+                <p>Let's install and switch:</p>
+                <ol>
+                    <li><strong>Install Fish:</strong>
+                        <pre><code>pkg install fish</code></pre>
+                        (Press <code>y</code> and Enter if asked).
+                    </li>
+                    <li><strong>Set Fish as Default:</strong> This command changes your login shell.
+                        <pre><code>chsh -s fish</code></pre>
+                        (<code>chsh</code> means Change Shell, <code>-s</code> specifies the shell path).
+                    </li>
+                    <li><strong>Restart Termux:</strong> Close Termux completely (you might need to force close it from Android's recent apps) and reopen it.</li>
+                </ol>
+                <p>You should now see a different prompt, possibly ending in <code>></code> and showing your current path (like <code>~</code> for home). Try typing a command you used before, like <code>ls</code> or <code>pwd</code>, and notice the highlighting and potential suggestions!</p>
+                <p><strong>🎉 Welcome to the Fish life! Command line just got way friendlier.</strong></p>
+                <p><em>(From now on, examples assume you're using Fish, but most basic commands work identically to Bash).</em></p>
+            </section>
+
+            <section id="step2">
+                <h2>Step 2: Finding Your Way Around (Navigation)</h2>
+                <p>Let's explore your Termux environment.</p>
+                <ul>
+                    <li><strong>Where am I? (`pwd`):</strong> Shows your current directory path.
+                        <pre><code>pwd</code></pre>
+                    </li>
+                    <li><strong>What's here? (`ls`):</strong> Lists files and folders. Your Fish prompt might already show the current directory!
+                        <pre><code>ls</code></pre>
+                        <em>Try <code>ls -l</code> for details or <code>ls -a</code> to see hidden files (starting with <code>.</code>). Fish might color-code the output!</em>
+                    </li>
+                    <li><strong>Move around (`cd`):</strong> Change directories.
+                        <ul>
+                            <li><code>cd ~</code> or just <code>cd</code>: Go home.</li>
+                            <li><code>cd ..</code>: Go up one level.</li>
+                            <li><code>cd <foldername></code>: Go into a specific folder (e.g., <code>cd projects</code>). Try typing <code>cd pro</code> and hitting Tab!</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <section id="step3">
+                 <h2>Step 3: Making Folders & Files</h2>
+                <p>Let's create some things.</p>
+                <ol>
+                    <li><strong>Make a Folder (`mkdir`):</strong>
+                        <pre><code>mkdir projects</code></pre>
+                        (Type <code>ls</code> to see it).
+                    </li>
+                    <li><strong>Go Inside:</strong>
+                        <pre><code>cd projects</code></pre>
+                        (Notice how your Fish prompt likely updated).
+                    </li>
+                    <li><strong>Create an Empty File (`touch`):</strong>
+                        <pre><code>touch notes.txt</code></pre>
+                        (Type <code>ls</code> again).
+                    </li>
+                    <li><strong>Head Home:</strong>
+                        <pre><code>cd ~</code></pre>
+                        (Or just <code>cd</code>).
+                    </li>
+                </ol>
+            </section>
+
+            <section id="step4">
+                 <h2>Step 4: Getting New Tools (Packages)</h2>
+                <p>Termux has a vast library of command-line software via <code>pkg</code>.</p>
+                 <ol>
+                    <li><strong>Search (`pkg search`):</strong> Look for packages.
+                        <pre><code>pkg search net-tools</code></pre>
+                    </li>
+                    <li><strong>Install (`pkg install`):</strong> Let's get `nano` (a text editor) and the `termux-api` commands.
+                        <pre><code>pkg install nano termux-api</code></pre>
+                        (Say <code>y</code> if prompted).
+                    </li>
+                     <li><strong>Remove (If Needed) (`pkg uninstall`):</strong>
+                         <pre><code># Example: pkg uninstall package-name</code></pre>
+                     </li>
+                </ol>
+            </section>
+
+            <section id="step5">
+                 <h2>Step 5: Editing Text with Nano</h2>
+                <p><code>nano</code> is a simple, keyboard-driven text editor.</p>
+                 <ol>
+                    <li><strong>Go to your file:</strong>
+                        <pre><code>cd ~/projects</code></pre>
+                    </li>
+                    <li><strong>Open with Nano:</strong>
+                        <pre><code>nano notes.txt</code></pre>
+                    </li>
+                    <li><strong>Edit:</strong> Type away! Keyboard shortcuts are listed at the bottom (<code>^</code> means Ctrl).</li>
+                    <li><strong>Save:</strong> <code>Ctrl + O</code> (Write Out), then Enter to confirm filename.</li>
+                    <li><strong>Exit:</strong> <code>Ctrl + X</code>.</li>
+                </ol>
+                <p>View file contents with <code>cat</code>:</p>
+                <pre><code>cat notes.txt</code></pre>
+            </section>
+
+            <section id="step6">
+                <h2>Step 6: Talking to Android (Termux API Magic!) ✨</h2>
+                <p>Use <code>termux-</code> commands to interact with Android features. You installed these with <code>pkg install termux-api</code>.</p>
+                 <p><strong>Heads Up:</strong> Android might ask for permissions the first time you use certain API commands via the "Termux:API" app. You must <strong>Allow</strong> them.</p>
+                <ul>
+                    <li><strong>Pop-up Message (`termux-toast`):</strong>
+                        <pre><code>termux-toast "Hello from your awesome Termux setup!"</code></pre>
+                    </li>
+                    <li><strong>Battery Status (`termux-battery-status`):</strong>
+                        <pre><code>termux-battery-status</code></pre>
+                    </li>
+                    <li><strong>Clipboard (`termux-clipboard-set`/`get`):</strong>
+                        <pre><code>termux-clipboard-set "Copied via Termux!"
+# Now copy something else from another app
+termux-clipboard-get</code></pre>
+                    </li>
+                    <li><strong>Dialog Box (`termux-dialog`):</strong>
+                        <pre><code>termux-dialog confirm -i "Is Termux cool?" -t "Quick Poll"</code></pre>
+                    </li>
+                    <li><strong>Vibrate (`termux-vibrate`):</strong>
+                         <pre><code>termux-vibrate -d 300 -f</code></pre>
+                         (Vibrates for 300ms, <code>-f</code> forces it).
+                    </li>
+                </ul>
+                 <p><em>Tip: Type <code>termux-</code> then hit Tab twice to see available commands. Use <code>command --help</code> for details (e.g., <code>termux-dialog --help</code>).</em></p>
+            </section>
+
+            <section id="step7">
+                 <h2>Step 7: Accessing Phone Storage</h2>
+                <p>Access your Downloads, Photos, etc., easily.</p>
+                 <ol>
+                    <li><strong>Run Setup:</strong>
+                        <pre><code>termux-setup-storage</code></pre>
+                    </li>
+                    <li><strong>Grant Permission:</strong> Allow file access when Android asks.</li>
+                    <li><strong>Find `storage` Folder:</strong> Go home (<code>cd ~</code>) and <code>ls</code>. You'll see a <code>storage</code> directory.</li>
+                    <li><strong>Explore Inside:</strong> <code>cd storage</code> and <code>ls</code>. You'll find links like:
+                        <ul>
+                            <li><code>dcim</code> (Camera)</li>
+                            <li><code>downloads</code></li>
+                            <li><code>movies</code>, <code>music</code>, <code>pictures</code></li>
+                            <li><code>shared</code> (Main internal storage)</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p>Now you can <code>cd</code> into these (e.g., <code>cd downloads</code>) and manage files using <code>ls</code>, <code>cp</code> (copy), <code>mv</code> (move/rename), <code>rm</code> (remove - <strong>CAREFUL!</strong>).</p>
+                 <p><em>Example: Copy notes to Downloads:</em></p>
+                 <pre><code># If not home, cd ~ first
+cp projects/notes.txt storage/downloads/</code></pre>
+            </section>
+
+            <section id="step8">
+                 <h2>Step 8: Running Simple Scripts (Automation Power!)</h2>
+                <p>Combine commands into reusable scripts.</p>
+                 <ol>
+                    <li><strong>Go Home:</strong> <code>cd ~</code></li>
+                    <li><strong>Create Script File:</strong>
+                        <pre><code>nano my_script.fish</code></pre>
+                        <em>(Using <code>.fish</code> extension is good practice for Fish scripts).</em>
+                    </li>
+                    <li><strong>Add Fish Commands:</strong>
+                        <pre><code>#!/data/data/com.termux/files/usr/bin/fish
+
+echo "Running my super Fish script!"
+termux-toast -g middle "Script Activated!"
+echo "Current directory is: "(pwd)
+echo "Files here:"
+ls -l
+termux-vibrate -d 150
+echo "Script complete."</code></pre>
+                    </li>
+                    <li><strong>Save & Exit:</strong> <code>Ctrl+O</code>, Enter, <code>Ctrl+X</code>.</li>
+                    <li><strong>Make Executable:</strong>
+                        <pre><code>chmod +x my_script.fish</code></pre>
+                    </li>
+                    <li><strong>Run It:</strong>
+                        <pre><code>./my_script.fish</code></pre>
+                    </li>
+                </ol>
+                <p>See your script in action!</p>
+            </section>
+
+            <section id="tips">
+                <h2>💡 Essential Tips & Shortcuts (Fish Edition!) 💡</h2>
+                <ul>
+                    <li><strong>Autosuggestions:</strong> Type... see grey text? Press Right Arrow (→) or Ctrl+F to accept!</li>
+                    <li><strong>Tab Completion:</strong> Hit Tab constantly to complete commands/paths. Use arrow keys if options appear.</li>
+                    <li><strong>History Search:</strong> Start typing part of an old command, then press the Up Arrow (↑) to cycle through matches.</li>
+                    <li><strong>Volume Keys:</strong> Usually <code>Volume Down</code> = Ctrl, <code>Volume Up</code> = Alt.</li>
+                    <li><strong><code>Ctrl + C</code>:</strong> Stop current command.</li>
+                    <li><strong><code>Ctrl + D</code>:</strong> Logout (or delete character under cursor).</li>
+                    <li><strong><code>Ctrl + L</code>:</strong> Clear screen.</li>
+                    <li><strong><code>Alt + .</code> (Period):</strong> Insert the last argument from the previous command.</li>
+                    <li><strong><code>help</code> command (in Fish):</strong> Type <code>help</code> in Fish for its built-in documentation, or <code>help commandname</code>.</li>
+                    <li><strong>Exit Termux:</strong> Type <code>exit</code> or press <code>Ctrl+D</code> at an empty prompt.</li>
+                </ul>
+            </section>
+
+            <section id="next">
+                 <h2>What's Next? Explore Further! 🗺️</h2>
+                <p>You've got a solid foundation and the user-friendly Fish shell! Now you can:</p>
+                <ul>
+                    <li>Configure Fish further (themes, functions): explore <code>fish_config</code> command.</li>
+                    <li>Learn more Linux/Unix commands (<code>grep</code>, <code>find</code>, <code>sed</code>, <code>awk</code>, <code>curl</code>, <code>wget</code>).</li>
+                    <li>Install programming languages: <code>pkg install python nodejs ruby golang rust</code> etc.</li>
+                    <li>Version control with Git: <code>pkg install git</code>.</li>
+                    <li>Connect to servers: <code>pkg install openssh</code>.</li>
+                    <li>Explore Termux Wiki and Fish shell documentation online.</li>
+                    <li>Write more complex scripts to automate phone tasks!</li>
+                </ul>
+                <p><strong>The key is practice and exploration. Don't hesitate to try things out! Have fun!</strong></p>
+            </section>
+        </main>
+
+        <footer>
+            <p>Happy Termuxing! Your Android just got a whole lot more powerful.</p>
+            <p><small>Guide enhanced on: <time datetime="2025-04-16">April 16, 2025</time></small></p>
+        </footer>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

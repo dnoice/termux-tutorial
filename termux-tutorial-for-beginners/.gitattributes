@@ -1,0 +1,13 @@
+# Normalise line endings before this repo goes under version control.
+#
+# As of 2026-08-09 the working tree is mixed: 11 of 15 content files are CRLF
+# and 4 are LF, because files were authored by different tools. Harmless to
+# Astro, but it makes diffs on those files useless and they will flip wholesale
+# the first time anyone's editor normalises them — producing a commit that looks
+# like a total rewrite. Settle it now, before the first commit.
+* text=auto eol=lf
+
+# Binary: never touch these.
+*.png binary
+*.woff2 binary
+*.zip binary

@@ -1,0 +1,555 @@
+---
+title: Reading the Device
+description: Battery, network, telephony, motion sensors, GPS, camera and microphone — every one of them a command that prints JSON you can parse.
+sidebar:
+  order: 2
+# No explicit `prev`/`next`: this lesson sits between api-setup and talking-back
+# in the sidebar array, so Starlight derives both ends of the chain.
+---
+
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+
+{/* No <TermuxTerminal> on this page, deliberately. The practice simulator
+    implements none of the termux-* API commands, has no jq, and explicitly
+    refuses pipes ("Pipes ( | ) are not simulated here") — and every single
+    example below is a pipe into jq. A terminal that answers "command not found"
+    to the lesson's own instructions teaches distrust, so this lesson sends you
+    to the phone instead and says so out loud. */}
+
+Last lesson ended with `termux-battery-status` printing a small blob of JSON.
+That blob is the whole shape of this lesson: **every command here reads
+something off your phone and prints JSON.** None of them change anything. You
+can run the lot, in any order, and put the phone down exactly as you found it.
+
+What you're building is the reflex of going from "the phone knows this" to "a
+shell variable holds this" in one line. And then — because this is the lesson
+where you first point a command at a camera — a straight conversation about what
+that reflex can be turned into.
+
+:::caution[This one needs the actual phone]
+There is no practice terminal on this page. A browser tab has no battery gauge,
+no GPS, no camera, and no honest way to fake one. Everything below runs in
+Termux on the device you're holding.
+:::
+
+## The two keys this lesson leans on
+
+Every command in this lesson gets piped into `jq`, and pipes are buried on a
+phone keyboard. So, before anything else:
+
+| Press | Gives you |
+| :---- | :-------- |
+| **Volume Up** + `L` | The pipe, &#124; — the character this entire lesson is built on |
+| **Volume Up** + `U` | `_` — every JSON key here is `full_of_underscores` |
+| **Volume Down** + `C` | **Ctrl-C**, to stop a command that keeps printing |
+
+Volume **Down** turns any letter into Ctrl + that letter. Volume **Up** is a
+short fixed list, and those two are on it. If you built the extra-keys row in
+the beginner course, `|` is probably one tap away already — but the volume
+combinations work whether or not that row is showing.
+
+## Every command has the same shape
+
+`jq` is the JSON tool you installed last lesson. Confirm it's there:
+
+```bash
+which jq
+```
+
+You should get a path ending in `/bin/jq`. If you get nothing, run
+`pkg install jq` before going further — from here on, every example needs it.
+
+Three forms do ninety percent of the work:
+
+| Form | What it does |
+| :--- | :----------- |
+| `<command> \| jq .` | Pretty-print the whole blob, indented and coloured |
+| `<command> \| jq .field` | Pull out one field |
+| `<command> \| jq -r .field` | Same, but **raw** — no surrounding quotes |
+
+`-r` is the flag you'll forget and then remember forever. Without it a string
+comes out as `"DISCHARGING"`, quotes included, which is fine to read and useless
+to compare against anything.
+
+## Battery: the safe one to learn on
+
+The battery needs no permission and nothing switched on, which makes it the
+right place to build the habit.
+
+<Steps>
+
+1. **Look at the whole thing.**
+
+   ```bash
+   termux-battery-status
+   ```
+
+   ```json
+   {
+     "health": "GOOD",
+     "percentage": 63,
+     "plugged": "UNPLUGGED",
+     "status": "DISCHARGING",
+     "temperature": 28.9
+   }
+   ```
+
+   Your numbers will differ. Newer Termux:API builds add a `current` field in
+   microamps — plenty of devices report nonsense in it, so treat that one as a
+   curiosity rather than a measurement.
+
+2. **Cut it down to one field.**
+
+   ```bash
+   termux-battery-status | jq .percentage
+   ```
+
+   ```text
+   63
+   ```
+
+3. **Cut a string down, without the quotes.**
+
+   ```bash
+   termux-battery-status | jq -r .status
+   ```
+
+   ```text
+   DISCHARGING
+   ```
+
+4. **Put it in a variable.** This is the move the rest of the course is built
+   on:
+
+   ```bash
+   level=$(termux-battery-status | jq .percentage)
+   echo "Battery is at $level%"
+   ```
+
+   ```text
+   Battery is at 63%
+   ```
+
+</Steps>
+
+`$( … )` runs the command inside and hands back its output. Swap the command in
+the middle and you have a variable holding any fact on this page.
+
+:::note[What the battery fields mean]
+| Field | Values you'll see |
+| :---- | :---------------- |
+| `percentage` | `0`–`100` |
+| `status` | `CHARGING`, `DISCHARGING`, `FULL`, `NOT_CHARGING`, `UNKNOWN` |
+| `plugged` | `UNPLUGGED`, `PLUGGED_AC`, `PLUGGED_USB`, `PLUGGED_WIRELESS` |
+| `health` | `GOOD`, `OVERHEAT`, `COLD`, `DEAD`, `OVER_VOLTAGE`, and friends |
+| `temperature` | Degrees Celsius, of the **battery** — not the room |
+:::
+
+## The network you're on
+
+```bash
+termux-wifi-connectioninfo | jq .
+```
+
+You get the SSID, the BSSID, your IP on the local network, link speed, frequency
+and `rssi` — signal strength in dBm, where closer to zero is better. Around
+`-50` is excellent, `-80` is nearly nothing.
+
+```bash
+termux-wifi-connectioninfo | jq -r .ip
+termux-wifi-connectioninfo | jq .rssi
+```
+
+Two things bite people here, and both are Android, not Termux.
+
+:::caution[Blank SSID? That's the location permission]
+Since Android 8.1, an app cannot read the Wi-Fi network name or BSSID unless it
+holds **location** permission *and* the system location toggle is switched on.
+Deny either one and you don't get an error — you get `<unknown ssid>` or a null,
+which reads exactly like a bug.
+
+Grant it under **Settings → Apps → Termux:API → Permissions → Location**. Note
+the app: these permissions belong to **Termux:API**, the companion app, not to
+Termux itself. That's the first place to look whenever a command on this page
+returns nothing and explains nothing.
+:::
+
+:::note[The SSID may arrive wrapped in quotes]
+Android hands the network name back with literal double quotes around it on many
+devices, so `jq -r .ssid` prints `"HomeWiFi"` — the quotes are *inside* the
+value. Strip them when you need the bare name:
+
+```bash
+termux-wifi-connectioninfo | jq -r .ssid | tr -d '"'
+```
+:::
+
+With Wi-Fi switched off the command still succeeds. It just hands you an object
+with nothing useful in it — a pattern you'll see repeatedly on this page, and
+the reason it's worth looking at the whole blob before you index into it.
+
+## Telephony: what the radio knows
+
+Two commands, and a large asterisk.
+
+```bash
+termux-telephony-deviceinfo | jq .
+```
+
+Carrier name, country code, network type, SIM state, roaming status, phone type
+— a couple of dozen fields.
+
+```bash
+termux-telephony-deviceinfo | jq -r .network_operator_name
+termux-telephony-deviceinfo | jq -r .sim_state
+```
+
+And the towers your phone can currently hear:
+
+```bash
+termux-telephony-cellinfo | jq length
+```
+
+That prints a count. The entries themselves vary by radio and by Android
+version, so look at one before you go reaching for a field name:
+
+```bash
+termux-telephony-cellinfo | jq '.[0]'
+```
+
+`.[0]` is "the first item in the array". Cell info needs the location permission
+too, for the same reason the Wi-Fi SSID does — tower identifiers are location
+data whether or not they look like it.
+
+:::caution[The IMEI fields are gone, and they're not coming back]
+`device_id`, `sim_serial_number` and `sim_subscriber_id` are still in the
+output. On **Android 10 and newer they are `null` for everyone**, forever.
+Google restricted non-resettable hardware identifiers to carrier-privileged apps
+precisely because they were the perfect tracking key.
+
+Every "get your IMEI in Termux" guide on the internet predates that change. The
+fields aren't broken and there is no flag that brings them back.
+:::
+
+## Sensors: the one that doesn't stop
+
+`termux-sensor` is the odd one out, because by default it **streams**. Start it
+with no limit and it prints readings until you stop it — which is why
+**Volume Down + C** got its own row in the table at the top.
+
+Start by asking what your phone actually has:
+
+```bash
+termux-sensor -l | jq -r '.sensors[]'
+```
+
+```text
+BMI160 Accelerometer
+BMI160 Gyroscope
+AK09918 Magnetometer
+Proximity Sensor
+Light Sensor
+…
+```
+
+Those names are vendor strings — yours will differ, sometimes wildly. Then take
+exactly one reading:
+
+```bash
+termux-sensor -s "BMI160 Accelerometer" -n 1
+```
+
+```json
+{
+  "BMI160 Accelerometer": {
+    "values": [0.04, 0.11, 9.79]
+  }
+}
+```
+
+| Flag | What it does |
+| :--- | :----------- |
+| `-l` | List available sensors and exit |
+| `-s <name>` | Listen to a named sensor (comma-separate for several) |
+| `-n <count>` | Stop after this many readings — **the flag that keeps you sane** |
+| `-d <ms>` | Delay between readings, in milliseconds |
+| `-a` | Every sensor at once. Battery-hungry; know that before you type it |
+| `-c` | Clean up — release sensors a previous run left held |
+
+The name has to match one from the `-l` list. Many builds accept a unique
+fragment like `accelerometer`, so try the short form first and paste the full
+vendor string if you get nothing back.
+
+Now the parsing problem: that top-level key is a vendor string you can't
+hardcode. `jq`'s `.[]` iterates an object's *values*, ignoring their names — so
+this works on any phone:
+
+```bash
+termux-sensor -s "BMI160 Accelerometer" -n 1 | jq '.[].values[2]'
+```
+
+```text
+9.79
+```
+
+Index `[2]` is the Z axis: gravity, in metres per second squared. Lay the phone
+flat and it reads about `9.8`. Stand it on its edge and it drops to near zero
+while `[1]` climbs. That is a spirit level, in one line.
+
+:::tip[If a sensor seems stuck, clean up]
+`termux-sensor` holds the hardware open. A run killed the wrong way can leave it
+held, and the next run then returns nothing at all. Fix it with:
+
+```bash
+termux-sensor -c
+```
+:::
+
+## Location, and the waiting
+
+```bash
+termux-location
+```
+
+Then wait. This is the first command in the course that doesn't answer
+immediately, and the silence is real work: the GPS radio is looking for
+satellites it hasn't spoken to since you last used maps. Indoors it can take a
+minute. Indoors under a concrete floor it may never finish at all.
+
+```json
+{
+  "latitude": 51.5072,
+  "longitude": -0.1276,
+  "altitude": 11.2,
+  "accuracy": 8.4,
+  "bearing": 0,
+  "speed": 0,
+  "provider": "gps"
+}
+```
+
+```bash
+termux-location | jq -r '"\(.latitude),\(.longitude)"'
+```
+
+```text
+51.5072,-0.1276
+```
+
+That last form is `jq` string interpolation: `"\( … )"` splices a value into a
+string. It's how you build one line you can paste into a maps search.
+
+| Flag | What it does |
+| :--- | :----------- |
+| `-p gps` | Satellites. Most accurate, slowest, useless indoors *(the default)* |
+| `-p network` | Wi-Fi and towers. Fast, works indoors, accurate to a block |
+| `-p passive` | Whatever some other app already asked for. Free, often empty |
+| `-r once` | One fix, then exit *(the default)* |
+| `-r last` | The last fix the system cached. Instant, possibly hours stale |
+| `-r updates` | Keep streaming fixes — **Volume Down + C** to stop |
+
+So the practical indoor version is:
+
+```bash
+termux-location -p network
+```
+
+:::caution[When it hangs forever]
+A `termux-location` that never returns is almost always one of three things, in
+this order:
+
+1. **Location is switched off system-wide.** Check the quick-settings tile.
+2. **Termux:API was never granted location.** Settings → Apps → Termux:API →
+   Permissions → Location, and choose **Allow only while using the app** at
+   minimum.
+3. **You asked for `gps` indoors.** Try `-p network` or `-r last`.
+
+Press **Volume Down + C** to get your prompt back. A hang here is not the same
+failure as a `termux-*` command that hangs *instantly* — that one is the
+companion-app problem from the [previous
+lesson](/bridge/api-setup/).
+:::
+
+:::note[Precise vs approximate location]
+On Android 12 and newer the permission dialog offers **Precise** and
+**Approximate**. Pick Approximate and `termux-location` keeps working — it just
+returns a deliberately coarse fix, kilometres wide. That's a legitimate setting,
+not a fault, and worth knowing before you spend an hour debugging your accuracy.
+:::
+
+## The camera
+
+This is the point in the course where a command you type reaches a lens. Read
+the section under this one before you get comfortable with it.
+
+<Steps>
+
+1. **Ask what cameras exist.**
+
+   ```bash
+   termux-camera-info | jq -r '.[] | "\(.id)  \(.facing)"'
+   ```
+
+   ```text
+   0  back
+   1  front
+   ```
+
+   The IDs are what the next command takes. On phones with several rear lenses
+   you may see more than two.
+
+2. **Take a photo.**
+
+   ```bash
+   termux-camera-photo -c 0 ~/shot.jpg
+   ```
+
+   `~` is **Volume Up + H**. `-c` picks the camera ID.
+
+3. **It prints nothing.** That's Unix silence meaning success — so verify it the
+   way you'd verify any file:
+
+   ```bash
+   ls -l ~/shot.jpg
+   ```
+
+   A size of `0` means it failed while looking like it worked. That is the
+   failure mode to watch for here.
+
+</Steps>
+
+:::caution[This command is genuinely unreliable on modern Android]
+Being straight with you: `termux-camera-photo` works fine on plenty of devices
+and fails on plenty of others. The known ways it goes wrong:
+
+- **A zero-byte or all-black file**, with no error printed at all.
+- **Nothing happens** because another app is holding the camera. Close it first
+  — the camera is exclusive.
+- **A permission that was never granted.** Settings → Apps → Termux:API →
+  Permissions → Camera.
+
+It talks to the camera stack directly rather than through a camera app, and
+manufacturers have been reworking that stack for years. If it doesn't work on
+your phone, it isn't something you typed wrong, and there is no flag that fixes
+it.
+:::
+
+## The microphone
+
+Recording runs in the background: the command returns to your prompt straight
+away and the phone keeps listening.
+
+```bash
+termux-microphone-record -f ~/note.m4a -l 10
+```
+
+`-f` is the output file, `-l` is a length limit in seconds — after which it
+stops itself. `-l 0` means unlimited, which is exactly as advisable as it
+sounds. The default encoder is AAC, so `.m4a` is the extension that matches.
+
+```bash
+termux-microphone-record -i    # is it recording, and where to?
+termux-microphone-record -q    # stop now
+```
+
+:::caution[Always set a limit]
+Because it detaches, closing the session does **not** reliably stop it. A
+recording started with `-l 0` and forgotten will run until the storage fills or
+the battery dies. Set `-l`. Then check with `-i`, and stop with `-q`.
+:::
+
+## Now the honest part
+
+You have just worked through seven commands. Six of them read something the
+phone knows about *you*: where you are, which network you're on, which towers
+you're near, how you're holding the device, what the camera sees, what the
+microphone hears.
+
+Individually each one is a party trick. The thing worth understanding is what
+they become when composed — because composing them is what the next section of
+this course teaches, and you should walk into it with your eyes open.
+
+**Location plus a timestamp, on a repeat, is a movement history.** Not a
+metaphor for one. The same file that tells you your commute takes forty minutes
+tells anyone who reads it where you sleep.
+
+**`termux-camera-photo` and `termux-microphone-record` do not open an app.**
+There is no viewfinder, no preview, no obvious moment where a person would
+notice. Whether a shutter sound plays depends on your device and on the laws
+where it was sold — so it is not a warning you can rely on.
+
+So, three rules. They aren't hedging; they're the terms on which this capability
+is worth having.
+
+:::danger[The three rules]
+**1. Run this on your own device only.** Installing this on someone else's
+phone, or leaving something running on it, is stalkerware. It does not matter
+that you wrote it, that they're family, or that you meant well. In many
+jurisdictions it is also a crime, and the fact that the tool is a shell command
+rather than an app changes nothing about that.
+
+**2. Treat the output like the thing it is.** A file of GPS fixes is a file of
+GPS fixes whether you called it `log.txt` or not. Don't sync it to a cloud
+folder, don't paste it into an issue report, don't commit it to a public repo.
+Keep it in `~`, and remember from the beginner course that `~` is wiped on
+uninstall — which here is a feature.
+
+**3. Prefer the least data that answers your question.** If you want "am I
+home?", that's an SSID comparison, not a coordinate log. If you want "is the
+phone moving?", that's the accelerometer, not GPS. Both are cheaper, both are
+faster, and neither leaves a trail worth stealing.
+:::
+
+:::tip[Android is watching too, and you should let it]
+Android 12 and newer put a **green dot** in the status bar whenever the camera
+or microphone is live, and log every access in **Settings → Privacy →
+Privacy Dashboard**. Go and look at it after this lesson — you'll see your own
+`termux-camera-photo` sitting in the list next to your messaging apps.
+
+That dashboard is the most reliable check you have that nothing is running when
+you think nothing is running. Use it on yourself.
+:::
+
+## One value from anything
+
+Everything on this page, reduced to the form you'll actually reach for:
+
+| What you want | One line |
+| :------------ | :------- |
+| Battery percent | `termux-battery-status \| jq .percentage` |
+| Charging or not | `termux-battery-status \| jq -r .status` |
+| Local IP | `termux-wifi-connectioninfo \| jq -r .ip` |
+| Signal strength | `termux-wifi-connectioninfo \| jq .rssi` |
+| Carrier name | `termux-telephony-deviceinfo \| jq -r .network_operator_name` |
+| Towers in range | `termux-telephony-cellinfo \| jq length` |
+| Is it lying flat? | `termux-sensor -s accelerometer -n 1 \| jq '.[].values[2]'` |
+| Coordinates | `termux-location -p network \| jq -r '"\(.latitude),\(.longitude)"'` |
+| Cameras present | `termux-camera-info \| jq -r '.[].facing'` |
+
+Wrap any of them in `$( … )` and it's a variable. That's the whole skill.
+
+## Recap
+
+- Every `termux-*` reader prints JSON; `jq` reduces it to one value, and `-r`
+  drops the quotes.
+- `$(command | jq .field)` is how device telemetry becomes a shell variable.
+- `|` is **Volume Up + L**, `_` is **Volume Up + U**, and **Volume Down + C**
+  stops anything that streams.
+- Permissions live on the **Termux:API** app, not on Termux — and a denied one
+  usually returns an empty value rather than an error.
+- Wi-Fi SSID and cell info both need **location** permission. IMEI-style
+  identifiers are `null` on Android 10+ and stay that way.
+- `termux-sensor` streams until you stop it; `-n 1` takes one reading and `-c`
+  releases a stuck sensor.
+- `termux-location` legitimately takes time; `-p network` is the indoor answer.
+- `termux-camera-photo` is silent on success *and* on some failures — check the
+  file size. It doesn't work on every device, and that's not your fault.
+- Camera and microphone commands leave no visible trace beyond Android's own
+  indicator dot. Own device only, minimum data, treat the output as sensitive.
+
+Next: the other direction — making the phone respond to *you*, with
+notifications you can tap, dialogs that ask questions, and a script that gets an
+answer back. [Talking Back to Android](/bridge/talking-back/).
+
+<LessonComplete client:only="react" slug="bridge/reading-the-device" />

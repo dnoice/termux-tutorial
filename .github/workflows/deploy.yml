@@ -1,0 +1,125 @@
+# Build every course in this monorepo and deploy them as ONE GitHub Pages site.
+#
+# GitHub Pages publishes exactly one artifact per repository, so the three
+# courses cannot each deploy themselves — they are built separately and
+# assembled into a single tree here:
+#
+#   dist/                    <- beginner   (base /termux-tutorial)
+#   dist/intermediate/       <- intermediate (base /termux-tutorial/intermediate)
+#   dist/advanced/           <- advanced   (not built yet)
+#
+# The beginner course is the site root because it is the entry point and every
+# link in it already resolves against /termux-tutorial. Each course keeps its
+# own package.json, its own guards, and its own base.
+#
+# NOTE: Pages from a PRIVATE repository requires GitHub Pro or higher. On the
+# free plan this workflow will build and then fail at the deploy step until the
+# repo is public.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Validate PRs too: build + typecheck run, deploy does not (see the job `if`).
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  # NOT cancel-in-progress. GitHub explicitly warns against cancelling a live
+  # Pages deployment: the run that is interrupted may have already begun
+  # swapping the site, leaving it half-published.
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # Astro 7 requires ^20.19 || ^22.12 || >=24. Pinned, so a runner image
+          # bump cannot break the build with no change to this repo.
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            termux-tutorial-for-beginners/package-lock.json
+            termux-tutorial-intermediate/package-lock.json
+
+      # ---------------------------------------------------------------- beginner
+      - name: Install — beginner
+        working-directory: termux-tutorial-for-beginners
+        run: npm ci
+
+      - name: Typecheck — beginner
+        # `astro build` does not typecheck, so strict mode is decorative without
+        # this step. This is what makes it real.
+        working-directory: termux-tutorial-for-beginners
+        run: npm run check
+
+      - name: Build — beginner
+        working-directory: termux-tutorial-for-beginners
+        # Runs the curriculum guard, astro build, and the link checker.
+        run: npm run build
+
+      # ------------------------------------------------------------ intermediate
+      - name: Install — intermediate
+        working-directory: termux-tutorial-intermediate
+        run: npm ci
+
+      - name: Typecheck — intermediate
+        working-directory: termux-tutorial-intermediate
+        run: npm run check
+
+      - name: Build — intermediate
+        working-directory: termux-tutorial-intermediate
+        run: npm run build
+
+      # ---------------------------------------------------------------- assemble
+      - name: Assemble the site
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          # The beginner course is the root of the published site.
+          cp -r termux-tutorial-for-beginners/dist _site
+          # Each later course nests under it, at the path its own `base` expects.
+          mkdir -p _site/intermediate
+          cp -r termux-tutorial-intermediate/dist/. _site/intermediate/
+          echo "Assembled $(find _site -name '*.html' | wc -l) HTML pages:"
+          echo "  root:         $(find _site -maxdepth 1 -name '*.html' | wc -l)"
+          echo "  intermediate: $(find _site/intermediate -name '*.html' | wc -l)"
+          # Fail loudly rather than deploying half a site.
+          test -f _site/index.html
+          test -f _site/intermediate/index.html
+
+      - name: Configure Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+  deploy:
+    needs: build
+    # A pull request gets the build and the typecheck, never the deployment.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

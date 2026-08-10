@@ -1,0 +1,29 @@
+# Build output — every course builds into its own dist/, and the deploy
+# workflow assembles them into one site artifact.
+dist/
+.astro/
+node_modules/
+# The assembled site the deploy workflow builds from the per-course dists.
+_site/
+
+# The per-course git histories from before the monorepo. Kept so the work is
+# recoverable (`git --git-dir=_pre-monorepo-history/<name>.git log`), ignored
+# so they never become submodules.
+_pre-monorepo-history/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment — SITE / BASE are the only vars the courses read
+.env
+.env.production
+.env.local
+.env.*.local
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini

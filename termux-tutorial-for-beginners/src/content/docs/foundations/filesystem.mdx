@@ -1,0 +1,108 @@
+---
+title: Navigating the Filesystem
+description: Understand where Termux lives on Android and learn the handful of commands you'll use to move around.
+sidebar:
+  order: 1
+# No explicit `next`: Files & Folders is now registered in the sidebar array
+# directly after this lesson, so Starlight chains to it. The chain no longer
+# skips it into Storage, which instructs `mkdir` and `tar` with no introduction.
+---
+
+import TermuxTerminal from '../../../components/terminal/TermuxTerminal.tsx';
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import PracticeSection from '../../../components/lesson/PracticeSection.astro';
+
+Linux keeps everything on one giant tree that starts at `/` — the *root*. No
+drive letters, no `C:\`, just one trunk with everything branching off it. Termux
+lives at a very specific address up in that tree, and once you know your way
+around, you'll never feel lost in a terminal again.
+
+:::note[Folder, directory — same thing]
+Linux says **directory**; Android and Windows say **folder**. They mean the
+identical thing, and this course uses both because the world does. `dir` in a
+command name is always short for *directory*.
+:::
+
+## Where you actually are
+
+When Termux opens, you're in your **home directory**, shown as `~`. Its real,
+full path is a mouthful — `/data/data/com.termux/files/home` — which is exactly
+why `~` exists. You'll rarely type the long form.
+
+Three landmarks are worth knowing by name:
+
+| Shortcut | What's there |
+| :------- | :----------- |
+| `~` | Your home directory — scripts, configs, projects |
+| `$PREFIX` | Installed programs and libraries (`~/../usr`, roughly) |
+| `~/storage` | Links into Android shared storage, once you've set it up |
+
+:::tip[That `$` isn't a prompt]
+`$PREFIX` is a **variable**, not a path you type out. The `$` means "the value
+stored under this name" — nothing to do with the `$` at the end of a bash
+prompt. Termux sets it to `/data/data/com.termux/files/usr`, the folder every
+package you install lands in. Ask it yourself:
+
+```bash
+echo $PREFIX
+```
+
+`echo` prints whatever you give it, so this prints the path. Try it in the
+terminal below — and try `echo $HOME` too.
+:::
+
+## The core navigation commands
+
+| Command | Meaning | Example |
+| :------ | :------ | :------ |
+| `pwd` | **P**rint **w**orking **d**irectory (where am I?) | `pwd` |
+| `ls` | **L**i**s**t files here | `ls` |
+| `ls -a` | List **all** files, including hidden `.dotfiles` | `ls -a` |
+| `cd dir` | **C**hange **d**irectory into `dir` | `cd storage` |
+| `cd ..` | Go up one level to the parent | `cd ..` |
+| `cd` or `cd ~` | Jump back to home from anywhere | `cd` |
+
+## A quick tour
+
+<PracticeSection>
+
+Try this sequence right here — notice how `pwd` changes as you move:
+
+<TermuxTerminal
+  client:only="react"
+  hint="Try: pwd → ls -a → echo $PREFIX → cd .. → pwd → cd → pwd"
+  height={360}
+/>
+
+</PracticeSection>
+
+:::tip[Paths: absolute vs relative]
+An **absolute** path starts from the root and always means the same place:
+`/data/data/com.termux/files/home`. A **relative** path is read from wherever
+you currently are: `cd storage` only works if a `storage` folder exists *here*.
+When in doubt, `pwd` tells you your starting point.
+:::
+
+## Hidden files
+
+Files whose names begin with a dot (like `.termux` or `.bashrc`) are **hidden**
+by default — `ls` skips them. They usually hold configuration. Reveal them with:
+
+```bash
+ls -a
+```
+
+You'll edit one of these dotfiles in [Optimizing the
+Keyboard](/foundations/extra-keys/).
+
+## Recap
+
+- `~` is home; `pwd` tells you where you are; `ls` shows what's here.
+- `cd` moves you around; `cd ..` goes up; `cd` alone goes home.
+- `$PREFIX` is a variable holding the folder your installed packages live in.
+- Hidden dotfiles hold config — see them with `ls -a`.
+
+Next: stop looking and start building — make, read, copy and delete files in
+[Files & Folders](/foundations/files-and-folders/).
+
+<LessonComplete client:only="react" slug="foundations/filesystem" />

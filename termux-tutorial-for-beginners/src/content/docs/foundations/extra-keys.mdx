@@ -1,0 +1,198 @@
+---
+title: Optimizing the Keyboard
+description: Add an extra row of terminal keys — Esc, Ctrl, Tab, and arrows — so you're not fighting your phone's soft keyboard.
+sidebar:
+  # Files & Folders inserted at order 2, so everything after it shifts down one.
+  order: 5
+# The chain used to dead-end here on a placeholder `next: false`, so the course
+# stopped one lesson early. Where to Next is now the sidebar item after this one
+# and carries the terminating `next: false` itself, so nothing is needed here —
+# Starlight derives the link from the array.
+---
+
+import TermuxTerminal from '../../../components/terminal/TermuxTerminal.tsx';
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+import PracticeSection from '../../../components/lesson/PracticeSection.astro';
+
+Here's the dirty secret of terminal-on-a-phone: the keys you need most — **Esc**,
+**Ctrl**, **Tab**, the **arrows** — are exactly the ones your soft keyboard
+buries or hides. Termux gives you a starter row of extra keys already; let's
+replace it with one built for how *you* work.
+
+:::tip[No Ctrl key yet? Your volume buttons are modifier keys]
+This is the single most useful thing nobody tells beginners:
+
+| Press | Acts as |
+| :---- | :------ |
+| **Volume Down** + a letter | **Ctrl** + that letter |
+| **Volume Up** + `E` | **Esc** |
+| **Volume Up** + `T` | **Tab** |
+| **Volume Up** + `W` / `S` | **↑** / **↓** |
+| **Volume Up** + `A` / `D` | **←** / **→** |
+| **Volume Up** + `Q` or `K` | Toggle the extra-keys row on/off |
+| **Volume Up** + `L` | The pipe, &#124; |
+| **Volume Up** + `H` | `~` |
+| **Volume Up** + `U` | `_` |
+| **Volume Up** + `B` / `F` / `X` | **Alt** + that letter |
+| **Volume Up** + `1`–`9` / `0` | **F1**–**F9** / **F10** |
+
+Volume **Down** is the general one — it turns *any* letter into Ctrl + that
+letter. Volume **Up** is not: it is the fixed list above and nothing else, so a
+combination that isn't on it simply does nothing. The three punctuation rows are
+the ones worth memorising — `|`, `~` and `_` are all buried two taps deep on a
+phone keyboard and all three show up constantly.
+
+So **Volume Down + O** saves in nano, **Volume Down + X** exits, and
+**Volume Down + C** cancels a running command. You never need a physical
+keyboard — and you can edit the file below even before you have a Ctrl key.
+
+The four keys this lesson is about — Esc, Tab and the arrows — are already
+reachable that way, and were covered in [Sessions, Copy &
+Paste](/start/sessions-and-copy-paste/). What you're building below is the
+comfortable version: one tap instead of two hands.
+:::
+
+## The extra-keys row
+
+Termux reads its interface settings from a hidden file:
+
+```text
+~/.termux/termux.properties
+```
+
+The `.termux` folder is hidden — it starts with a dot — and on a fresh install it
+may not exist yet, so we'll make sure of it first.
+
+## Start with one row
+
+Every character in the line you're about to type — `[`, `'`, `\`, `,` — lives
+behind a symbol layer on an Android keyboard. So type the short version first,
+confirm it works, and grow it later.
+
+<Steps>
+
+1. **Install an editor and make sure the folder exists.**
+
+   ```bash
+   pkg install nano
+   mkdir -p ~/.termux
+   ```
+
+   `mkdir -p` is the "make it if it isn't there, don't complain if it is"
+   version — on a fresh install `~/.termux` often doesn't exist yet.
+
+2. **Open the file.**
+
+   ```bash
+   nano ~/.termux/termux.properties
+   ```
+
+3. **Type exactly this one line.** No trailing spaces, no line break.
+
+   ```properties
+   extra-keys = [['ESC','CTRL','ALT','TAB','LEFT','DOWN','UP','RIGHT']]
+   ```
+
+   Eight keys: the four you can't live without, plus arrows.
+
+4. **Save and exit.** **Ctrl-O**, **Enter**, then **Ctrl-X** — or, with no Ctrl
+   key yet, **Volume Down + O**, **Enter**, then **Volume Down + X**.
+
+5. **Read it back before you apply it.** This is the step that catches typos:
+
+   ```bash
+   cat ~/.termux/termux.properties
+   ```
+
+   You should see your line, and nothing else. If it's blank, nano didn't save.
+
+6. **Apply it live.**
+
+   ```bash
+   termux-reload-settings
+   ```
+
+</Steps>
+
+**Success looks like:** within about a second, a row of grey keys appears above
+your keyboard — `ESC CTRL ALT TAB ← ↓ ↑ →`. No restart, no relaunch. Nothing
+happened? Re-run the `cat` from step 5 and check the line character by
+character.
+
+:::tip[Why these keys?]
+`ESC` and `CTRL` are essential for editors like `vim` and for cancelling
+commands (`Ctrl-C` — **Volume Down + C** until this row exists). `TAB` triggers
+auto-completion (**Volume Up + T**). The arrows let you move through commands
+and history without a physical keyboard (**Volume Up + W/A/S/D**).
+:::
+
+## Practice the sequence
+
+<PracticeSection>
+
+Three of these four commands run in the practice terminal — `nano` is an
+interactive editor, so it says so honestly instead of faking it. Get the rhythm
+here, then do it on the phone.
+
+<TermuxTerminal
+  client:only="react"
+  hint="Try: pkg install nano → mkdir -p ~/.termux → cat ~/.termux/termux.properties → termux-reload-settings"
+  height={380}
+/>
+
+</PracticeSection>
+
+:::tip[That row of keys below the terminal? Same idea.]
+`ESC TAB ↑ ↓ ← → / - ~ CTRL` — the practice terminal above has its own extra-keys
+row, for exactly the reason this lesson exists: a phone keyboard doesn't have
+those keys either. Tap **CTRL** and it stays lit until your next keypress, so
+**CTRL** then `C` sends Ctrl-C. That's the same sticky-modifier behaviour you're
+about to configure in real Termux.
+:::
+
+:::note[No nano? Use the trick from Files & Folders]
+You can write this file without an editor at all:
+
+```bash
+echo "extra-keys = [['ESC','CTRL','ALT','TAB','LEFT','DOWN','UP','RIGHT']]" > ~/.termux/termux.properties
+```
+
+One `>` overwrites the file — which is what you want here. See [Files &
+Folders](/foundations/files-and-folders/) for the `cat >` + **Ctrl-D**
+(**Volume Down + D**) version,
+which is far easier if you're pasting from an Android text editor.
+:::
+
+## The upgrade: two rows
+
+Once the one-row layout is working, this is the layout most people settle on:
+
+```properties
+extra-keys = [['ESC','/','-','HOME','UP','END','PGUP'], \
+              ['TAB','CTRL','ALT','LEFT','DOWN','RIGHT','PGDN']]
+```
+
+- **Top row:** Esc, `/`, `-`, Home, Up, End, Page Up
+- **Bottom row:** Tab, Ctrl, Alt, Left, Down, Right, Page Down
+
+:::caution[The `\` is load-bearing, and a trailing space kills it]
+That backslash at the end of the first line means "this line continues". It has
+to be the **very last character** — one space after it and Termux reads a broken
+setting and silently keeps your old row. If the two-row layout does nothing,
+that space is almost always why. `cat` the file and look hard at the end of
+line one.
+:::
+
+## Recap
+
+- The extra-keys row lives in `~/.termux/termux.properties`.
+- Start with one row; add the second once the first works.
+- `cat` the file to verify **before** `termux-reload-settings`.
+- A `\` continues a line — and only if nothing follows it.
+- Apply changes live with `termux-reload-settings`; no restart needed.
+
+That's the Foundations module — and the last thing you have to configure. Next:
+what you can build with all of it, in [Where to Next](/where-next/).
+
+<LessonComplete client:only="react" slug="foundations/extra-keys" />

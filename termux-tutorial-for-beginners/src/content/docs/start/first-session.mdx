@@ -1,0 +1,98 @@
+---
+title: Your First Session
+description: Run your first real Termux commands in a live, interactive terminal.
+sidebar:
+  order: 3
+---
+
+import TermuxTerminal from '../../../components/terminal/TermuxTerminal.tsx';
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+import PracticeSection from '../../../components/lesson/PracticeSection.astro';
+
+Enough setup — let's *drive*. Every command below runs in the terminal right on
+this page, so you can build the reflexes here before you ever touch your real
+device. Mistakes are free. Make a bunch.
+
+:::tip[How the practice terminal works]
+This is a **fish**-style shell. As you type, grey text suggests a completion from
+your history or the command list — press **→** or **Tab** to accept it. Valid
+commands turn **cyan**; typos turn **red**.
+
+Neither key is on an Android soft keyboard, which is a real problem and has a
+real answer: in Termux, **Volume Up + D** is → and **Volume Up + T** is Tab. The
+[Handy keys](#handy-keys) table below has the full set.
+
+Real Termux ships with **bash**, which is plainer than this — no grey ghost
+text, no colour. That's the very next lesson: [Upgrade Your Shell to
+Fish](/start/friendly-shell/).
+:::
+
+## Walk through it
+
+<PracticeSection>
+
+<Steps>
+
+1. **See who you are and where you are.** Type `whoami`, then `pwd`.
+
+2. **Update your packages.** Every session starts here: `pkg update`.
+
+3. **Look around.** List your home directory with `ls`, then `ls -a` to reveal
+   hidden files like `.termux`.
+
+4. **Install your first tool.** Try `pkg install git`.
+
+</Steps>
+
+<TermuxTerminal client:only="react" hint="Start with: whoami" height={380} />
+
+</PracticeSection>
+
+## What just happened?
+
+| Command | What it does |
+| :------ | :----------- |
+| `whoami` | Prints your username. On Android it's an auto-generated ID like `u0_a123` — you don't pick it, and it's normal for it to look like nonsense. |
+| `pwd` | *Print working directory* — where you are in the filesystem right now. |
+| `pkg update` | Refreshes the list of available packages and versions. |
+| `ls` / `ls -a` | Lists files. `-a` includes hidden dotfiles. |
+| `pkg install git` | Downloads and installs a package (here, the `git` version control tool). |
+
+## Handy keys
+
+Every key here has a phone equivalent in the right-hand column — none of these
+are on an Android soft keyboard, so the volume buttons stand in for them.
+
+| Key | Does | On a phone |
+| :-- | :--- | :--------- |
+| **↑** / **↓** | Walk back and forward through your command history | **Volume Up + W** / **Volume Up + S** |
+| **Tab** or **→** | Accept the grey autosuggestion | **Volume Up + T** / **Volume Up + D** |
+| **Ctrl-C** | Cancel the running command or the line you're typing | **Volume Down + C** |
+| **Ctrl-L** | Clear the screen | **Volume Down + L** |
+
+`history` does the same job as ↑ when ↑ is too slow: it prints the whole list,
+numbered. It's a command, not a key — try it above once you've run a few things.
+
+:::tip[Your volume buttons are the keys you're missing]
+While Termux is on screen the volume buttons stop changing the volume and become
+modifiers: **Volume Down + a letter** is **Ctrl** + that letter, and **Volume Up**
+turns a handful of letters into the keys no soft keyboard has (`E` = Esc,
+`T` = Tab, `W`/`S`/`A`/`D` = the four arrows, `L` = the pipe `|`).
+
+The asymmetry is worth knowing: Volume **Down** works with *any* letter, Volume
+**Up** only with the specific ones on that list — press it with anything else and
+nothing happens.
+
+That is the whole trick, and it works on a fresh install with nothing
+configured. [Sessions, Copy & Paste](/start/sessions-and-copy-paste/) has the
+full table; [Optimizing the Keyboard](/foundations/extra-keys/) turns them into
+a permanent row of buttons.
+:::
+
+## Next
+
+You can move around and install things. Next, make your real Termux behave like
+this sandbox: [Upgrade Your Shell to Fish](/start/friendly-shell/).
+
+<LessonComplete client:only="react" slug="start/first-session" />

@@ -1,0 +1,411 @@
+---
+title: A Web Server in Your Pocket
+description: Serve a directory over HTTP from your phone with Python or Node, then open it from your laptop across the Wi-Fi you are both already on.
+sidebar:
+  order: 6
+# No prev/next here: this lesson is registered in the Serving From Your Pocket
+# group in astro.config.mjs, between Making It Run Itself and Opening a Door to
+# the Internet, so Starlight derives both ends of the chain from that array.
+# Hand-written links would be a second source of truth that nothing validates.
+---
+
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+
+Your phone has spent its entire life as a client. It asks for pages; other
+machines answer. This lesson turns that round: one command makes a folder on
+your phone into a website, and the laptop on the other end of the sofa loads it.
+
+Nothing leaves your Wi-Fi today, and that is the point. The next lesson opens a
+door to the open internet — but a tunnel to a server that was never working is
+undebuggable, because every failure looks identical from outside. So you build
+the baseline first, prove it, and only then punch a hole through it.
+
+## Something worth serving
+
+A web server serves a **directory**. Give it an empty one and you get an empty
+page, which tells you nothing. So make a directory with one real file in it.
+
+<Steps>
+
+1. **Make the folder and step into it.**
+
+   ```bash
+   mkdir -p ~/site
+   cd ~/site
+   ```
+
+   In your **home** directory, not `~/storage/shared` — the rule from course
+   one hasn't changed just because the file happens to be HTML.
+
+2. **Write a page.**
+
+   ```bash
+   echo "<h1>Served from my phone</h1>" > index.html
+   ```
+
+   One `>` overwrites, which is what you want on a file that doesn't exist yet.
+
+3. **Check it's really there.**
+
+   ```bash
+   cat index.html
+   ```
+
+   If `cat` prints nothing, the `echo` went somewhere else and everything below
+   will serve you a directory listing instead of a page.
+
+</Steps>
+
+:::note[Why `index.html` and not `page.html`]
+Both servers in this lesson do the same thing with a directory: if it contains
+`index.html`, they serve that file. If it doesn't, they generate a clickable
+**listing of every file in the folder** instead. That listing is a genuinely
+useful feature — and it is also how people accidentally publish the contents of
+a folder they hadn't looked in for a year.
+:::
+
+## Start the server
+
+Python is almost certainly already on your phone; if not, `pkg install python`.
+It ships a web server as part of the standard library, so there is nothing else
+to install.
+
+```bash
+python -m http.server 8080 --bind 0.0.0.0
+```
+
+That's it. The terminal prints one line and then stops:
+
+```text
+Serving HTTP on 0.0.0.0 port 8080 (http://0.0.0.0:8080/) ...
+```
+
+The prompt does **not** come back. The server has the terminal now, and it keeps
+it until you stop it. That's not a hang — it's a running program, and the first
+thing it does is nothing at all, because nobody has asked it for anything yet.
+
+Give it something to answer. Open your phone's normal browser — Chrome, Firefox,
+whatever you use — and go to:
+
+```text
+http://127.0.0.1:8080
+```
+
+Your page appears, and back in Termux a new line shows up:
+
+```text
+127.0.0.1 - - [09/Aug/2026 14:02:11] "GET / HTTP/1.1" 200 -
+```
+
+That is the server telling you who asked, when, for what, and how it went.
+`200` means it found the file. `404` means it didn't. This log is the single
+most useful diagnostic in the next lesson, so get used to reading it now.
+
+:::tip[Stop it with Ctrl-C — on a phone, Volume Down + C]
+`Ctrl-C` is how you stop any program that has taken over the terminal, and
+**Volume Down + C** is that key combination on a phone that has no Ctrl key.
+Python answers with `Keyboard interrupt received, exiting.` and hands the
+prompt back. Leave the server running for now — you'll need it in a minute.
+:::
+
+:::note[No practice terminal on this lesson]
+Every other lesson gives you a simulator to rehearse in. This one can't: the
+practice terminal is deliberately offline and has no network stack, so
+`python -m http.server` there would be a lie with a convincing prompt. A server
+you can't connect to teaches nothing. Use the phone.
+:::
+
+## `0.0.0.0` versus `127.0.0.1`
+
+You just loaded the page at `127.0.0.1` and it worked. Try that address from
+your laptop and it will fail — and it will fail in the most confusing way
+possible, because `127.0.0.1` on your laptop is a perfectly valid address that
+means *your laptop*.
+
+Your phone has more than one address. It always has at least two:
+
+| Address | Also called | Who can reach it |
+| :------ | :---------- | :--------------- |
+| `127.0.0.1` | localhost, the loopback | **Only this device.** Traffic never touches the Wi-Fi chip |
+| `192.168.x.x` (or `10.x.x.x`) | the LAN address | Anything on the same Wi-Fi |
+| `0.0.0.0` | "all of them" | Not an address at all — see below |
+
+`0.0.0.0` is the odd one out: it is not somewhere you connect *to*, it is what a
+server says when it is asked **which of my addresses should I listen on** and the
+answer is *all of them*. So `--bind 0.0.0.0` means the server answers on the
+loopback **and** on the Wi-Fi address. Bind it to `127.0.0.1` instead and it
+answers only itself, which is a perfectly good choice when you're testing
+something you don't want the café to see.
+
+:::note[You may see `::` instead]
+Leave `--bind` off entirely and Python still listens everywhere — that's already
+the default — but on a phone with IPv6 it will often print
+`Serving HTTP on :: port 8080` instead. `::` is the IPv6 way of writing the same
+"all of them", and nothing is wrong. Passing `--bind 0.0.0.0` just pins it to
+IPv4 so the output says what this section is about.
+:::
+
+## Find your phone's address
+
+Now you need the *other* address — the one your laptop can actually use.
+
+The most reliable answer comes from Android itself, through Termux:API, which
+you wired up in [Wiring Up Termux:API](/bridge/api-setup/):
+
+```bash
+termux-wifi-connectioninfo
+```
+
+Look for the `ip` line in the JSON it prints. That's the address.
+
+:::caution[If that comes back empty or full of nulls]
+`termux-wifi-connectioninfo` goes through Android's Wi-Fi API, which is
+permission-gated. If `ssid` reads `<unknown ssid>` the location permission is
+missing — the `ip` field is usually still there, so carry on. If the whole
+object is null, grant Termux:API the location permission and turn location on;
+that's the same grant [Reading the Device](/bridge/reading-the-device/) needed.
+
+The permission-free fallback always works: **Settings → About phone → Status →
+IP address**. The exact path varies by manufacturer, but every Android has it.
+:::
+
+You may also see `ifconfig` or `ip addr` suggested for this. Both need a package
+(`pkg install net-tools` or `pkg install iproute2`), and on Android 10 and newer
+they frequently return nothing useful for an unprivileged app, because Android
+walled off the kernel interfaces they read. If yours prints only `lo`, that's
+the restriction and not your mistake — use one of the two methods above.
+
+An address that starts `192.168.`, `10.`, or `172.16.`–`172.31.` is a private
+LAN address, which is exactly what you want. Write it down; the examples below
+use `192.168.1.42`.
+
+:::caution[That address is a lease, not a name]
+Your router hands it out and can hand out a different one after you rejoin the
+Wi-Fi, toggle airplane mode, or reboot. If a URL that worked yesterday times out
+today, re-check the address before you debug anything else.
+:::
+
+## Load it from the laptop
+
+<Steps>
+
+1. **Confirm both devices are on the same Wi-Fi.** Not "the same house" — the
+   same network name. A 2.4 GHz and a 5 GHz band with the same name are fine;
+   a separate *guest* network is not.
+
+2. **Make sure the server is still running** on the phone. If you stopped it:
+
+   ```bash
+   python -m http.server 8080 --bind 0.0.0.0 --directory ~/site
+   ```
+
+   `--directory` serves that folder without you having to `cd` into it first,
+   which matters once you're starting this from a script.
+
+3. **On the laptop, open a browser** and go to your phone's address and port:
+
+   ```text
+   http://192.168.1.42:8080
+   ```
+
+   Substitute your own address. Keep the `http://` — leave it off and the
+   browser will treat it as a search, or silently try HTTPS and fail.
+
+4. **Watch Termux while the page loads.** A new log line appears with your
+   laptop's address on it.
+
+</Steps>
+
+That log line is the whole lesson. A page on your phone, fetched by a different
+machine, and a server that told you it happened.
+
+### When it doesn't load
+
+Work down this list in order. Each row rules out everything above it.
+
+| Symptom | Almost always |
+| :------ | :------------ |
+| Works at `127.0.0.1` on the phone, times out from the laptop | Bound to `127.0.0.1`, or the two devices aren't on the same network |
+| Fails at `127.0.0.1` on the phone too | The server isn't running — check the Termux session |
+| Connection refused, instantly | Right address, wrong port, or the server has stopped |
+| Times out with no error at all | A VPN on either device, or **AP isolation** on the router |
+| Page loads but shows a file list | No `index.html` in the folder you served |
+| `404` in the log | The file exists somewhere else — check the `--directory` you passed |
+
+:::caution[Guest networks and café Wi-Fi are built to stop this]
+**AP isolation** (also sold as "client isolation" or "guest mode") deliberately
+prevents devices on the same Wi-Fi from talking to each other. It is on by
+default on most guest networks and a lot of public hotspots. Nothing you type in
+Termux can defeat it — you need a network without it, or your phone's own
+hotspot with the laptop joined to that. A VPN app on either device does much the
+same thing by routing traffic away from the LAN.
+:::
+
+## Why not port 80?
+
+Port `80` is where browsers look when you don't name a port, so serving on it
+would let you drop the `:8080`. Try it:
+
+```bash
+python -m http.server 80
+```
+
+```text
+PermissionError: [Errno 13] Permission denied
+```
+
+Ports **below 1024** are privileged: on Linux — and Android is Linux — only root
+may listen on them. Termux is an ordinary unprivileged Android app, so it cannot,
+and no flag, package or `sudo` will change that on an unrooted phone. This is not
+a Termux limitation to work around; it is the correct answer.
+
+Pick anything from `1024` upward. `8080` and `8000` are conventional, `3000` is
+the Node habit, and any unused number in the range works fine. The cost is four
+extra characters in the URL.
+
+:::note[`Address already in use`]
+```text
+OSError: [Errno 98] Address already in use
+```
+
+Errno 98 means a server is **already** listening on that port — usually one you
+started earlier and forgot. Either pick another port, or find the old one; the
+last section of this lesson is about exactly that.
+:::
+
+## The Node version
+
+If your project is already a Node project, staying in one toolchain is worth
+something. There is no server in Node's standard library the way there is in
+Python's, so this one is an install:
+
+```bash
+pkg install nodejs
+npm install -g http-server
+```
+
+Then serve the same folder:
+
+```bash
+http-server ~/site -p 8080
+```
+
+It binds to `0.0.0.0` by default, and it prints the addresses it is reachable on
+— including the LAN one, which saves you the previous section entirely. To
+restrict it to the loopback the way `--bind 127.0.0.1` does, pass `-a 127.0.0.1`.
+
+:::tip[Which one should you use?]
+**Python**, unless you have a reason. It is already installed, it is one command
+with nothing to download, and it has no dependency tree to rot. `http-server`
+earns its install when you want its extras — CORS headers, cache control, a
+proxy — or when the alternative is explaining to a teammate why the Node project
+is served by Python.
+
+`npx http-server` runs it without the global install, but it fetches the package
+on first use, so it needs a working network at the moment you least want to
+think about one.
+:::
+
+:::caution[Both of these serve a folder to everyone on the network]
+Neither server asks for a password, and neither is trying to be secure — Python's
+own documentation says `http.server` is not recommended for production. On a home
+network that is fine. On shared Wi-Fi, everyone on it can read every file in the
+directory you pointed at, and browse subfolders freely.
+
+So point them at a folder you built for the purpose. **Never** at `~`, and never
+at `~/storage/shared` — that is your entire phone: photos, downloads, documents,
+the lot. This matters more in the next lesson, where the audience stops being
+"the people in this building".
+:::
+
+## Keeping it alive
+
+A server holds its session for as long as it runs, which raises the obvious
+question: how do you type anything else?
+
+**Open a second session.** Swipe in from the left edge of Termux and tap **New
+session** — the gesture from course one. The server keeps running in the first
+one, and you get a prompt in the second. Swipe back to watch the log. This is
+the answer most of the time, and it needs nothing installed.
+
+**Or hand it the wakelock.** Everything [Making It Run
+Itself](/automation/scheduling/) said about Android suspending Termux applies
+here, and a suspended server is a server that stops answering the moment your
+screen has been off for a few minutes:
+
+```bash
+termux-wake-lock
+```
+
+Release it the second you're done — it has a real battery cost, and a forgotten
+wakelock is a phone that's warm in the morning:
+
+```bash
+termux-wake-unlock
+```
+
+**Or push it into the background.** Ending the command with `&` starts it and
+returns your prompt immediately:
+
+```bash
+python -m http.server 8080 --directory ~/site > ~/server.log 2>&1 &
+```
+
+The redirect matters: without it the server's log lines spray over whatever
+you're typing. `> ~/server.log` sends the normal output to a file and `2>&1`
+sends the errors to the same place, so `cat ~/server.log` tells you what
+happened. List what you have running in that session with `jobs`, and stop one
+with its job number:
+
+```bash
+jobs
+kill %1
+```
+
+### Finding the server you forgot
+
+This is the one that catches people: you closed the session, the server is still
+running, and `8080` now refuses every new server you start.
+
+The usual Linux answer is `netstat` or `ss`, and on modern Android it usually
+doesn't work — the `/proc/net` files those tools read are restricted for
+unprivileged apps. So use the two methods that do:
+
+1. **Try to bind the port again.** `Address already in use` is a definitive
+   yes; the server starting normally is a definitive no. Free, instant, needs
+   nothing installed.
+2. **Kill it by name.**
+
+   ```bash
+   pkill -f http.server
+   ```
+
+   `-f` matches against the whole command line rather than just the program
+   name, which is what you need here — the program is `python`, and killing
+   every `python` is not what you meant. If `pkill` isn't there,
+   `pkg install procps`.
+
+Fully exiting Termux stops the server too, wakelock or no wakelock. That is a
+blunt instrument, but it is a reliable one.
+
+## Recap
+
+- `python -m http.server 8080 --bind 0.0.0.0` serves the current directory;
+  `--directory ~/site` serves a named one.
+- `127.0.0.1` is reachable only from the phone. `0.0.0.0` means "listen on every
+  address I have", which is what makes the laptop's request arrive.
+- Get the phone's LAN address from `termux-wifi-connectioninfo`, or from
+  **Settings → About phone → Status**. It changes; re-check it before you debug.
+- Ports under 1024 need root, so an unrooted phone cannot use port 80. Anything
+  from 1024 up is yours.
+- `index.html` gets served; without one you publish a browsable file listing.
+- `Ctrl-C` (**Volume Down + C**) stops the server. A second session, the
+  `termux-wake-lock` from the last lesson, or `&` plus a redirect keep it alive.
+- The request log in the terminal is your diagnostic. Read it.
+
+You now have a working server and a known-good URL. Next: make that same server
+answer someone who is nowhere near your Wi-Fi — [Opening a Door to the
+Internet](/serving/tunnels/).
+
+<LessonComplete client:only="react" slug="serving/local-server" />

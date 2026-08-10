@@ -1,0 +1,206 @@
+---
+title: Sessions, Copy & Paste
+description: The Android half of Termux — running several terminals at once, copying and pasting without a Ctrl key, scrolling back, closing it properly, and the volume-key shortcuts for Esc, Tab and the arrows.
+sidebar:
+  # Inert while Start Here uses an explicit `items` array (CLAUDE.md gotcha #1),
+  # but check-curriculum.mjs asserts these ascend in sidebar order — this lesson
+  # is registered LAST in Start Here, after Upgrade Your Shell to Fish (4).
+  order: 5
+# No prev/next here: this lesson is registered in the Start Here group in
+# astro.config.mjs, after Upgrade Your Shell to Fish and before Navigating the
+# Filesystem, so Starlight derives both ends of the chain from that array.
+---
+
+import TermuxTerminal from '../../../components/terminal/TermuxTerminal.tsx';
+import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
+import PracticeSection from '../../../components/lesson/PracticeSection.astro';
+
+You can type commands now. That is the Linux half. This lesson is the **Android**
+half — the app wrapped around the shell, and the part that decides whether you
+are still using Termux next week.
+
+Every skill here is a gesture or a button, not a command: running several
+terminals at once, getting a command off a web page and into your prompt,
+scrolling back to read what scrolled away, and shutting the whole thing down on
+purpose. None of it is hard. All of it is invisible until somebody points at it.
+
+## One app, many terminals
+
+A **session** is one running shell. Termux can hold several at once, and they
+keep running while you look at another one — so you can leave a long download
+going in session 1 and carry on working in session 2.
+
+The session list lives in a drawer off the left edge of the screen.
+
+<Steps>
+
+1. **Swipe in from the left edge** of the terminal. A drawer slides out listing
+   every open session, with the current one highlighted.
+
+2. **Tap `NEW SESSION`** at the bottom of the drawer. You land in a fresh shell,
+   in your home directory, with nothing running in it.
+
+3. **Swipe the drawer open again and tap a session** to switch back. Whatever
+   you left running there is still running.
+
+4. **Long-press a session in the drawer** to rename it. `build`, `logs`,
+   `scratch` — anything beats `bash` three times over.
+
+</Steps>
+
+:::tip[Closing one session vs closing Termux]
+Typing `exit` — or pressing <kbd class="tmx-kbd">Ctrl-D</kbd>
+(**Volume Down + D**) at an empty prompt — ends **that session only**. If it was
+your last one, Termux closes. Sessions you left open in the drawer keep running
+regardless of which one you are looking at.
+:::
+
+## Copy and paste, without a Ctrl key
+
+This is the single most useful gesture in the app, and it is the one nobody
+mentions: **long-press anywhere on the terminal**. A small menu appears with
+**Copy**, **Paste** and **More**.
+
+- **To paste** — long-press, tap **Paste**. Whatever is in the Android clipboard
+  is typed in at the cursor, exactly as if you had typed it. This is how a
+  command gets from a web page (like this one) into your prompt.
+- **To copy** — long-press on the *text you want*, then drag the two selection
+  handles to cover it, and tap **Copy**. It goes to the Android clipboard, so
+  you can paste it into any other app.
+
+:::danger[Ctrl-C is not copy. It never was.]
+On a desktop, <kbd class="tmx-kbd">Ctrl-C</kbd> copies. **In a terminal it does
+the opposite of nothing — it kills the command that is running.** That meaning is
+forty years older than the copy shortcut, and terminals kept it.
+
+So if a command is stuck, spewing output, or you just changed your mind:
+<kbd class="tmx-kbd">Ctrl-C</kbd> — on a phone, **Volume Down + C**. And if you
+meant to copy: long-press and **Copy**, never Ctrl-C.
+
+<kbd class="tmx-kbd">Ctrl-V</kbd> is not paste either. It is a terminal escape
+that inserts the *next* keystroke literally. Long-press and **Paste**.
+:::
+
+:::note[Selecting text is fiddly, and that's not you]
+Selection handles on a monospace grid are genuinely awkward. Two ways round it:
+long-press → **More** → **Select URL** pulls every link out of the screen into a
+tappable list, and **More** → **Share transcript** hands the whole session to
+another app. Both beat wrestling a handle across nine lines of output.
+:::
+
+## Scrolling back
+
+Output that scrolls off the top is not gone — Termux keeps a **scrollback
+buffer**. Swipe up on the terminal with one finger to read back through it, and
+swipe down to return to the prompt.
+
+Worth knowing: `clear` (or <kbd class="tmx-kbd">Ctrl-L</kbd>, **Volume Down +
+L**) only pushes the screen down out of sight. Scroll up and it is all still
+there. That is a feature — you can clear the clutter without losing the error
+message you were about to read.
+
+## Closing Termux properly
+
+Swiping Termux out of the recent-apps list does **not** stop it. It runs a
+foreground service specifically so that Android will not kill it, which is what
+keeps your long jobs alive — and what makes a "restart" that isn't one.
+
+**Pull down the notification shade** and you will find the Termux notification.
+It has two actions:
+
+| Action | What it does |
+| :----- | :----------- |
+| **Exit** | Ends **every** session and stops Termux completely. This is the real quit button. |
+| **Acquire wakelock** | Keeps the CPU awake so a long job survives the screen going off. Tap it again to release. |
+
+You met **Exit** in [Upgrade Your Shell to Fish](/start/friendly-shell/) — that
+is why `chsh` appeared not to work until you used it. Now you know what it is
+actually doing: killing all your sessions, not just the one on screen.
+
+:::caution[Exit closes every session at once]
+There is no "are you sure?". Anything running in any session stops. If you have
+a download going in session 2, switch to it and let it finish first.
+:::
+
+## Keys your keyboard doesn't have
+
+Your soft keyboard has letters, digits and punctuation. It has no **Esc**, no
+**Tab**, no **Ctrl**, no arrows — and the terminal wants all four. Termux solves
+this with the volume buttons, which stop changing the volume the moment Termux
+is on screen.
+
+| Press | You get |
+| :---- | :------ |
+| **Volume Down** + a letter | **Ctrl** + that letter — `Ctrl-C`, `Ctrl-D`, `Ctrl-L`, all of them |
+| **Volume Up** + `E` | **Esc** |
+| **Volume Up** + `T` | **Tab** — completion, and accepting a fish suggestion |
+| **Volume Up** + `W` / `S` | **↑** / **↓** — walk back through your command history |
+| **Volume Up** + `A` / `D` | **←** / **→** — move along the line you're typing |
+| **Volume Up** + `Q` or `K` | Show or hide the extra-keys row |
+| **Volume Up** + `L` | The pipe, &#124; — buried two taps deep on a phone |
+
+Those six letters are worth learning today, because they unlock the keys every
+remaining lesson asks for. In [Optimizing the
+Keyboard](/foundations/extra-keys/) you'll put the same keys on a permanent row
+of buttons above the keyboard — but the volume shortcuts always work, including
+on a fresh install with nothing configured.
+
+## If you have a real keyboard
+
+Plug in a USB keyboard or pair a Bluetooth one and Termux behaves like any other
+terminal: **Esc**, **Tab**, **Ctrl** and the arrows are just keys, and the volume
+tricks above become unnecessary.
+
+You also get app shortcuts, all of them on **Ctrl-Alt**:
+
+| Shortcut | Does |
+| :------- | :--- |
+| **Ctrl-Alt-C** | New session |
+| **Ctrl-Alt-N** / **Ctrl-Alt-P** | Next / previous session |
+| **Ctrl-Alt-1** … **Ctrl-Alt-9** | Jump straight to session 1–9 |
+| **Ctrl-Alt-R** | Rename the current session |
+| **Ctrl-Alt-V** | Paste |
+| **Ctrl-Alt-+** / **Ctrl-Alt--** | Bigger / smaller text |
+
+:::note[Two things that catch people out]
+Some Bluetooth keyboards send **Fn-layer** arrows that Android swallows before
+Termux sees them — if the arrows do nothing, the volume-key versions still work.
+And the extra-keys row stays on screen with a hardware keyboard attached;
+**Volume Up + Q** hides it and gives you the lines back.
+:::
+
+## Practice the shell half
+
+<PracticeSection>
+
+The gestures above belong to the Android app, so they have nothing to do here —
+but the commands they wrap do. Run a few things, then `history` to see them
+listed, then `clear` and scroll back up to prove nothing was lost.
+
+<TermuxTerminal
+  client:only="react"
+  hint="Try: whoami → pwd → ls -a → history → clear"
+  height={360}
+/>
+
+</PracticeSection>
+
+## Recap
+
+- A **session** is one shell. Swipe in from the **left edge** for the drawer;
+  `NEW SESSION` makes another; long-press one to rename it.
+- **Long-press the terminal** for Copy and Paste. Select text with the handles.
+- **`Ctrl-C` cancels, it does not copy** (**Volume Down + C**). `Ctrl-V` isn't
+  paste either.
+- Swipe up to read the **scrollback**. `clear` hides output; it doesn't destroy
+  it.
+- The notification's **Exit** is the real quit button, and it closes **every**
+  session.
+- Volume Down = Ctrl. Volume Up + `E`/`T`/`W`/`S`/`A`/`D` = Esc, Tab and the
+  arrows.
+
+You can now live in the app. Next, get your bearings inside it: [Navigating the
+Filesystem](/foundations/filesystem/).
+
+<LessonComplete client:only="react" slug="start/sessions-and-copy-paste" />

@@ -1,0 +1,142 @@
+---
+# The site title is also "Termux for Beginners", so a matching page title
+# rendered as "Termux for Beginners | Termux for Beginners" — the word-for-word
+# duplicate SERP entry the audit flagged. Starlight's mergeHead dedupes on
+# tag === 'title' with the later source winning, so this frontmatter `head`
+# replaces the default outright. It is set here rather than in the config's
+# `head` because a title tag there would override all 15 pages.
+# "Learn Termux on Android | Termux for Beginners" = 46 chars, inside budget.
+title: Termux for Beginners
+head:
+  - tag: title
+    content: Learn Termux on Android | Termux for Beginners
+description: Turn the phone in your pocket into a real Linux machine. A hands-on Termux course with a live terminal baked into every lesson — no device, no setup, no excuses.
+template: splash
+hero:
+  # The old tagline stopped at "switched on", which is lesson two of eleven —
+  # it read as a course about installing Termux rather than using it. It was
+  # also over-built: a passive clause, a cutesy metaphor, a filler beat, and a
+  # three-preposition tail. This says what the thing is, what you get out of it,
+  # and why you can start now, in two sentences that read aloud cleanly.
+  tagline: Android runs Linux underneath — Termux is the terminal it never shipped with. This course takes you from your first command to a phone that does real work. Every lesson has a live terminal, so you can start before you install anything.
+  actions:
+    # Relative (no leading slash): frontmatter cannot use import.meta.env.BASE_URL,
+    # and Starlight does not base-prefix hero action links. Relative resolves
+    # against this splash page's own URL, which IS the base root — so it stays
+    # correct if `base` ever changes.
+    - text: Start the course
+      link: start/why-termux/
+      icon: right-arrow
+      variant: primary
+# Lesson one is Why Termux — never the progress dashboard.
+# Relative, for the same reason as the hero action above: Starlight does NOT
+# base-prefix frontmatter links, so a leading slash here 404s on GitHub Pages.
+next:
+  link: start/why-termux/
+  label: Why Termux (not the Play Store)
+
+---
+
+import { Icon } from 'astro-icon/components';
+import TermuxTerminal from '../../components/terminal/TermuxTerminal.tsx';
+import BootSplash from '../../components/splash/BootSplash.astro';
+
+{/* Landing page only, once per session, skippable — see the component header.
+    Mounted here rather than in a layout override on purpose: the last thing
+    that rendered site-wide took the sticky header with it. */}
+<BootSplash />
+
+export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+<p class="tmx-lede">
+  Most tutorials hand you a wall of commands and wish you luck. This one hands
+  you a <strong class="tmx-gradient-text">live terminal</strong> and stands next
+  to you while you use it. Read a little, type a little, break things safely —
+  that's the whole deal.
+</p>
+
+Go ahead — poke it. Type `pkg update`, then `termux-setup-storage`. The grey
+text ahead of your cursor is the terminal guessing what you meant; tap
+<kbd class="tmx-kbd">→</kbd> or <kbd class="tmx-kbd">Tab</kbd> to accept it.
+Reading this on a phone, where your keyboard has neither key? Just type the
+command out — and note the problem, because solving it on your real device is
+[a lesson of its own](/start/sessions-and-copy-paste/).
+
+That guessing comes from a shell called **fish**. You'll install it in lesson
+four; this practice terminal just has it switched on from the start.
+
+<TermuxTerminal client:only="react" hint="Lost? Type 'help' — it lists everything this practice terminal knows." />
+
+:::tip[Before you start]
+**You need nothing at all to begin.** Every lesson has a terminal built in, so
+you can read and practise the entire course right here and install Termux later
+— that's the point of the thing above.
+
+**To follow along on your phone:** Android 7 or newer, about **200 MB** free,
+and **Wi-Fi** for the first package update (it pulls tens of megabytes).
+
+**You do not need:** root, a computer, a rooted bootloader, or money.
+
+**Time:** about 90 minutes end to end, and it saves your place as you go.
+:::
+
+<div class="tmx-rule"><Icon name="fa6-solid:terminal" aria-hidden="true" focusable="false" /></div>
+
+## What you'll walk away with
+
+<div class="tmx-grid">
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:shield-halved" aria-hidden="true" focusable="false" /></span>
+    <h3 class="tmx-card__title">Install it without shooting yourself in the foot</h3>
+    <p class="tmx-card__body">Why the Play Store build is a dead end, and how one cryptographic signature decides whether your apps will even speak to each other.</p>
+  </div>
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:folder-tree" aria-hidden="true" focusable="false" /></span>
+    <h3 class="tmx-card__title">Bridge Termux to your real files</h3>
+    <p class="tmx-card__body">Run <code>termux-setup-storage</code>, learn the symlinks it drops in, and never nuke a day's work to an app reset again.</p>
+  </div>
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:cubes-stacked" aria-hidden="true" focusable="false" /></span>
+    <h3 class="tmx-card__title">Command the package manager</h3>
+    <p class="tmx-card__body">Update, search, install, upgrade — <code>pkg</code>, the friendly face on top of Debian's <code>apt</code>, becomes second nature.</p>
+  </div>
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:rocket" aria-hidden="true" focusable="false" /></span>
+    <h3 class="tmx-card__title">Practice with zero risk</h3>
+    <p class="tmx-card__body">A scripted practice terminal for muscle memory, plus a real Debian VM in the browser when you want to go off-script.</p>
+  </div>
+</div>
+
+<div class="tmx-rule"><Icon name="fa6-solid:fish" aria-hidden="true" focusable="false" /></div>
+
+## Two terminals, zero setup
+
+This course ships with **two** ways to get your hands dirty. You don't launch
+them from here — they're built right into the lessons. Here's the lay of the land:
+
+<div class="tmx-panels">
+  <div class="tmx-panel">
+    <span class="tmx-chip"><Icon name="fa6-solid:wand-magic-sparkles" aria-hidden="true" focusable="false" /></span>
+    <div class="tmx-panel__head">
+      <span class="tmx-panel__kicker">Offline · Instant</span>
+      <h3 class="tmx-panel__title">The Practice Terminal</h3>
+    </div>
+    <p class="tmx-panel__body">The one up the page, with the grey suggestions. Predictable and always-on — training wheels for following a lesson keystroke by keystroke. It's embedded in nearly every lesson.</p>
+  </div>
+  <div class="tmx-panel">
+    <span class="tmx-chip"><Icon name="fa6-brands:linux" aria-hidden="true" focusable="false" /></span>
+    <div class="tmx-panel__head">
+      <span class="tmx-panel__kicker">Real Debian · Heavier</span>
+      <h3 class="tmx-panel__title">The Live Sandbox</h3>
+    </div>
+    <p class="tmx-panel__body">A genuine Debian VM running entirely in your browser via <a href="https://webvm.io">WebVM</a> — real commands, real output. It shows up in the <a href={`${base}/foundations/packages/`}>packages lesson</a>.</p>
+  </div>
+</div>
+
+<div class="tmx-cta">
+  <p class="tmx-cta__text">Enough throat-clearing —</p>
+  <a class="tmx-btn tmx-btn--primary" href={`${base}/start/why-termux/`}>
+    <span>Start lesson one</span>
+    <Icon name="fa6-solid:arrow-right" width="14" height="14" aria-hidden="true" focusable="false" />
+  </a>
+</div>
