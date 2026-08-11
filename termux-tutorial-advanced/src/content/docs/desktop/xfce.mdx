@@ -3,13 +3,485 @@ title: Bringing Up XFCE
 description: 'XFCE4 on the Termux side: install, DISPLAY, the session bus, and what a first launch actually looks like.'
 sidebar:
   order: 5
+# No prev/next here: this lesson is registered in the "A Desktop on Your Phone"
+# group in astro.config.mjs, between A Display Server on Android and The Desktop
+# in the Container, so Starlight derives both ends of the chain from that array.
 ---
 
 import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
 
-{/* STUB — created so the sidebar, the progress dashboard and the link
-    check all resolve. Brief: XFCE4 on the Termux side: install, DISPLAY, the session bus, and what a first launch actually looks like. */}
+{/* No <TermuxTerminal> here, and none anywhere in this course — the simulator
+    cannot open an X11 socket, so it would answer this lesson's own commands
+    with fiction. The landing page states the reason. */}
 
-Coming up: xFCE4 on the Termux side: install, DISPLAY, the session bus, and what a first launch actually looks like.
+[A Display Server on Android](/desktop/x11-server/) got you a server with
+nothing to show. That is the correct order to have done it in: you now know the
+display half works, so everything that goes wrong from here belongs to the
+desktop half.
+
+This lesson fills that empty display. XFCE runs **on the Termux side** —
+outside the container, no PRoot in the path, no syscall tax on every window
+redraw. Fewer moving parts, and the fastest this desktop is ever going to feel
+on your phone.
+
+## Why XFCE, and not the desktop you actually use
+
+The honest answer is that the other two big desktops assume a computer that your
+phone is not.
+
+| Desktop | Why it does not fit here |
+| :------ | :----------------------- |
+| **GNOME** | Its session, screen locking and power handling are built around **systemd** and `logind`. There is no init system in Termux — nothing is PID 1 that belongs to you — so the assumption fails at the bottom. Its compositor also wants real GL from the start. |
+| **KDE Plasma** | Lighter than its reputation, but still a compositing desktop with a large runtime, and the same expectation of a session manager it did not have to start itself. |
+| **XFCE** | Predates all of that. It is a panel, a window manager, something that draws the desktop, and a settings daemon — **a handful of ordinary programs you launch**, which is exactly what you are in a position to do. |
+
+There is a second, blunter reason: **Termux packages XFCE.** It is in the
+`x11-repo` you already added, built for your architecture, and it starts without
+a compositor. GNOME Shell and Plasma are not there to install.
+
+:::note[XFCE is the light option, not the lightest]
+Expect the session plus one terminal to sit in the **hundreds of megabytes** of
+RAM, not the low tens. If that is too much on a 4 GB phone, Termux packages
+lighter things too — try `pkg search openbox` for a bare window manager, or
+`pkg search lxqt` for a smaller full desktop. They cost less and give you less:
+a bare window manager has no settings GUI, no panel that agrees with the file
+manager, and no menus you did not write yourself.
+
+XFCE is the point on that curve where things still look after each other.
+:::
+
+## Check what this costs before you spend it
+
+`xfce4` is a metapackage: one name, dozens of dependencies, a few hundred
+megabytes once unpacked. That is small next to the Debian rootfs from
+[Installing a Full Distro](/container/first-distro/), but it is not nothing, and
+you are about to be asked to confirm it.
+
+```bash
+df -h $PREFIX
+```
+
+Then read — actually read — the line `pkg` prints before it commits:
+
+```text
+After this operation, 512 MB of additional disk space will be used.
+Do you want to continue? [Y/n]
+```
+
+That number is the real one for **your** repo snapshot on **your**
+architecture. Any figure this page could print would be a guess about your
+device; that line is not.
+
+## Install the desktop
+
+<Steps>
+
+1. **Make sure `x11-repo` is present and the lists are fresh.**
+
+   ```bash
+   pkg install x11-repo
+   pkg update
+   ```
+
+   You did this in the last lesson. Both commands are safe to repeat — the
+   first will tell you it is already installed and stop.
+
+2. **Install XFCE.**
+
+   ```bash
+   pkg install xfce4
+   ```
+
+   `Unable to locate package xfce4` means step 1 did not take: the repo is
+   missing, or the lists are stale. Re-run `pkg update` and read its output for
+   a failing mirror before you try anything more creative.
+
+3. **Install a terminal for inside the desktop.**
+
+   ```bash
+   pkg install xfce4-terminal
+   ```
+
+   Do not skip this. A desktop whose only terminal is the Termux window
+   *behind* it is a desktop you cannot do anything from.
+
+4. **Add an application or two, so it is not an empty room.**
+
+   ```bash
+   pkg install thunar mousepad
+   ```
+
+   A file manager and a text editor, both XFCE-native. If `pkg` says either is
+   already the newest version, the metapackage brought it along — fine, carry
+   on. If it says it cannot find one, `pkg search thunar` will show you what
+   your snapshot actually calls it.
+
+</Steps>
+
+That is the whole install. Everything difficult from here is about **starting**
+it, not about having it.
+
+## `DISPLAY` — how an application finds the screen
+
+An X application does not know where it is drawing. It reads one environment
+variable and connects to whatever is on the other end:
+
+```bash
+export DISPLAY=:0
+```
+
+`:0` means *display number zero on this machine*, reached over a local socket
+rather than the network. Termux:X11 is listening there. Every X client you
+launch — the session manager, the panel, Thunar, all of them — reads `DISPLAY`
+and connects to the same place, which is what makes them one desktop instead of
+several strangers.
+
+:::caution[It does not survive a new session]
+`export` sets the variable for **this shell and the things it starts**. Open a
+new Termux session, or reopen the app tomorrow, and it is gone. The symptom is
+some variation of:
+
+```text
+cannot open display:
+```
+
+which reads like a broken server and almost never is. Set it and try again
+first.
+
+To make it permanent, add it to your shell's startup file — `export DISPLAY=:0`
+in `~/.bashrc`, or for the fish shell from course one:
+
+```fish
+set -Ux DISPLAY :0
+```
+
+`-U` makes it universal (fish remembers it across sessions) and `-x` exports it
+to child processes. That `~` is **Volume Up + H**, and `_` is **Volume Up + U**
+— both are two taps deep on a phone keyboard.
+:::
+
+## The session bus, and why `dbus-launch` is in the command
+
+You will see `dbus-launch --exit-with-session startxfce4` pasted all over the
+internet with no explanation. Here is the explanation, because it decides
+whether your settings stick.
+
+**D-Bus is how desktop programs talk to each other.** There are two buses: a
+*system* bus, and a *session* bus that belongs to one logged-in user for the
+life of their session. XFCE leans on the session bus constantly — the settings
+daemon publishes changes on it, `xfconf` stores them over it, Thunar and the
+panel find each other through it.
+
+On a normal Linux desktop the **login manager** creates that bus before your
+session starts. Termux has no login manager. Nothing creates one. So you create
+it yourself, and `dbus-launch` is the program whose entire job that is.
+
+Run it bare and you can see exactly what it hands back:
+
+```bash
+dbus-launch
+```
+
+```text
+DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-Ab3xK9,guid=8f2c...
+DBUS_SESSION_BUS_PID=14822
+```
+
+Two shell assignments: where the bus is, and what process is running it. Any
+program that inherits those two variables joins that bus.
+
+:::caution[That bare run just left a daemon behind]
+`dbus-launch` with no command starts a bus and **does not wait for anything** —
+it printed the address and exited, and the daemon is still there. That is what
+the flag is for:
+
+```bash
+dbus-launch --exit-with-session startxfce4
+```
+
+`--exit-with-session` says: run `startxfce4`, give it the bus, and **kill the
+bus when it exits.** One session, one bus, cleaned up on the way out.
+
+If you already ran the bare version, `kill 14822` — the PID it printed — tidies
+it up. Nothing terrible happens if you do not; you just accumulate idle daemons
+until Termux restarts.
+:::
+
+If `dbus-launch: command not found`, install it and re-run:
+
+```bash
+pkg install dbus
+```
+
+:::note[No, this does not start two buses]
+`startxfce4` will start a bus itself if it cannot find one, so wrapping it looks
+like belt and braces. It is not: the script checks `DBUS_SESSION_BUS_ADDRESS`
+first and reuses a bus it was handed. Wrapping it means you get one either way,
+which is the point — the failure you are insuring against is subtle and
+miserable to diagnose.
+
+**What no session bus looks like:** the desktop comes up and appears fine, then
+settings changes refuse to stick, `xfconf-query` fails to connect, and Thunar or
+the settings manager hang or die on launch. Nothing says "bus". It just behaves
+like a haunted house.
+:::
+
+## Starting it, for real
+
+Use **two Termux sessions** — the sessions from course one, swiped in from the
+left edge. One holds the display server, one holds the desktop. When something
+goes wrong, you want to read their output separately rather than untangle two
+programs shouting into one scrollback.
+
+<Steps>
+
+1. **Session one: start Termux:X11**, the way the last lesson had you do it —
+   usually:
+
+   ```bash
+   termux-x11 :0 &
+   ```
+
+   Switch to the Termux:X11 app once and confirm you get a blank display rather
+   than an error. If that is not true, stop here: no desktop is going to fix it.
+
+2. **Session two: point it at the display.**
+
+   ```bash
+   export DISPLAY=:0
+   ```
+
+3. **Start the session, under a bus.**
+
+   ```bash
+   dbus-launch --exit-with-session startxfce4
+   ```
+
+4. **Switch to the Termux:X11 app and wait.** The desktop appears **there**, not
+   in Termux. Termux is now the engine room; the X11 app is the screen.
+
+</Steps>
+
+### What the first launch honestly looks like
+
+Session two immediately fills with warnings, and this alarms everyone the first
+time. Most of them are XFCE looking for services that only exist on a full
+desktop OS — a policy daemon, a session logger, a virtual filesystem service, a
+power manager with a battery interface it recognises. None of that is here.
+
+**The rule of thumb:** if the panel comes up, the warnings were noise. If it
+does not, read the **last** few lines, not the first — the fatal one is at the
+bottom, and the top of that wall is almost always unrelated.
+
+| Roughly when | What you should be seeing |
+| :----------- | :------------------------ |
+| Immediately | A wall of warnings in the Termux session |
+| A few seconds | The X11 app goes from blank to a black or grey field, maybe a cursor |
+| 10–60 seconds | A wallpaper, then the panel arriving at the top |
+| Second launch onward | Noticeably quicker |
+
+Those numbers are from mid-range hardware. A recent flagship roughly halves
+them; a budget device can double them. The first run is the slow one because
+XFCE is writing its default configuration into `~/.config/xfce4` and building
+caches that later runs simply read.
+
+**If you are two minutes in with nothing at all**, treat it as a failure and go
+back to session two's output. Waiting longer has never fixed it.
+
+:::caution[Android will freeze this the moment you look away]
+Switching to the Termux:X11 app puts **Termux in the background**, and Android
+is extremely keen on suspending background apps — which is where every one of
+these processes actually lives. Come back to a frozen desktop and that is
+usually what happened.
+
+Pull down the notification shade and tap **Acquire wakelock** on Termux's
+notification before you start. It costs battery, honestly and noticeably. A
+desktop plus a full-brightness screen plus a wakelock is not a low-power
+activity, and the phone will get warm.
+:::
+
+:::note[Already running?]
+`xfce4-session: Another session manager is already running` means exactly that:
+your previous session never died. That is not a broken install — see
+[shutting it down](#shutting-it-down-without-breaking-anything) below.
+:::
+
+## Touch is not a mouse, and this is a compromise
+
+XFCE was designed for a pointer, a scroll wheel and two buttons, at about 96
+dots per inch. You are running it on a six-inch panel with four times that pixel
+density and one finger. It works. It is not comfortable, and pretending
+otherwise would waste your afternoon.
+
+What you need to find out, on your build:
+
+- **Right-click**, which XFCE uses for nearly every context menu. Depending on
+  which input mode Termux:X11 is in, that is either a **long press** or a
+  **two-finger tap**. Try both on the **desktop background** — a right-click
+  there opens the applications menu, so it is an unambiguous test target.
+- **Scrolling** is usually a **two-finger drag**.
+- **Precision.** Panel buttons and window close boxes are sized in pixels for a
+  mouse, so on a dense screen they are tiny targets. Scaling, below, helps more
+  than practice does.
+
+:::tip[The real fix is a mouse]
+A Bluetooth or USB-OTG mouse is handed to Termux:X11 as an actual pointer, and
+every gesture puzzle on this page evaporates — hover works, right-click is a
+button, dragging a window edge is possible. Add a keyboard and it stops being an
+impression of a desktop.
+
+Worth knowing if you do not have one: **the volume-key tricks do not follow you
+into the X11 app.** Volume Down + C is a Termux terminal feature, not an Android
+one. Inside the desktop you need a real <kbd class="tmx-kbd">Ctrl</kbd>, from
+the X11 app's own keyboard affordances or from hardware.
+:::
+
+## Make it readable: DPI and scaling
+
+The default desktop on a phone screen is microscopic. There are two separate
+dials, in two separate places, and they do different things:
+
+- **Termux:X11's own display scale** changes the size of the *display itself* —
+  fewer, larger pixels for everything on it. It lives in the app's own
+  preferences. The exact wording moves between nightly builds, so look rather
+  than trust a name here.
+- **XFCE's DPI and window scaling** keep the resolution and make the *interface*
+  bigger. That is usually the one you want.
+
+Inside the desktop: **Settings → Appearance → Fonts → Custom DPI setting**. The
+default is 96; try 140, look at it, adjust. On XFCE 4.16 and newer the
+**Settings** tab of the same dialog also has a **Window Scaling** factor, which
+is integer-only — 1x or 2x, nothing between — and applications need restarting
+to pick it up.
+
+From a shell, the same two settings:
+
+```bash
+xfconf-query -c xsettings -p /Xft/DPI -s 140
+xfconf-query -c xsettings -p /Gdk/WindowScalingFactor -s 2
+```
+
+If either answers that the property **does not exist on channel `xsettings`**,
+nothing is wrong — you are creating a setting rather than changing one, and
+`xfconf-query` will not guess its type for you. Say so with `-n` (new) and `-t`:
+
+```bash
+xfconf-query -c xsettings -p /Xft/DPI -n -t int -s 140
+```
+
+:::caution[Run those from inside the desktop, not from Termux]
+`xfconf-query` talks over the **session bus** — the one `dbus-launch` created
+for session two. A different Termux session does not have
+`DBUS_SESSION_BUS_ADDRESS`, so the same command there fails to connect and looks
+like a broken tool.
+
+Open **xfce4-terminal inside XFCE** and run it there. That shell inherited the
+bus, the display and the environment from the session that started it.
+
+Which is also the moment worth noticing: that terminal is the same `$HOME` and
+the same `$PREFIX` as the Termux window behind it. It is not a different
+machine. It is the same Termux, drawn in a window.
+:::
+
+Two more that make a real difference, both reached by **right-clicking the
+panel → Panel → Panel Preferences**: **Row size** in pixels, and the icon size
+in the Items tab. The panel does not follow the DPI setting as obediently as
+applications do.
+
+## Shutting it down without breaking anything
+
+Order matters here, and it is the reverse of starting: **session first, server
+second.**
+
+<Steps>
+
+1. **Log out from inside XFCE.** Applications menu → **Log Out** → **Log Out**.
+
+   The **Shut Down**, **Restart** and **Suspend** buttons in that dialog are
+   either greyed out or will simply error. They ask `logind` to do something to
+   a machine, and there is no `logind` and no machine — only Android, which is
+   not taking requests. Log Out is the one that means anything.
+
+2. **Watch session two.** Your prompt comes back, and `--exit-with-session`
+   takes the D-Bus daemon down with it. That is a clean exit.
+
+3. **Stop the display server.** Use the Termux:X11 app's own exit or kill
+   option if your build has one; otherwise, back in session one:
+
+   ```bash
+   pkill -f termux-x11
+   ```
+
+4. **Release the wakelock** from the notification shade. It does not release
+   itself, and it will quietly eat your battery for the rest of the day.
+
+</Steps>
+
+:::tip[When the desktop is wedged and Log Out is unreachable]
+Go to session two and press <kbd class="tmx-kbd">Ctrl-C</kbd> — on a phone,
+**Volume Down + C**. That is the session manager's own terminal; interrupting it
+ends the session.
+
+Still stuck:
+
+```bash
+pkill xfce4-session
+```
+
+A hard kill can leave the display's socket behind. If your next `termux-x11`
+start insists display `:0` is already in use while nothing is running, that
+leftover is the culprit — close the Termux:X11 app fully from Recents, which
+clears it.
+:::
+
+:::note[Getting the disk back]
+`pkg uninstall xfce4` removes the metapackage and almost none of what it pulled
+in — that is metapackages working as designed, and it is why the number never
+seems to come back.
+
+```bash
+apt autoremove
+```
+
+is what actually reclaims orphaned dependencies. **Read the list it proposes
+before you agree to it**, every time. It is generally right and it is
+occasionally enthusiastic.
+:::
+
+## Recap
+
+- **XFCE, not GNOME or Plasma:** it does not assume `systemd`, it does not need
+  a compositor, its memory footprint is survivable, and it is the one Termux
+  actually packages.
+- `pkg install xfce4`, plus `xfce4-terminal` — a desktop with no terminal in it
+  is a dead end — plus an app or two so there is something to open.
+- **Read the disk-space line** `pkg` prints before confirming. It is the only
+  honest number available.
+- `export DISPLAY=:0` tells X clients which server to connect to. It **does not
+  survive a new session**; `cannot open display` almost always means it is unset,
+  not that the server is broken.
+- `dbus-launch --exit-with-session startxfce4` creates the **session bus** that
+  no login manager is here to create, and destroys it on the way out. Without
+  one, settings silently refuse to stick.
+- Two sessions, in order: **server, then desktop.** The desktop appears in the
+  Termux:X11 app, never in Termux.
+- Warnings on first launch are normal. If the panel appears, ignore them; if it
+  does not, read the **last** lines, not the first.
+- **Acquire the wakelock** or Android will freeze the whole thing the moment you
+  switch apps. It costs battery and heat, and that is a real trade.
+- Right-click is a long press or a two-finger tap depending on input mode — test
+  it on the desktop background. **A real mouse fixes more than any setting does.**
+- Scale in two places: the X11 app's display scale, and XFCE's DPI / window
+  scaling. Run `xfconf-query` from a terminal **inside** the desktop, where the
+  bus lives.
+- Shut down in reverse: **Log Out**, then stop the server, then release the
+  wakelock.
+
+You now have a desktop running on your phone — and every part of it lives on the
+Termux side, where `apt`, your home directory and the distribution you installed
+back in [Living in the Container](/container/living-in-it/) are not. Next, the
+hard one: putting the two halves together, in [The Desktop in the
+Container](/desktop/across-the-boundary/).
 
 <LessonComplete client:only="react" slug="desktop/xfce" />

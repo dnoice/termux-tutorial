@@ -6,10 +6,580 @@ sidebar:
 ---
 
 import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
 
-{/* STUB — created so the sidebar, the progress dashboard and the link
-    check all resolve. Brief: Compiling for aarch64 on the device, and what to do when a package is not in any repo. */}
+{/* No <TermuxTerminal> and no <LiveSandbox> anywhere in this course — the
+    simulator cannot run a compiler, and a fake `make` on a lesson about real
+    build failures would be the worst possible lie. The landing page states the
+    rule; this lesson just follows it. Every command here runs on a device. */}
 
-Coming up: compiling for aarch64 on the device, and what to do when a package is not in any repo.
+`pkg search` comes back with nothing. So does the container's `apt`. The tool
+exists — you have its README open in another tab — and nobody has ever built it
+for Android.
+
+That used to be the end of the conversation. It isn't, because you are holding a
+64-bit computer with a working C compiler on it. This lesson is the compiler,
+the source tree, and the honest accounting of what it costs to put the two
+together on a phone.
+
+You also now have **two machines**, not one: Termux itself, and the Debian
+container from [Installing a Full Distro](/container/first-distro/). They have
+different compilers, different C libraries and different filesystems, and
+choosing between them is most of the skill here. That choice gets its own
+section, and it is the section that saves you an afternoon.
+
+## First, check that you have to
+
+Compiling is the expensive answer. Spend two minutes ruling out the cheap ones.
+
+<Steps>
+
+1. **Search the main repo properly.** `pkg search` matches descriptions, not
+   just names, so search the *thing it does* as well as what it is called.
+
+   ```bash
+   pkg search fortune
+   ```
+
+2. **Remember the other Termux repos.** You already added `x11-repo` for the
+   desktop lessons; it is not the only one. There is also a large
+   community-maintained repository, TUR, which is not official and carries no
+   promises:
+
+   ```bash
+   pkg install tur-repo
+   pkg update
+   ```
+
+   Then search again. If the tool is in there, someone has already fought every
+   fight the rest of this lesson describes.
+
+3. **Ask the container.** Debian has packaged nearly everything that has ever
+   been packaged:
+
+   ```bash
+   proot-distro login debian
+   apt search fortune
+   ```
+
+   If the tool only needs to work *inside* the container — for something you run
+   from the desktop, say — then `apt install` is a build you never have to do.
+
+</Steps>
+
+:::caution[The prebuilt binary on the releases page probably will not run]
+You will be tempted by an asset named something like `tool-linux-arm64.tar.gz`.
+It is the right CPU. It is still usually the wrong binary.
+
+Nearly every Linux binary in the world is linked against **glibc** and expects
+its dynamic loader at `/lib/ld-linux-aarch64.so.1`. Android's C library is
+**bionic**, and that loader is simply not on your phone at that path or any
+other. The kernel goes looking, doesn't find it, and reports:
+
+```text
+bash: ./tool: No such file or directory
+```
+
+about a file that is very obviously right there. That message is one of the most
+misleading in Linux, and now you know what it actually means.
+
+Two exceptions worth knowing: a **statically linked** binary — Go release builds
+usually are, and Rust ones built for a musl target — has no loader to look for
+and may well just run. And the same glibc binary will usually run **inside the
+container**, which has both the loader and the glibc it wants. Try it there
+before you write it off.
+:::
+
+## Which machine are you, exactly
+
+Before you compile anything, find out what you are compiling for.
+
+```bash
+uname -m
+```
+
+| Output | What you have |
+| :----- | :------------ |
+| `aarch64` | 64-bit ARM. This is nearly every phone made since about 2016. |
+| `armv7l` | 32-bit ARM. An older or budget device; everything below still works, slower and with less RAM. |
+| `armv8l` | A 64-bit chip running a **32-bit** Termux. The CPU is fine; the app is the 32-bit build. |
+| `x86_64` | An emulator, a Chromebook, or an x86 Android device. Rare, and not what most instructions assume. |
+
+Termux has its own name for the same thing, and that name is what decides which
+packages `pkg` will hand you:
+
+```bash
+dpkg --print-architecture
+```
+
+When you go looking for build instructions online, `aarch64` and `arm64` are the
+same processor under two naming conventions — the toolchain world says one, the
+Debian world says the other. Instructions written for either will apply to you.
+
+## Get the toolchain
+
+One metapackage pulls in the usual set:
+
+```bash
+pkg install build-essential
+```
+
+If your Termux is old enough not to have it, install the parts by name — they
+are all in the main repo:
+
+```bash
+pkg install clang make cmake pkg-config git
+```
+
+And if the source is a **git checkout** rather than a released tarball, it will
+have no `configure` script in it, only the machinery to generate one:
+
+```bash
+pkg install autoconf automake libtool
+```
+
+:::note[Your compiler is clang, not gcc]
+Termux's C compiler is **clang**, and `cc` resolves to it. That is a real
+difference from a typical Linux box, and it surfaces in exactly one place:
+Makefiles that hardcode `gcc` instead of asking for `cc`. You do not need a
+different compiler, you need to tell the build which one you have:
+
+```bash
+make CC=clang
+```
+
+Check what you actually got before you trust any of this:
+
+```bash
+clang --version
+command -v cc
+```
+:::
+
+:::tip[There is no `sudo`, and you do not need one]
+Build instructions written for a desktop end in `sudo make install`. You are an
+ordinary Android app with no root — the lesson [Root Without
+Rooting](/container/why-proot/) explains why that is permanent — but you also
+**own `$PREFIX` outright**. Drop the `sudo` and the install works. A build that
+genuinely cannot proceed without root is a build that will not proceed here.
+:::
+
+## Prove the toolchain before you blame the project
+
+When a real build fails on the first try, you want to already know the compiler
+is not the problem. Three commands settle that permanently.
+
+<Steps>
+
+1. **Write a C file.** One `printf` writes the whole thing, and it behaves the
+   same in fish and in bash:
+
+   ```bash
+   printf '#include <stdio.h>\nint main(void) { puts("toolchain ok"); return 0; }\n' > check.c
+   ```
+
+2. **Compile it.** No flags, no Makefile, nothing to misconfigure.
+
+   ```bash
+   clang check.c -o check
+   ```
+
+3. **Run it.**
+
+   ```bash
+   ./check
+   ```
+
+   ```text
+   toolchain ok
+   ```
+
+</Steps>
+
+If that printed, your compiler, your linker and your C library are all working,
+and every failure from here on belongs to the project you are building. If it
+*didn't*, fix this before going near anything larger — re-run `pkg install
+build-essential` and read its output rather than scrolling past it.
+
+## A real build, start to finish
+
+GNU `hello` is a program that prints one line of text. It is also the reference
+implementation of the entire GNU build system, which is what you are actually
+here to learn: unpack, configure, make, install. Roughly every autotools project
+on earth uses these same four commands, so the boring program is the point.
+
+<Steps>
+
+1. **Fetch the tarball.** (`pkg install curl` first if you don't have it.)
+
+   ```bash
+   cd ~
+   curl -LO https://ftp.gnu.org/gnu/hello/hello-2.12.2.tar.gz
+   ```
+
+2. **Unpack it and step in.**
+
+   ```bash
+   tar -xf hello-2.12.2.tar.gz
+   cd hello-2.12.2
+   ```
+
+3. **Configure — and pass the prefix.** This flag is the single most important
+   thing on this page:
+
+   ```bash
+   ./configure --prefix=$PREFIX
+   ```
+
+   `configure` inspects your system for a few hundred things and writes a
+   Makefile that matches what it found. Expect a minute or two of `checking
+   for…` lines.
+
+4. **Compile.**
+
+   ```bash
+   make
+   ```
+
+5. **Install.**
+
+   ```bash
+   make install
+   ```
+
+6. **Prove it.**
+
+   ```bash
+   hello
+   command -v hello
+   ```
+
+   ```text
+   Hello, world!
+   /data/data/com.termux/files/usr/bin/hello
+   ```
+
+   That second line is the whole lesson: a command on your `PATH` that no
+   repository gave you.
+
+</Steps>
+
+:::caution[Why `--prefix` is not optional here]
+Leave it off and `configure` defaults to `/usr/local`, exactly as it would on a
+laptop. On Android there is no `/usr` at all and `/` is not writable by an app,
+so the build configures happily, compiles happily for however many minutes it
+takes, and then dies on the **last** command with `Permission denied`.
+
+`--prefix=$PREFIX` puts it where your packages already live. There is no reason
+ever to type this cycle without it.
+:::
+
+:::caution[If this particular tarball dies on you, that is the lesson]
+GNU tarballs carry a compatibility layer called gnulib that has opinions about
+what a C library provides, and bionic disagrees with several of them. This
+particular build works on many devices and stops on some, and there is no way
+for a web page to know which yours is.
+
+If it stops: read the first error, not the last one, then read the next two
+sections. The container exists for precisely this, and reaching for it is the
+correct move rather than a defeat.
+:::
+
+### Where the files went
+
+`make install` scattered maybe a dozen files across `$PREFIX`, following the
+same layout every package you have ever installed uses:
+
+| Directory | What landed there |
+| :-------- | :---------------- |
+| `$PREFIX/bin` | The executable. This is why typing `hello` works. |
+| `$PREFIX/lib` | Libraries, if the project built any. |
+| `$PREFIX/include` | Headers, if it installs any for other builds to use. |
+| `$PREFIX/share` | Man pages, docs, translations, icons. |
+| `$PREFIX/etc` | Config files. |
+
+To take it back off, run the reverse **from the same source directory**:
+
+```bash
+make uninstall
+```
+
+That only works while the build tree still exists, because the Makefile in it is
+the only record of what got installed where. Delete `~/hello-2.12.2` and you
+have no uninstaller — just files you will find in three months and not
+recognise.
+
+:::caution[`pkg` has no idea any of this happened]
+`dpkg` tracks files it installed. It did not install these, so:
+
+- `pkg uninstall hello` will tell you there is no such package.
+- `pkg upgrade` will never update it. Security fixes are now your job.
+- If a Termux package later ships a file with the same name, the two collide,
+  and `apt` resolves that argument in ways you will not enjoy debugging.
+
+The tidy habit is to keep hand-built things out of `$PREFIX` entirely:
+
+```bash
+./configure --prefix=$HOME/.local
+```
+
+Then put that directory on your `PATH` once. In fish, which is where course one
+left you:
+
+```bash
+fish_add_path ~/.local/bin
+```
+
+In bash, add `export PATH="$HOME/.local/bin:$PATH"` to `~/.bashrc`.
+
+Now your builds and your packages live in separate trees, and `ls ~/.local/bin`
+is a complete list of everything you compiled yourself. Neither location
+survives uninstalling Termux — that erases the whole app, exactly as course one
+warned.
+:::
+
+## Why builds fail here more than on a laptop
+
+Autotools has been ported to a great many systems. Android is not really one of
+them — it is Linux with the userland replaced, which is the awkward middle
+ground where everything *nearly* works.
+
+Start with the table. Each of these has a specific cause and a specific fix.
+
+| What you see | What it means | What to do |
+| :----------- | :------------ | :--------- |
+| `Permission denied` on `make install` | Prefix defaulted to `/usr/local` | Re-run `./configure --prefix=$PREFIX` |
+| `/usr/bin/env: bad interpreter` | No `/usr` on Android; the script's shebang points at nothing | `termux-fix-shebang <file>` rewrites it to `$PREFIX/bin` |
+| A script fails writing to `/tmp` | Android has no `/tmp`. Termux sets `TMPDIR` to `$PREFIX/tmp` instead | Patch the hardcoded path, or `export TMPDIR=$PREFIX/tmp` and hope the script reads it |
+| `cannot find -lrt` | bionic folds real-time functions into libc; there is no separate `librt` | Delete the flag. It is not a missing package |
+| `fatal error: 'foo.h' file not found` | The library isn't installed at all | `pkg install <library>` — see the note below |
+| `configure: error: C compiler cannot create executables` | Something is genuinely broken, and the screen is not where it says what | Read `config.log` |
+| `Killed` mid-compile, or Termux closing itself | Android's low-memory killer ended the compiler, or the app | Fewer parallel jobs, close apps, and don't build with a desktop session running |
+
+:::note[Termux has no `-dev` packages, and that is good news]
+On Debian, headers live in a separate `libfoo-dev` package and forgetting it is
+the classic build failure. Termux ships headers **inside the library package**,
+so `pkg install libfoo` gives you everything needed to compile against it.
+
+Which means `'foo.h' file not found` in Termux does not mean "you forgot the dev
+package". It means the library is not installed, or it is not packaged for
+Termux at all — and the second case is the one that sends you into the
+container.
+:::
+
+### The deep reason: bionic is not glibc
+
+Android's C library is small, fast, and built for apps rather than for
+Unix. Things a twenty-year-old configure script assumes are simply absent:
+full locale support, `iconv` inside libc, System V shared memory, a real
+`/etc/passwd` behind the user-lookup functions, and a handful of GNU-only
+headers. Termux ships shim packages — `libandroid-support`, `libiconv`,
+`libandroid-shmem` and friends — to fill some of those holes, and the Termux
+package tree carries hundreds of patches for the rest.
+
+That is the honest framing for this whole lesson: **when a Termux package
+exists, it exists because somebody already did this work.** When one doesn't,
+you are doing the porting, not just the compiling — and porting is a different
+size of job from typing `make`.
+
+### Read the first error, and read `config.log`
+
+A failing build prints screens of output and the part that matters scrolled away
+several thousand lines ago. Capture it:
+
+```bash
+make 2>&1 | tee ~/build.log
+```
+
+`2>&1` folds errors into the normal output so both land in the file, and `tee`
+shows you the build while it writes. The `|` is buried in a symbol layer on most
+phone keyboards — **Volume Up + L** types it.
+
+Then find the *first* failure, not the last:
+
+```bash
+grep -n -i error ~/build.log | head
+```
+
+Everything after the first error is usually consequences of it.
+
+When `configure` is what failed, the screen is not the record — `config.log` is,
+sitting in the source directory. It contains the exact command it tried, the
+exact error the compiler gave, and it is the only place either appears:
+
+```bash
+tail -n 60 config.log
+```
+
+## The other machine: build inside the container
+
+Everything above fights Android's userland. Inside the Debian container you
+installed in [Installing a Full Distro](/container/first-distro/), that fight
+does not happen: there is a normal FHS, a writable `/usr/local`, a real `/tmp`,
+glibc, `-dev` packages, and a build system that has been tested against exactly
+this environment by millions of people.
+
+For a stubborn project this is routinely the difference between a two-minute
+build and an afternoon.
+
+<Steps>
+
+1. **Log in.**
+
+   ```bash
+   proot-distro login debian
+   ```
+
+2. **Install the toolchain there.** It is a separate machine with a separate
+   package manager; nothing you installed in Termux exists in here.
+
+   ```bash
+   apt update
+   apt install -y build-essential curl pkg-config
+   ```
+
+3. **Run the same cycle, minus the workarounds.** No `--prefix` needed —
+   `/usr/local/bin` is writable and already on `PATH` inside:
+
+   ```bash
+   ./configure
+   make
+   make install
+   ```
+
+4. **Leave when you're done.**
+
+   ```bash
+   exit
+   ```
+
+</Steps>
+
+:::note[`apt build-dep` is the shortcut, when it works]
+If Debian already packages the thing you are building, it can install every
+build dependency in one command:
+
+```bash
+apt build-dep <package>
+```
+
+That needs `deb-src` lines in the container's `sources.list`, which a minimal
+rootfs often ships without. If it reports that it can't find source packages,
+that's why — add the `deb-src` lines, or install the `-dev` packages by name
+instead.
+:::
+
+:::caution[What you built inside stays inside]
+This is the trade, and it is not small.
+
+**The binary is a glibc, FHS binary.** It runs in the container and nowhere
+else. Copy it to `$PREFIX/bin` and Termux will tell you `No such file or
+directory` about a file you can plainly see — the same missing-loader message
+from the top of this lesson, now self-inflicted.
+
+**Everything inside is slower.** PRoot intercepts every system call, and a
+compiler makes millions of them: every header opened, every file stat-ed, every
+temporary written. Compiling is close to the worst-case workload for syscall
+interception, so the same source can take substantially longer inside than out.
+You are trading your debugging time for the phone's compiling time.
+
+**It costs disk.** Source trees and object files land inside a rootfs that
+already cost you 1.5–3 GB. A mid-sized build tree can add another gigabyte, and
+it is inside the container where you are least likely to go looking for it.
+:::
+
+### So which one?
+
+The question is never "which is easier". It is **where will you run this**.
+
+| You need the tool… | Build it… |
+| :----------------- | :-------- |
+| At the Termux prompt, next to your `termux-*` commands and `~/storage` | **Outside**, in Termux, with `--prefix` |
+| Inside the container, or from the desktop you brought up earlier | **Inside** |
+| Both places | Build it twice, or accept that it is container-only |
+| As a Python or Node extension | Wherever that interpreter lives — `pip` and `npm` compile C too, and every rule on this page applies to them |
+
+Moving the finished binary or its source between the two is the file-crossing
+problem from [Living in the Container](/container/living-in-it/); nothing about
+that changes because the file happens to be something you compiled.
+
+## Heat, battery, and the honest time estimate
+
+A laptop compiles with a fan. Your phone compiles with a sheet of glass.
+
+Under sustained full load an Android SoC **thermally throttles**: clocks drop to
+keep the case temperature survivable, and the second half of a long build runs
+measurably slower than the first. This is not a fixed penalty you can multiply
+by — a build that takes ten minutes on a laptop can take an hour here, and the
+gap widens the longer it runs.
+
+Things that actually help:
+
+- **Fewer parallel jobs than you think.** `make -j$(nproc)` uses every core,
+  which on a big.LITTLE phone heats up fastest and throttles soonest. `make -j4`
+  often *finishes sooner* than `-j8` on a device that is already warm. It also
+  uses far less RAM, which is what stands between you and `Killed`.
+- **Take the wakelock.** A screen that goes off suspends Termux, and a suspended
+  build looks exactly like a hung one:
+
+  ```bash
+  termux-wake-lock
+  ```
+
+  Release it the moment the build ends — `termux-wake-unlock` — for the same
+  battery reasons course two gave.
+- **Unplug it, and take the case off.** Charging generates heat on top of the
+  heat you are already making. A phone compiling on a charger inside a case is
+  the slowest possible configuration.
+- **Watch a number rather than the screen.** The battery temperature is not the
+  SoC temperature, but it moves with it and you can read it:
+
+  ```bash
+  termux-battery-status | jq -r '.temperature'
+  ```
+- **Interrupt without losing everything.** `Ctrl-C` — **Volume Down + C** —
+  stops `make` at the next command boundary. The object files it already
+  produced stay on disk, so running `make` again resumes rather than starting
+  over. Do not run `make clean` out of habit; that is what throws the work away.
+
+:::caution[Some things are simply not phone-scale, and saying so is not defeat]
+LLVM, a browser engine, a kernel, anything measured in tens of thousands of
+source files: these are hours of sustained heat that end, more often than not,
+in `Killed` at 80% and no partial result you can use.
+
+The judgement worth developing is not "can this phone compile it" — given
+infinite time and a cold room, often yes. It is **whether the hour of heat is
+worth it** when a laptop, a cheap VPS or a wait for the packager would do the
+same job. Building on the device is a genuine capability. It is not an
+obligation.
+:::
+
+## Recap
+
+- Check `pkg search`, `tur-repo` and the container's `apt` before you compile
+  anything. A prebuilt Linux `arm64` binary usually won't run in Termux — bionic
+  has no glibc loader, and the error it gives is `No such file or directory`
+  about a file that exists.
+- `uname -m` says `aarch64` on nearly every modern phone.
+  `dpkg --print-architecture` says what Termux itself thinks it is.
+- `pkg install build-essential` is the toolchain. The compiler is **clang**;
+  `make CC=clang` fixes Makefiles that assume gcc. There is no `sudo` and you do
+  not need one.
+- The cycle is `./configure --prefix=$PREFIX` → `make` → `make install`. Without
+  `--prefix`, the build fails at the very last step with `Permission denied`.
+- Executables land in `$PREFIX/bin`, and `pkg` knows nothing about them —
+  `--prefix=$HOME/.local` plus `fish_add_path ~/.local/bin` keeps your builds
+  separate from your packages.
+- Android-specific failures are a short list: no `/usr`, no `/tmp`, no `librt`,
+  no `-dev` packages, and bionic disagreeing with glibc assumptions. Read the
+  **first** error, and read `config.log`.
+- Build **inside** the container when the project fights you and the tool is for
+  the container. That binary will not run outside it, and everything under PRoot
+  compiles slower.
+- Phones throttle. Use fewer `-j` jobs, hold `termux-wake-lock`, unplug, and
+  know when a build is not worth the hour of heat.
+
+Next: the last page in the series — what you can do now, and where the real
+ecosystem goes from here, in [Where to Next](/where-next/).
 
 <LessonComplete client:only="react" slug="hardware/building" />

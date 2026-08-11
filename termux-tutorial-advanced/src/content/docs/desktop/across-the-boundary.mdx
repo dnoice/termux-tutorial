@@ -6,10 +6,616 @@ sidebar:
 ---
 
 import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
 
-{/* STUB — created so the sidebar, the progress dashboard and the link
-    check all resolve. Brief: Server on the host, session in the container, a shared socket as the tether. The hardest setup in the series. */}
+This is the hardest setup in the series, and it is the one that fails for the
+most reasons. So before anything else: **it needs the last two lessons working
+independently.**
 
-Coming up: server on the host, session in the container, a shared socket as the tether. The hardest setup in the series.
+Not "mostly working". Working, separately, on this device, today:
+
+- The display server from [A Display Server on
+  Android](/desktop/x11-server/) — Termux:X11 running, and a native client
+  proven to draw on it.
+- The desktop from [Bringing Up XFCE](/desktop/xfce/) — XFCE started on the
+  Termux side, on that same server, at least once.
+
+If either of those is shaky, go back and fix it there. Everything in this
+lesson assumes both halves are known-good, because the entire skill here is
+telling *which* half broke — and you cannot do that if you were never sure
+either one worked.
+
+## The architecture, before any command
+
+There is exactly one idea in this lesson, and everything else is a consequence
+of it. Read this section twice if you have to. A reader who understands the
+split can debug their own black screen; a reader who does not is copying spells
+off a page.
+
+**The X server must run in native Termux.** It is the thing that talks to the
+Android screen. Termux:X11 is an Android app plus a native helper, and it draws
+into an Android surface using Android's own graphics stack. Your Debian
+container has none of that. Inside PRoot there is no SurfaceFlinger, no Android
+runtime, no display hardware node it is allowed to touch — it is a plain Linux
+userland with an `apt` and a `/etc`. A container cannot own the screen, so it
+does not get to run the server.
+
+**The desktop session must run inside the container.** That is where the
+software is: `xfce4-session`, `thunar`, GIMP, LibreOffice, the whole Debian
+archive. These are X *clients*. A client does not need a screen, hardware, or
+any privilege at all. It needs one thing — a socket to talk to a server.
+
+**The socket is the tether, and it is the only connection between the two
+sides.** The X server creates a Unix domain socket. Clients connect to it. That
+is the entire protocol relationship: one file, two processes.
+
+And here is the part that makes it work at all — the container is not a virtual
+machine. Those Debian processes are ordinary Android processes under your own
+UID, traced by PRoot, running on the same kernel. So when the container and
+Termux can both see the same directory, a socket in it is genuinely the *same
+socket*. No networking, no port forwarding, no tunnel. Just a filename that
+appears in two places.
+
+```text
+  ANDROID
+  │
+  ├── Termux:X11 app ──► the screen
+  │        ▲
+  │        │  Android surface
+  │        │
+  ├── TERMUX (native)
+  │     termux-x11 :0                   the X SERVER lives here
+  │     creates  $TMPDIR/.X11-unix/X0   the socket
+  │        ▲
+  │        │   --shared-tmp makes these
+  │        │   two names for one directory
+  │        ▼
+  │   ┌── DEBIAN (inside PRoot) ───────────────────┐
+  │   │   sees it at  /tmp/.X11-unix/X0            │
+  │   │   DISPLAY=:0                               │
+  │   │   xfce4-session, xfce4-panel, thunar …     │
+  │   │            the X CLIENTS live here         │
+  │   └────────────────────────────────────────────┘
+  │
+```
+
+Three things have to line up, and each of them is a separate thing that can be
+wrong:
+
+| The piece | On which side | What breaks if it's missing |
+| :-------- | :------------ | :-------------------------- |
+| A running X server | Termux, native | Nothing to connect to |
+| A shared `/tmp` | Set at login time | The socket exists but the container can't see the file |
+| `DISPLAY` | Inside the container | The client doesn't know which socket to open |
+
+Keep those three separate in your head. The rest of this lesson is just
+building them one at a time, and then testing them one at a time.
+
+## `--shared-tmp`, and exactly what it does
+
+Termux's temporary directory is `$TMPDIR` — on a standard install that is
+`/data/data/com.termux/files/usr/tmp`. Termux:X11 puts its socket in
+`$TMPDIR/.X11-unix/`.
+
+Every X client on earth looks for its socket in `/tmp/.X11-unix/`. That path is
+baked into the client libraries; it is not something you talk them out of. And
+inside the container, `/tmp` is the container's own empty `/tmp` — a completely
+different directory that happens to share a name.
+
+`proot-distro login` has a flag for precisely this:
+
+```bash
+proot-distro login debian --shared-tmp
+```
+
+`--shared-tmp` bind-mounts Termux's `$TMPDIR` onto the container's `/tmp`. One
+directory, two paths. The socket the server created at
+`$TMPDIR/.X11-unix/X0` is now also at `/tmp/.X11-unix/X0` inside — exactly
+where Debian's X clients already intend to look.
+
+:::caution[It is a login flag, and it applies to that login only]
+There is no config file, no toggle, no "remember this". Log in without
+`--shared-tmp` and that session **cannot** see the socket, and you cannot add
+the flag afterwards — you have to exit and log in again.
+
+This is the single most common cause of "it worked yesterday". Yesterday you
+typed the flag.
+:::
+
+:::tip[Use `$TMPDIR`, not the literal path]
+`/data/data/com.termux/files/usr/tmp` is correct for a standard install on the
+primary Android user. On a secondary user or a work profile the `/data/data`
+part differs. `$TMPDIR` is always right; the hardcoded path is only usually
+right.
+:::
+
+### Prove the share before you build on it
+
+Ten seconds, and it removes an entire category of later confusion. Two shells:
+one native Termux session, one container login.
+
+<Steps>
+
+1. **Log in with the flag:**
+
+   ```bash
+   proot-distro login debian --shared-tmp
+   ```
+
+2. **Inside the container, drop a marker in `/tmp`:**
+
+   ```bash
+   touch /tmp/boundary-test
+   ```
+
+3. **In a native Termux session** — swipe in from the left edge for a new one —
+   look for it on the other side:
+
+   ```bash
+   ls -l $TMPDIR/boundary-test
+   ```
+
+   A file listing means the two `/tmp`s are one directory and the tether is
+   real. *"No such file or directory"* means the mount did not happen, and
+   nothing else in this lesson can work until it does.
+
+</Steps>
+
+## Install XFCE inside the container
+
+You already have XFCE on the Termux side. That one is not the one we are about
+to start, and keeping those two straight is a whole failure mode later on.
+
+Log in with the flag and stay there — everything in this section runs **inside**
+the container, as root, which is who `proot-distro login` makes you.
+
+### Check the space first
+
+A Debian rootfs is already 1.5–3 GB. A desktop is a substantial addition on top
+of that, and `apt` will happily start a download that fills your phone.
+
+<Steps>
+
+1. **Refresh the package lists:**
+
+   ```bash
+   apt update
+   ```
+
+2. **Ask `apt` what it would cost, without doing it.** `-s` simulates:
+
+   ```bash
+   apt-get -s install xfce4 xfce4-terminal dbus-x11
+   ```
+
+   The last lines are the ones you want — *"Need to get … of archives"* and
+   *"After this operation, … of additional disk space will be used."* That
+   second number is the real answer for your Debian release, and it is worth
+   reading rather than trusting anyone's estimate, including this page's.
+
+3. **Check you actually have it.** From a native Termux session:
+
+   ```bash
+   df -h $PREFIX
+   ```
+
+   The container lives on internal storage, under
+   `$PREFIX/var/lib/proot-distro/installed-rootfs/debian`, so that `Avail`
+   column is the budget for everything you install inside.
+
+</Steps>
+
+### Do the install
+
+```bash
+apt install -y xfce4 xfce4-terminal dbus-x11
+```
+
+Three packages, three jobs:
+
+| Package | Why |
+| :------ | :-- |
+| `xfce4` | The desktop itself — session manager, panel, window manager, file manager |
+| `xfce4-terminal` | A terminal *inside* the desktop. Otherwise the desktop has no shell of its own |
+| `dbus-x11` | Provides `dbus-launch`. XFCE will not hold together without a session bus |
+
+:::note[It will stop and ask you things]
+Some of what `xfce4` pulls in — keyboard layout and timezone configuration —
+puts a blue full-screen debconf dialog in your terminal. It looks like a hang.
+It is not; it is waiting for you.
+
+Arrow keys move, <kbd class="tmx-kbd">Tab</kbd> jumps to `Ok`, Enter accepts. On
+a phone the arrows are **Volume Up + W/A/S/D** and Tab is **Volume Up + T**.
+Answers here are cosmetic for our purposes — the container is not driving your
+physical keyboard.
+
+If you would rather it never asked, prefix the command with
+`DEBIAN_FRONTEND=noninteractive` and it takes the defaults silently.
+:::
+
+### Add the two tiny toolkits you'll debug with
+
+```bash
+apt install -y x11-utils x11-apps
+```
+
+`x11-utils` gives you `xdpyinfo`. `x11-apps` gives you `xclock`. Neither is part
+of a desktop and both are a few hundred kilobytes, and they are the two most
+useful things you can own here: a trivial client that either reaches the display
+or says exactly why it cannot. A whole desktop failing tells you nothing. A
+clock failing tells you everything.
+
+## Point the session at the host's display
+
+Inside the container:
+
+```bash
+export DISPLAY=:0
+```
+
+`:0` is not decoration — it is a display *number*, and it has to match the
+number you gave the server. If you started it as `termux-x11 :1`, this line is
+`export DISPLAY=:1`. A mismatch here produces a client that looks for
+`/tmp/.X11-unix/X1`, finds nothing, and gives up.
+
+:::caution[`export` dies with the shell]
+Set it, exit the container, log back in, and `DISPLAY` is empty again. That is
+normal shell behaviour and it catches everyone once.
+
+Make it stick by putting the line in the container's own shell startup file —
+the `~` is **Volume Up + H**, and the `>>` appends rather than overwrites:
+
+```bash
+echo 'export DISPLAY=:0' >> ~/.bashrc
+```
+
+That file is `/root/.bashrc` *inside the container*. It has nothing to do with
+your Termux `~`, and the fish config from course one is not involved — the
+container's shell is bash.
+:::
+
+Now test it, with the clock, before a desktop is anywhere near the picture.
+Make sure Termux:X11 is running on the native side first, then inside:
+
+```bash
+xdpyinfo | head -n 3
+```
+
+The `|` is **Volume Up + L**. **Success looks like** a name for the display, a
+version line, and a vendor string. That output means a Debian process inside
+PRoot just completed a conversation with an X server running in Termux —
+which is the entire point of this lesson, achieved before you installed a single
+panel.
+
+Then confirm something actually reaches the glass:
+
+```bash
+xclock
+```
+
+A clock appears in the Termux:X11 app. Stop it with
+<kbd class="tmx-kbd">Ctrl-C</kbd> — **Volume Down + C** on a phone.
+
+:::tip[If the clock works, the boundary works]
+Everything from here is XFCE's business, not the boundary's. That is the whole
+value of testing with a two-hundred-kilobyte program instead of a desktop: it
+splits the problem in half, and it does it in about four seconds.
+:::
+
+## Start the desktop
+
+Stop the native XFCE session from the last lesson before you do this. Two
+desktops on one display is its own mess — see the failure catalogue below.
+
+<Steps>
+
+1. **Native Termux session. Hold a wake lock**, so Android doesn't suspend the
+   server the moment the screen changes:
+
+   ```bash
+   termux-wake-lock
+   ```
+
+2. **Start the display server and background it:**
+
+   ```bash
+   termux-x11 :0 &
+   ```
+
+   The `&` returns your prompt. That server is a child of *this* session — close
+   the session and it dies with it.
+
+3. **Open the Termux:X11 app** from your app drawer or the recents switcher, so
+   you can see what lands. Then come back to Termux.
+
+4. **Log in to the container, with the flag:**
+
+   ```bash
+   proot-distro login debian --shared-tmp
+   ```
+
+5. **Inside, point at the display** (or skip this if you put it in `.bashrc`):
+
+   ```bash
+   export DISPLAY=:0
+   ```
+
+6. **Start a session bus, and the desktop on top of it:**
+
+   ```bash
+   dbus-launch --exit-with-session xfce4-session
+   ```
+
+7. **Switch to the Termux:X11 app.** XFCE draws there — panel, desktop, the
+   lot. First launch is slow; it is building caches and doing it through a
+   syscall tracer.
+
+</Steps>
+
+The terminal you launched from is now the desktop's console: it stays occupied
+and prints XFCE's warnings as they happen. Do not close it, and do read it when
+something misbehaves — that stream is the best diagnostic you get.
+
+:::note[`startxfce4` is the shortcut, `dbus-launch` is the one you can debug]
+Debian ships `startxfce4`, which arranges a session bus and starts the session
+in one word. It usually works and it is fine to use.
+
+The two-part command is taught here because it fails *legibly*: when
+`dbus-launch --exit-with-session xfce4-session` breaks, you can see which of the
+two nouns broke. `startxfce4` breaking just prints less.
+:::
+
+### Wrapping it up in a script
+
+Once it works twice by hand, it is worth a script — this is exactly what course
+two's scripting lesson was for. On the **Termux side**, `~/desktop.sh`:
+
+```bash
+#!/data/data/com.termux/files/usr/bin/bash
+termux-wake-lock
+termux-x11 :0 &
+sleep 3
+proot-distro login debian --shared-tmp -- /bin/bash -lc \
+  'export DISPLAY=:0; dbus-launch --exit-with-session xfce4-session'
+```
+
+`chmod +x ~/desktop.sh` and run it with `~/desktop.sh`.
+
+:::caution[That `sleep 3` is a race, and it is honest about being one]
+The container needs the socket to already exist when it connects, and there is
+no clean "wait until the server is up" signal here. Three seconds is a guess
+that works on most devices and is not a guarantee on yours. A cold or busy phone
+can need more.
+
+If the script fails but the same commands typed by hand succeed, raise the
+sleep before you suspect anything else.
+:::
+
+## The failure catalogue
+
+A black screen is not one bug. It is six, and they look identical. This is the
+part of the lesson worth bookmarking.
+
+Start with the symptom, then run the numbered test — each one checks exactly one
+link in the chain, and none of them depends on the others passing.
+
+| What you see | Most likely | Test |
+| :----------- | :---------- | :--- |
+| `Error: Can't open display: :0` | Server not running, or wrong number | 1, 3 |
+| `Error: Can't open display:` (nothing after the colon) | `DISPLAY` is unset | 3 |
+| `/tmp/.X11-unix` is empty inside | Logged in without `--shared-tmp` | 2 |
+| Panel never appears, session exits at once | dbus, or XFCE isn't in the container | 5, 6 |
+| Windows draw but settings and menus misbehave | No session bus | 5 |
+| Two panels, or "another window manager is running" | The native XFCE is still up | 6 |
+| App shows a black screen, terminal shows nothing | Server up, no client connected | 4 |
+
+### Test 1 — is the server actually running? (Termux side)
+
+```bash
+pgrep -f termux-x11
+ls -l $TMPDIR/.X11-unix/
+```
+
+Two separate answers, and they mean different things:
+
+- **A process id** from `pgrep` says the server is alive at all. Nothing back
+  means it died, or was never started, or the session you started it in is gone.
+- **A socket named `X0`** in that directory says it has published an endpoint in
+  the one place `--shared-tmp` can carry across. That file is the tether; with no
+  file there is nothing for the container to open, and every test below will fail
+  for that single reason.
+
+A live process with no socket points at the Termux:X11 **app** rather than the
+command — it needs its companion app the same way the `termux-api` package
+needed Termux:API back in course two. Check the app is installed and has been
+opened at least once, and read whatever the `termux-x11` command printed before
+it went quiet.
+
+### Test 2 — can the container see the socket? (container side)
+
+```bash
+ls -l /tmp/.X11-unix/
+```
+
+Test 1 passed but this is empty or missing: you logged in without
+`--shared-tmp`. Exit, log in again with it. There is no way to fix this from
+inside a session that was started wrong.
+
+### Test 3 — is `DISPLAY` set, and set to the right thing? (container side)
+
+```bash
+echo $DISPLAY
+```
+
+Empty means unset. A value means compare it to the socket: `DISPLAY=:0` needs
+`X0` in that directory, `DISPLAY=:1` needs `X1`. This is a two-second check that
+regularly saves an hour, because a wrong number and a dead server produce nearly
+the same error text.
+
+### Test 4 — can a trivial client reach the display? (container side)
+
+```bash
+xdpyinfo | head -n 3
+xclock
+```
+
+This is the whole boundary in one command, with XFCE removed from the equation.
+
+- **Clock appears** → the boundary is fine. Your problem is XFCE, dbus, or the
+  native session still holding the display. Go to tests 5 and 6.
+- **`Can't open display`** → the boundary is broken. Go back to tests 1–3; one
+  of them is lying to you.
+
+### Test 5 — is there a session bus? (container side)
+
+Run this in the shell where you started the desktop, or inside the desktop's own
+terminal:
+
+```bash
+echo $DBUS_SESSION_BUS_ADDRESS
+```
+
+The underscore is **Volume Up + U**, which is worth knowing before you type that
+name.
+
+Empty means no session bus. XFCE's pieces talk to each other over it, so without
+one you get a session that half-starts: a window manager but no panel, settings
+that do not stick, applications that hang on launch, or an immediate exit with
+*"Failed to connect to session manager"*.
+
+The fix is to launch through `dbus-launch --exit-with-session`, not to start
+`xfce4-session` bare. If `dbus-launch` itself is *"command not found"*, you are
+missing `dbus-x11`:
+
+```bash
+apt install -y dbus-x11
+```
+
+### Test 6 — which side is the desktop actually on?
+
+This is the one nobody expects, and this course sets you up for it perfectly:
+after the last lesson you have XFCE installed **twice**, once per side. The
+command name is identical. Only the shell you typed it in decides which one
+runs.
+
+Run this on both sides and compare:
+
+```bash
+command -v xfce4-session
+```
+
+- Inside the container: a path under `/usr/bin`.
+- In native Termux: a path under `/data/data/com.termux/files/usr/bin`.
+
+If the container says nothing, the desktop is not installed where you think it
+is — `apt install xfce4` went to a session you have since exited, or you
+installed it on the Termux side twice. If *both* answer and both are running,
+you get the two-panel mess: they are two independent desktops fighting over one
+display.
+
+**Only run one at a time.** Stop the native session before starting the
+container's.
+
+:::tip[Change one thing per attempt]
+When a desktop will not come up, the temptation is to change the display number,
+add the flag, reinstall a package and try again. Then it works and you have
+learned nothing, or it doesn't and you have six suspects instead of one.
+
+Tests 1 through 6 are ordered along the chain deliberately. Walk them in order,
+stop at the first failure, fix only that.
+:::
+
+## What this actually costs you
+
+Honest accounting, because the desktop is where the bill for PRoot finally
+arrives.
+
+**It is slower than the native desktop, and noticeably.** PRoot works by
+intercepting system calls with `ptrace`. A desktop makes an enormous number of
+them — every window, every redraw, every icon read off disk. This is close to
+the worst case for that technique. The same XFCE running natively in Termux is
+faster than the same XFCE inside Debian, and no configuration closes that gap.
+
+**Everything on this screen is drawn by the CPU.** There is no hardware
+acceleration in what you just built; each pixel is computed by the processor and
+handed over. That is fine for a file manager and a text editor, and it is why
+video and 3D are slideshows.
+
+**It gets hot, and it drinks battery.** A phone rendering a desktop in software
+under a syscall tracer is a phone doing real work. Expect warmth, expect the
+battery to move, and expect thermal throttling on a long session to make an
+already-slow desktop slower.
+
+**On a low-RAM device Android may simply kill it.** Debian plus XFCE plus Termux
+plus the X11 app is a lot of resident memory, and Android's low-memory killer
+does not negotiate. The tell is unmistakable: your session vanishes and Termux
+prints something about the process being killed, with no error from XFCE at all.
+Nothing in this lesson fixes that; fewer applications open, and closing other
+Android apps first, is the whole mitigation.
+
+:::caution[Two things that will bite you inside the desktop]
+**You are root in there.** `proot-distro login` gives you a root shell, so the
+desktop runs as root. Most things do not care. Browsers do — Chromium refuses to
+start as root without `--no-sandbox`, and that is a real security trade you
+should make deliberately rather than by pasting a flag.
+
+**Input is the app's department, not the desktop's.** Termux:X11 maps touch to
+pointer and provides its own soft-keyboard control; which toggles exist depends
+on your Termux:X11 build, so check the app's own preferences rather than
+expecting a fixed set. Driving XFCE by thumb is workable and never pleasant. A
+Bluetooth or USB keyboard and mouse changes this lesson from a demo into
+something you would actually use.
+:::
+
+:::tip[One free speed-up worth doing immediately]
+Inside XFCE: **Settings → Window Manager Tweaks → Compositor**, and turn the
+compositor off. It buys shadows and transparency you did not ask for at a cost
+your phone is paying in software. Everything feels faster the moment it is off.
+:::
+
+### Shutting it down cleanly
+
+Log out from inside XFCE (**Applications → Log Out**), which ends
+`xfce4-session` and returns your container prompt. Then `exit` the container,
+<kbd class="tmx-kbd">Ctrl-C</kbd> (**Volume Down + C**) the `termux-x11` job, and
+release the wake lock:
+
+```bash
+termux-wake-unlock
+```
+
+If the session wedges instead of exiting, `pkill -f xfce4-session` inside the
+container ends it without taking the container down with it.
+
+## Recap
+
+- **The server is native, the clients are in the container, the socket is the
+  tether.** Every failure in this lesson is one of those three being absent.
+- The container is not a VM — same kernel, same UID — so a shared directory
+  makes the socket genuinely shared. There is no networking involved.
+- `proot-distro login debian --shared-tmp` bind-mounts Termux's `$TMPDIR` onto
+  the container's `/tmp`, which is where X clients look. It is **per login** and
+  cannot be added afterwards.
+- Inside: `apt install xfce4 xfce4-terminal dbus-x11`, plus `x11-utils` and
+  `x11-apps` for the debugging tools. Read the real size with
+  `apt-get -s install` before committing the disk.
+- `export DISPLAY=:0` must match the number you gave `termux-x11`, and belongs
+  in the container's `~/.bashrc` if you want it to survive a logout.
+- **Test with `xclock` before you test with a desktop.** It splits every problem
+  into "boundary" or "XFCE" in four seconds.
+- Start it with `dbus-launch --exit-with-session xfce4-session` — without a
+  session bus XFCE half-starts and blames nothing.
+- Six causes, six independent tests, in chain order: server up (1), tmp shared
+  (2), `DISPLAY` right (3), a trivial client connects (4), session bus present
+  (5), desktop on the side you think (6).
+- XFCE exists on **both** sides now. `command -v xfce4-session` is how you tell
+  which one you are about to start; run only one at a time.
+- It is slow, software-rendered, hot, and killable by Android on a low-RAM
+  device. All four are properties of the approach, not mistakes you made.
+
+You have a Debian desktop drawn on a phone screen, with every pixel computed by
+the CPU. Next: [Handing Work to the GPU](/hardware/gpu/) — the most
+device-dependent thing in this series, and the lesson most likely to tell you
+your particular phone says no.
 
 <LessonComplete client:only="react" slug="desktop/across-the-boundary" />

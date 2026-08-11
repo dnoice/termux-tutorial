@@ -11,11 +11,282 @@ sidebar:
 next: false
 ---
 
+import { Icon } from 'astro-icon/components';
 import LessonComplete from '../../components/profile/LessonComplete.tsx';
 
-{/* STUB — created so the sidebar, the progress dashboard and the link
-    check all resolve. Brief: The end of the series: what the learner can now do, and where the real ecosystem goes next. */}
+{/* Raw <a href> in MDX bypasses the rehypeBasePaths plugin, so internal links
+    inside the JSX blocks below are built from BASE_URL by hand — same pattern
+    as index.mdx. Markdown-syntax links elsewhere on this page ARE rewritten by
+    the plugin and must stay root-relative. */}
+export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-Coming up: the end of the series: what the learner can now do, and where the real ecosystem goes next.
+{/* The three courses are one deployed site assembled by the repo-root workflow:
+    the hub at the series root, then /beginner/, /intermediate/, /advanced/.
+    Those paths sit OUTSIDE this course's own base, which is why they are built
+    from SERIES_ROOT rather than from `base` — and why check-links.mjs carries
+    them in its SIBLINGS allowlist instead of trying to resolve them in dist/. */}
+export const SERIES_ROOT = base.replace(/\/[^/]+$/, '');
+export const SERIES = {
+  beginner: `${SERIES_ROOT}/beginner/`,
+  intermediate: `${SERIES_ROOT}/intermediate/`,
+};
+
+That's course three. It's also the end of the series.
+
+Three courses ago you were installing an app and wondering where the files had
+gone. You're finishing with a Debian rootfs on your phone, a desktop drawn on
+its screen, and a binary you compiled yourself for an architecture you probably
+hadn't thought about before.
+
+And none of this course was simulated. There was no practice terminal on any
+page, so every command you ran was on your own hardware, every gigabyte was your
+own storage, and every failure was one you had to read rather than one a script
+handed you. That is the part worth keeping.
+
+## What you can actually do now
+
+Not a list of lesson titles — a list of things you could sit down and do right
+now, on a phone, without looking the first step up.
+
+- **Install Termux without walking into the two traps.** From F-Droid or GitHub,
+  never the frozen Google Play build, and both halves of a plugin from the
+  **same source** — Android's signature-level permission means a mismatched pair
+  doesn't error, it just goes silent forever.
+- **Drive a shell from a keyboard that has no shell keys on it.** **Volume
+  Down + any letter** is Ctrl + that letter, which is the one that saves you.
+  **Volume Up** is a short fixed list — `E` for Esc, `T` for Tab, `W`/`A`/`S`/`D`
+  for the arrows, `L` for `|`, `H` for `~`, `U` for `_`, and `Q` or `K` to toggle
+  the extra-keys row. It is not a general Alt key, and it does not toggle the
+  soft keyboard. You also know how to build your own extra-keys row when the
+  defaults aren't the keys you keep reaching for.
+- **Move files across the Android boundary in the right direction.**
+  `termux-setup-storage`, `~/storage/shared` for anything another app has to
+  see — and code that stays in `~`, because shared storage has no exec bit and
+  no symlinks.
+- **Manage software.** `pkg update` before anything, `pkg search` when you don't
+  know the name, `pkg list-installed` saved somewhere you can find it after a
+  reinstall.
+- **Reach the device itself.** Battery, network, sensors, location, camera and
+  microphone as commands that print JSON, `jq` to pull one value out, and
+  notifications, dialogs, clipboard and speech to answer back.
+- **Write a script and let it run without you.** A shebang, `chmod +x`, a `~/bin`
+  on your `PATH`, arguments and exit codes — then `cron` or
+  `termux-job-scheduler`, plus a straight answer for the overnight silence:
+  Doze, App Standby, and the phantom process killer are Android's opinion, not
+  your bug.
+- **Serve something, then close the door.** A directory over HTTP on the LAN, an
+  outbound tunnel when your carrier's NAT rules out port forwarding, and the
+  discipline that goes with it — serve a directory built for serving, never `~`,
+  never `~/storage/shared`, and assume a public URL is public the second it
+  prints.
+- **Run a real distribution in user space.** `proot-distro install`, a Debian
+  rootfs with `apt`, real paths and real permissions, and an accurate mental
+  model of what ptrace-based syscall interception can fake and what it cannot.
+- **Put a desktop on the screen.** A display server and a session brought up as
+  separate layers, so a black screen is a question with about three answers
+  instead of one shrug — and the same desktop driven from inside the container
+  once the two halves each work alone.
+- **Hand work to the GPU, and know whether it took.** The `x11-repo` packages,
+  the driver environment variables, and — the part that matters — a way to check
+  which renderer you actually got instead of assuming the flag did something.
+- **Build what nobody packaged.** A toolchain, a `./configure` that has never
+  heard of Android, an aarch64 binary at the end of it, and "it isn't in the
+  repo" demoted from a dead end to an afternoon.
+
+That's not a terminal emulator with tricks. That's a computer you administer
+from a touchscreen.
+
+## What Termux is not good for
+
+This matters more than the list above, because knowing where the wall is saves
+you the week you'd otherwise spend walking into it. None of these are things you
+did wrong.
+
+| You want to… | Why this is the wrong machine |
+| :----------- | :---------------------------- |
+| Run Docker, LXC, or anything with `systemd` | All of them need real namespaces, cgroups and PID 1. PRoot has none of those, because it has no root — it rewrites syscalls in user space. This is not a missing feature; it's the boundary the whole approach is built on. |
+| Load a kernel module, use `iptables`, mount a filesystem | The kernel is Android's, and you are not its administrator. Unrooted means unrooted. |
+| Compile something large | PRoot's per-syscall overhead plus thermal throttling makes a phone the slowest reasonable computer in your house for a build. One package, fine. A kernel or a browser, no. |
+| Run x86 software | Your phone is almost certainly aarch64. Translation layers exist and are outside this series; they are slow, and "slow" here means slow on top of PRoot's slow. |
+| Host anything with an uptime story | Android will kill your process, doze your network, and reboot for an update while you sleep. A tunnel to your pocket is a demo, a debugging aid, a way to show someone a thing. It is not production. |
+| Hammer the storage | Phone flash is soldered in and has a finite write budget. A database doing constant writes is spending hardware you cannot replace. |
+
+:::caution[PRoot is not root, and `sudo` inside the container is theatre]
+Inside Debian you appear to be `root`, and that appearance is convincing enough
+that people build on it for a week before it bites. It is a lie PRoot tells your
+processes so that `apt` will run — the *kernel* still sees the same unprivileged
+Android UID it always did.
+
+Anything that needs privilege from the kernel rather than from libc fails, and
+often fails in a way that reads like a broken package. It isn't. Everything in
+the table above is that same fact, wearing different clothes.
+:::
+
+:::note[GPU acceleration is the one that may simply not work on your phone]
+It was true in that lesson and it's still true now: the driver path depends on
+your GPU vendor, your Android version and your device's driver blobs, and there
+are phones where no combination of environment variables produces hardware
+rendering. If yours is one of them, you did not misconfigure it.
+
+Software rendering still gives you a working desktop. It gives you a desktop
+that is slow, hot and correct — which for most of what you'd actually run is the
+right trade anyway.
+:::
+
+## If you're done for now, take the disk back
+
+A rootfs you're not using is 1.5–3 GB of your phone doing nothing. This is
+reversible, which was always the point.
+
+```bash
+proot-distro list
+```
+
+That prints what's installed alongside what's available. To see what it's
+actually costing you:
+
+```bash
+du -sh $PREFIX/var/lib/proot-distro/installed-rootfs/
+```
+
+Give that one a moment — it walks every file in the rootfs, and there are a lot
+of them. If it seems to hang, it hasn't; **Volume Down + C** stops it if you'd
+rather not wait.
+
+Then, when you mean it:
+
+```bash
+proot-distro remove debian
+```
+
+:::caution[That deletes everything inside the container]
+`remove` does not archive, prompt twice, or keep a copy. Files in the
+container's `/home` and `/root` go with it — anything you want to keep should
+already be on the Termux side, in `~`, or backed up to `~/storage/shared`. If
+you bind-mounted a Termux directory in, that directory is fine; it was never
+inside the rootfs to begin with.
+:::
+
+Reinstalling later is one command and a download. Nothing you learned expires.
+
+## Where the ecosystem actually lives
+
+Termux is a volunteer project with a large surface area, and this course is a
+path through it, not a map of it. Here's the rest of the map.
+
+| Where | What's there |
+| :---- | :----------- |
+| [wiki.termux.com](https://wiki.termux.com) | The reference. Every `termux-*` command, the package repos, the plugin apps, and the Community page — which is where you should get chat-room links, because rooms move and tutorials go stale. Including this one. |
+| [github.com/termux](https://github.com/termux) | All of it. The app, the packages, the plugins, the issue trackers where device-specific weirdness actually gets diagnosed. |
+| [termux/termux-packages](https://github.com/termux/termux-packages) | The build recipes for everything `pkg install` can reach. Also the answer to "why isn't X packaged" — usually because nobody has written the recipe yet. |
+| [termux/proot-distro](https://github.com/termux/proot-distro) | The tool from this course's first half, plus the list of distributions beyond Debian and the plumbing behind `install`, `login` and `remove`. |
+| [termux/termux-x11](https://github.com/termux/termux-x11) | The display-server project. Nightly builds and the issue tracker both live here, and it moves fast enough that the tracker is often more current than any write-up. |
+| [r/termux](https://www.reddit.com/r/termux/) | Where "it works on every phone except mine" gets worked out by someone with the same phone. |
+
+### Contributing a package is more approachable than it looks
+
+This is the natural next step after the building lesson, and it's the one most
+people assume is out of reach.
+
+A package in `termux-packages` is a directory under `packages/` containing a
+`build.sh` — homepage, description, version, source URL, and the SHA-256 of
+that source. Many recipes are twenty lines. The infrastructure builds them in a
+Docker image via the repo's own `scripts/run-docker.sh`, which means the actual
+packaging work happens **on a computer, not on the phone** — the phone is where
+you discovered the gap.
+
+That's the honest shape of it: you already did the hard part when you got the
+thing to compile by hand. Writing down what you did so the next person types
+`pkg install` is the small part.
+
+:::tip[Start by reading, not by writing]
+Find a package whose upstream you understand, open its `build.sh`, and compare
+it to what you did by hand. The conventions become obvious in about ten minutes,
+and the repo's own docs cover the rest.
+:::
+
+## The series
+
+Three courses, each self-contained, each assuming the one before it. You've done
+all three.
+
+<div class="tmx-panels">
+  <div class="tmx-panel">
+    <span class="tmx-chip"><Icon name="fa6-solid:check" aria-hidden="true" focusable="false" /></span>
+    <div class="tmx-panel__head">
+      <span class="tmx-panel__kicker">Course 1 · Done</span>
+      <h3 class="tmx-panel__title">Beginner</h3>
+    </div>
+    <p class="tmx-panel__body">Install, the shell, sessions, the filesystem, files, storage, packages, and a keyboard that finally has the keys on it. <a href={SERIES.beginner}>Go back to it</a> if any of that has gone soft — everything since leaned on it.</p>
+  </div>
+  <div class="tmx-panel">
+    <span class="tmx-chip"><Icon name="fa6-solid:check" aria-hidden="true" focusable="false" /></span>
+    <div class="tmx-panel__head">
+      <span class="tmx-panel__kicker">Course 2 · Done</span>
+      <h3 class="tmx-panel__title">Intermediate</h3>
+    </div>
+    <p class="tmx-panel__body">Termux:API, the sensors and the camera, notifications and dialogs, shell scripting, cron and Android's own scheduler, a local server, and a tunnel to the open internet. <a href={SERIES.intermediate}>Its scheduling lesson</a> is the one worth re-reading the first time a job stops overnight.</p>
+  </div>
+  <div class="tmx-panel">
+    <span class="tmx-chip"><Icon name="fa6-solid:flag-checkered" aria-hidden="true" focusable="false" /></span>
+    <div class="tmx-panel__head">
+      <span class="tmx-panel__kicker">Course 3 · You are here</span>
+      <h3 class="tmx-panel__title">Advanced</h3>
+    </div>
+    <p class="tmx-panel__body">A real distribution under PRoot, a desktop on the screen, the GPU where the hardware allowed it, and builds of your own. The course with a disk cost, a heat cost, and no safety net. Finished.</p>
+  </div>
+</div>
+
+## And when something breaks
+
+It will, and this course breaks in more interesting ways than either of the
+others — a good share of these failures are your specific device's opinion
+rather than your typo.
+
+- The [Command Cheatsheet](/reference/cheatsheet/) has every `proot-distro`,
+  X11 and build invocation from this course on one page.
+- [Troubleshooting](/reference/troubleshooting/) covers what this course
+  actually produces: the install that dies partway through on a full disk, the
+  black screen with three plausible causes, the container that can't see the
+  display, and the renderer that quietly stayed on software.
+- When neither helps, the issue tracker for the specific project — not the
+  general forum — is where a device-specific bug gets an answer, because that's
+  where the people who wrote it are.
+
+## Recap
+
+The specifics fade. These don't:
+
+- **A phone is a real computer with real limits, and the limits are the
+  kernel's, not yours.** No root means no root, all the way down. Everything
+  PRoot cannot do traces back to that one fact.
+- **Cost is a design input here.** Disk, battery, heat and time are all finite on
+  a device you also need to make calls with. Check the space before the install,
+  not after.
+- **"It might not work on your device" is a real answer.** GPU acceleration is
+  the clearest case, but it applies anywhere Android's fragmentation reaches.
+  Knowing how to *check* beats trusting any instruction, including these.
+- **Volume Down + letter is Ctrl.** It is the general one, and it's how you get
+  your prompt back. Volume Up is a short fixed list, not an Alt key.
+- **Code in `~`, backups in `~/storage/shared`.** Still true, still the way
+  round people get wrong.
+- **Close the doors you open.** Stop the tunnel, stop the server, remove the
+  rootfs you're done with.
+- **The wiki and the issue trackers outlive every tutorial.** Go to the source
+  when something here stops matching what your phone does.
+
+You started this series to find out whether a phone could be a Linux machine.
+It can. You've now got the far more useful answer — which parts of that are
+worth doing, and which parts are a laptop's job.
+
+Go build something nobody packaged.
+
+<div class="tmx-cta">
+  <p class="tmx-cta__text">Series complete —</p>
+  <a class="tmx-btn tmx-btn--primary" href={`${base}/progress/`}>
+    <span>See your progress</span>
+    <Icon name="fa6-solid:arrow-right" width="14" height="14" aria-hidden="true" focusable="false" />
+  </a>
+</div>
 
 <LessonComplete client:only="react" slug="where-next" />

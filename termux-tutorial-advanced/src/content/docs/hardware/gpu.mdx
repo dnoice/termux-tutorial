@@ -6,10 +6,528 @@ sidebar:
 ---
 
 import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
 
-{/* STUB — created so the sidebar, the progress dashboard and the link
-    check all resolve. Brief: virglrenderer and mesa: bridging OpenGL to the phone GPU. Experimental, device-dependent, and honest about it. */}
+This is the lesson most likely to not work on your phone, and you should know
+that before you spend an evening on it.
 
-Coming up: virglrenderer and mesa: bridging OpenGL to the phone GPU. Experimental, device-dependent, and honest about it.
+Everything up to here has been reliable. PRoot behaves the same on every device.
+Termux:X11 behaves the same on every device. This does not. What happens next
+depends on which GPU your phone has, which driver the manufacturer shipped with
+it, what Android does with that driver, and how much of it Mesa can talk to.
+Those four things vary per handset, and a fair number of combinations simply
+have no working path.
+
+So this lesson is built differently from the rest. Every step ends with a way to
+**check** rather than a way to feel finished, because the failure mode here is
+not an error message — it is a setup that looks correct, runs, and is still
+doing every pixel on the CPU.
+
+:::caution[This one gets hot]
+GPU work is the most power-hungry thing in this series, and it lands on a device
+with no fan. Expect the back of the phone to get genuinely warm within a few
+minutes, expect Android to throttle the clocks when it does, and expect your
+frame rate to drop as it happens. That is thermal management working, not your
+setup failing.
+
+Plugged in and off the bed sheets, if you're going to be at this a while.
+:::
+
+## What you have been running on
+
+Before installing anything, find out what you already have. Log into the
+container the way [Living in the Container](/container/living-in-it/) set up,
+make sure `DISPLAY` points at the Termux:X11 server from [A Display Server on
+Android](/desktop/x11-server/), and install the one tool that answers the
+question:
+
+```bash
+apt install mesa-utils
+```
+
+```bash
+glxinfo -B
+```
+
+Somewhere in that output is the line this entire lesson is about:
+
+```text
+OpenGL renderer string: llvmpipe (LLVM 15.0.6, 128 bits)
+```
+
+**`llvmpipe` is software rendering.** There is no GPU in that sentence anywhere.
+Mesa found no hardware it could drive, so it fell back to its own rasterizer and
+is running the whole graphics pipeline — vertices, triangles, shaders, every
+fragment — on the same CPU cores that are already running PRoot's syscall
+tracing. It is completely correct, it is completely portable, and it is the
+reason your XFCE session felt like it was being drawn by hand.
+
+If you only ever remember one command from this lesson, make it this one:
+
+```bash
+glxinfo | grep -i "renderer string"
+```
+
+The `|` is **Volume Up + L**, as always.
+
+:::note[`softpipe` is the other software answer]
+If the string says `softpipe` rather than `llvmpipe`, you are on Mesa's
+reference rasterizer — correct, unoptimised, and slower still. Same category,
+worse day. Neither one is touching your GPU.
+:::
+
+## Why the container cannot just use the GPU
+
+The obvious question is why Debian can't drive the GPU directly. Termux can — it
+is an Android app, and Android apps render with the GPU constantly.
+
+The barrier isn't permission. Your container runs under Termux's own user ID, so
+it has exactly the access Termux has. The barrier is that **the driver is an
+Android library.** The code that actually knows how to talk to an Adreno or a
+Mali is a vendor `.so` sitting in `/vendor/lib64/egl`, built against Android's
+C library and loaded by Android's linker. The Debian side of your phone is a
+glibc userland. It cannot load that file, and there is no version of it that it
+could load.
+
+So Mesa inside the container looks for hardware it recognises, finds a kernel it
+can't get a modern DRM handle from, and does the only honest thing left:
+llvmpipe.
+
+## The shape of the fix
+
+You cannot move the driver to the container. You can move the **work** to the
+driver.
+
+```text
+  inside the container             on the Termux side
+  --------------------             ------------------
+  your OpenGL app                  virgl_test_server_android
+        |                                    |
+  Mesa, virpipe driver  ---- socket ---->  Android EGL / GLES
+                                             |
+                                           vendor driver
+                                             |
+                                           your GPU
+```
+
+A small server runs on the **Termux** side, as a native Android binary, which
+means it can load the vendor driver and get a real GL context the normal way.
+Mesa inside the container stops trying to render and instead serialises its GL
+commands onto a Unix socket. The server replays them against the real GPU and
+sends the results back.
+
+That is **virglrenderer**, and it was not invented for phones — it is how a
+virtual machine's guest gets 3D out to its host. Here the "guest" is your PRoot
+container and the "host" is Termux. Same problem, same answer.
+
+The container-side half is a Mesa Gallium driver called **`virpipe`**, which
+speaks the vtest protocol over a socket. The word "test" in the binary's name is
+a leftover from that protocol's origins; in this arrangement it is the only
+transport there is, not a toy mode.
+
+:::note[This is orthogonal to your display server]
+virgl handles *rendering*. Termux:X11 handles *display*. They are separate
+pieces and they fail separately — a broken `DISPLAY` looks exactly like a broken
+GPU from inside the container. If nothing appears on screen at all, re-check the
+display work from [Bringing Up XFCE](/desktop/xfce/) before you blame anything
+here.
+:::
+
+## Find out what you are working with
+
+Your odds are mostly decided by which GPU is in the phone. Ask Android
+directly, from the **Termux** side:
+
+```bash
+getprop ro.hardware.vulkan
+getprop ro.board.platform
+```
+
+The first usually prints a driver family — `adreno`, `mali`, and so on. Not
+every device sets it; an empty answer means the property isn't populated, not
+that you have no GPU. `ro.board.platform` gives you the SoC codename, which is
+worth searching for alongside "termux virgl" before you invest an evening.
+
+| GPU family | Typically found in | Realistic odds |
+| :--------- | :----------------- | :------------- |
+| **Adreno** | Snapdragon | Best by a wide margin. Almost every working report comes from here, and it is the target of the open-source driver work |
+| **Mali** | Exynos, Dimensity, Tensor, Kirin | Mixed to poor. Often works for OpenGL via virgl, often unstable, rarely fast |
+| **Xclipse** | Recent Exynos | Rare, and reports conflict |
+| **PowerVR** | Some budget MediaTek | Rare |
+
+:::caution[Android version matters too, and not in your favour]
+Newer Android releases have tightened what a background process may do with the
+graphics stack. On some devices the vendor driver will refuse to hand a
+surfaceless GL context to a process that isn't in the foreground, which shows up
+as the server dying the moment you switch away from Termux.
+
+There is no flag for this. It is a decision made below you.
+:::
+
+## Install and start the server
+
+Everything in this section runs on the **Termux side**, not inside the
+container. The GPU packages live in Termux's separate X11 repository, which is
+itself just a package:
+
+<Steps>
+
+1. **Add the repository, then refresh.**
+
+   ```bash
+   pkg install x11-repo
+   pkg update
+   ```
+
+2. **Install virglrenderer.**
+
+   ```bash
+   pkg install virglrenderer-android
+   ```
+
+   The `-android` suffix is the part that matters. It is the build wired to
+   Android's EGL rather than to a desktop DRM device, and it is the only one of
+   these that can reach your phone's GPU.
+
+3. **Start the server — in its own Termux session.**
+
+   ```bash
+   virgl_test_server_android
+   ```
+
+   Open a **new session** for this rather than backgrounding it with `&`. You
+   learned sessions in course one and this is what they were for: the server
+   prints its complaints to the terminal, and a backgrounded server that dies
+   at startup dies silently, which is the single most confusing way to begin.
+
+   Leave it running. It has no prompt and nothing to type into. Switch back to
+   your other session and carry on.
+
+4. **Confirm the socket exists.**
+
+   In a different session:
+
+   ```bash
+   ls -l $PREFIX/tmp/.virgl_test
+   ```
+
+   That leading dot makes it a hidden file, so a bare `ls $PREFIX/tmp` will not
+   show it — name it directly. A path and a timestamp means the server is up and
+   listening. "No such file or directory" means it isn't, whatever the other
+   session appears to be doing.
+
+</Steps>
+
+:::tip[Stopping it]
+<kbd class="tmx-kbd">Ctrl-C</kbd> in the server's session — **Volume Down + C**
+on a phone. Killing the session works too. There is no state to lose; it is a
+relay, not a daemon with opinions.
+:::
+
+:::caution[If the server exits immediately, read what it printed]
+This is the first real fork in the road. A server that starts and instantly
+returns you to the prompt has usually been refused a GL context by the vendor
+driver — which is the "your device does not do this" answer, arriving early.
+
+Before accepting that: make sure Termux is in the foreground when you start it,
+make sure the phone isn't in a battery saver mode, and try once with the screen
+unlocked and Termux visibly on top. If it still won't hold a context, skip ahead
+to [When it does not work](#when-it-does-not-work) — the rest of this page will
+not fix it.
+:::
+
+## Point the container at it
+
+Now log into the container and tell Mesa to stop rendering and start
+forwarding.
+
+<Steps>
+
+1. **Check the socket is visible from inside.** This is the step people skip and
+   then spend an hour on:
+
+   ```bash
+   ls -l /tmp/.virgl_test
+   ```
+
+   `proot-distro login` normally binds Termux's `$PREFIX/tmp` onto the
+   container's `/tmp`, which is why the two sides land on the same socket with
+   no extra work. Verify it rather than trust it — bindings differ between
+   proot-distro versions.
+
+   If it is missing, log out and bind it explicitly:
+
+   ```bash
+   proot-distro login debian --bind $PREFIX/tmp:/tmp
+   ```
+
+2. **Select the driver.**
+
+   ```bash
+   export GALLIUM_DRIVER=virpipe
+   ```
+
+   `virpipe` is the socket-based one. `virgl` on its own expects a real
+   virtio-gpu device, which you do not have, so it is not a synonym here.
+
+3. **Make sure nothing is forcing software.**
+
+   ```bash
+   unset LIBGL_ALWAYS_SOFTWARE
+   ```
+
+   Harmless if it was never set, and it overrides everything above when it is.
+
+4. **Ask the question again.**
+
+   ```bash
+   glxinfo | grep -i "renderer string"
+   ```
+
+</Steps>
+
+:::caution[`export` only affects the shell you typed it in]
+Set the variable, then start a desktop session from a different shell, and the
+session inherits nothing. This is the most common reason a setup "works" in a
+test and reverts to llvmpipe in real use.
+
+Put the exports in the container user's shell startup file, or — better for the
+session work from [The Desktop in the Container](/desktop/across-the-boundary/)
+— put them in the same script that launches the session, above the line that
+starts it. Variables have to exist *before* the process that reads them.
+:::
+
+## Verify, do not assume
+
+Read the renderer string. It is the only thing in this lesson that tells you the
+truth.
+
+| Renderer string contains | What it means |
+| :----------------------- | :------------ |
+| `llvmpipe` | **Software.** Nothing changed. The CPU is still doing all of it |
+| `softpipe` | Software, unoptimised. Same as above but slower |
+| `virgl` — usually with a GPU name in brackets | **The bridge is up.** The name in brackets is your actual GPU, reported back through the server |
+| `zink` | GL running on Vulkan on the real GPU — see the next section |
+
+The exact wording varies with Mesa version and with what the server reports, so
+match on the substring, not on a whole line. `virgl` anywhere in the string is
+the win condition.
+
+:::tip[Prove it to yourself with an A/B]
+`glxgears` comes with `mesa-utils` and prints a frame rate every five seconds.
+Run it both ways and compare:
+
+```bash
+glxgears
+```
+
+```bash
+LIBGL_ALWAYS_SOFTWARE=1 glxgears
+```
+
+Prefixing a variable like that sets it for **that one command only** — a useful
+habit generally, and exactly right for a comparison. If the two numbers are the
+same, your "hardware" path is not a hardware path.
+
+Treat glxgears as a smoke test, not a benchmark. It is a trivially small scene,
+and it is usually capped by vsync at your display's refresh rate, so a hardware
+result frequently parks at a suspiciously round 60 and stops. That is a floor,
+not a ceiling.
+:::
+
+:::note[A number that goes down is normal]
+Watch glxgears for two or three minutes rather than five seconds. On a phone the
+first reading is the best reading, and the steady-state number after the SoC
+warms up is the one you will actually live with. Both are real; only the second
+one is representative.
+:::
+
+## The Zink path
+
+There is a second route, and on recent Adreno hardware it is often the better
+one.
+
+`virgl_test_server_android` has to render the commands it receives *somehow*.
+By default it uses the phone's OpenGL ES driver. **Zink** is a Mesa driver that
+implements OpenGL on top of **Vulkan** instead — so the server can take your
+container's GL stream and put it out through the phone's Vulkan driver, which on
+a lot of modern hardware is the better-supported and better-maintained of the
+two.
+
+Nothing changes inside the container. You still use `GALLIUM_DRIVER=virpipe`
+there. The change is entirely in how you start the server on the Termux side:
+
+```bash
+GALLIUM_DRIVER=zink \
+MESA_GL_VERSION_OVERRIDE=4.3COMPAT \
+MESA_GLES_VERSION_OVERRIDE=3.2 \
+MESA_NO_ERROR=1 \
+virgl_test_server_android
+```
+
+Reading that line, because you should not run environment variables you cannot
+explain:
+
+- **`GALLIUM_DRIVER=zink`** — the actual change. Render through Vulkan.
+- **`MESA_GL_VERSION_OVERRIDE` / `MESA_GLES_VERSION_OVERRIDE`** — tell Mesa to
+  *claim* a higher API version than it worked out on its own. Many applications
+  check the version and refuse to start rather than degrade.
+- **`MESA_NO_ERROR=1`** — skip GL error checking for a little speed.
+
+:::caution[If your Termux shell is fish, that line will not run]
+`VAR=value command` is **bash syntax**, and it is a syntax error in fish — which
+is the shell course one had you install. Fish will complain about an unknown
+command rather than about the variables, so the error points nowhere useful.
+
+`env` works in both, and is the version to keep:
+
+```bash
+env GALLIUM_DRIVER=zink MESA_GL_VERSION_OVERRIDE=4.3COMPAT \
+    MESA_GLES_VERSION_OVERRIDE=3.2 MESA_NO_ERROR=1 \
+    virgl_test_server_android
+```
+
+Inside the container this doesn't come up — Debian's shell is bash, so the
+prefix form is fine there. It is only the Termux side that bites.
+:::
+
+:::caution[The version overrides are a promise you may not be able to keep]
+`MESA_GL_VERSION_OVERRIDE` does not add features. It changes the number Mesa
+reports. If an application believes it and then uses something the stack cannot
+actually do, you get a crash or corrupted output rather than a clean "this needs
+a newer OpenGL".
+
+They are in every Termux GPU guide because without them a lot of software won't
+launch at all. Keep them if you need them, drop them when you are diagnosing
+something, and suspect them first when an app renders nonsense.
+:::
+
+### Zink needs real Vulkan, and "Vulkan" is not proof of hardware
+
+This is the trap worth the whole section. Before Zink is worth trying, check
+what Vulkan you actually have, from the Termux side:
+
+```bash
+pkg install vulkan-tools
+vulkaninfo --summary
+```
+
+Look at the driver name in the summary:
+
+- A real GPU name — **Adreno**, **Turnip**, **Mali** — means a hardware Vulkan
+  driver, and Zink has something to stand on.
+- **SwiftShader** or **lavapipe** are **software** Vulkan implementations. Zink
+  on top of one of those is OpenGL emulated on Vulkan emulated on the CPU, which
+  is reliably *slower* than plain llvmpipe. A working setup, a plausible-looking
+  renderer string, and worse performance than doing nothing.
+
+:::note[Package names in this corner move around]
+The Vulkan loader and driver packages get renamed and split more often than
+anything else in the Termux repositories, and any exact list written today ages
+badly. Search rather than trust:
+
+```bash
+pkg search vulkan
+pkg search mesa
+```
+
+The one name that has been stable is `virglrenderer-android`. Around it, read
+what your repository actually offers today.
+:::
+
+:::caution[`ZINK_DESCRIPTORS=lazy` in older guides]
+You will see this in most walkthroughs. It was a meaningful tuning knob on older
+Mesa; newer Mesa made that behaviour the default and the variable does nothing.
+It is harmless to include and pointless to worry about. Not a fix for anything.
+:::
+
+## When it does not work
+
+Work down this table. It is ordered by how often each one is the actual answer:
+
+| Symptom | Most likely cause |
+| :------ | :---------------- |
+| Still `llvmpipe`, no errors | `GALLIUM_DRIVER` isn't set in the process that's rendering — check the shell, not the one you tested in |
+| `glxinfo: command not found` | `mesa-utils` isn't installed **in the container** |
+| Cannot connect / socket errors | Server not running, or `/tmp/.virgl_test` isn't visible inside the container — check both sides |
+| Server exits at startup | The vendor driver refused a GL context. Device-level answer |
+| Renders a while, then everything dies | Unstable driver path. Common on Mali, and not something you configure your way out of |
+| `virgl` in the string but visible garbage | Real bridge, incomplete GL support — drop the version overrides and retest |
+| Fast, then progressively slower | Thermal throttling. Working as designed |
+| Slower than before you started | Software Vulkan under Zink, or a scene too small to be worth the round trip |
+
+:::danger[If it does not work, that is not you failing]
+There is a real chance you follow every step on this page exactly and end up
+with `llvmpipe`. That outcome is not a missing flag, a typo, or insufficient
+persistence. It is a vendor graphics driver, written for a phone, declining to
+do something nobody paid it to do.
+
+No amount of trying harder fixes a driver that will not hand out a context.
+Knowing *which* of those two situations you are in — and having a one-line
+command that tells you — is worth more than the acceleration was.
+
+The container works. The desktop works. Those did not depend on this.
+:::
+
+:::tip[Roll back cleanly if you want the space]
+Nothing here is sticky. Stop the server, remove the exports from wherever you
+put them, and everything falls back to llvmpipe on its own. If you want the
+packages gone too, `pkg uninstall virglrenderer-android` and you are back where
+you started with no residue.
+:::
+
+## What this buys, and what it does not
+
+When it works, it is a genuine step change and not a subtle one:
+
+- **The desktop stops feeling like a slideshow.** Window compositing, dragging,
+  and redraw move off the CPU, which also frees the CPU for whatever you were
+  actually doing.
+- **3D applications become usable** rather than technically-runnable. Model
+  viewers, CAD tools, anything with a rotating viewport.
+- **GL-based emulators and games** get frame rates worth the name.
+- **WebGL inside a container browser** starts working properly.
+
+What stays out of reach, no matter how well the above goes:
+
+| Not available | Why |
+| :------------ | :-- |
+| **Vulkan inside the container** | virgl carries OpenGL only. Even when the *server* is using Vulkan via Zink, the container's side of the socket is still a GL stream. A container app that requires Vulkan does not get it |
+| **Hardware video decode and encode** | Android's media stack isn't exposed through this bridge. Video stays on the CPU, so playback is unchanged |
+| **OpenCL, CUDA, GPU compute** | Different interfaces entirely. None of them ride this socket |
+| **Anything wanting DRM/KMS or a kernel module** | Same wall as [Root Without Rooting](/container/why-proot/). PRoot intercepts syscalls; it does not add hardware |
+| **The newest OpenGL versions** | Your ceiling is set by what the phone's driver supports, minus what virgl can translate. Expect a mid-range GL version, not the current one |
+
+The pattern is consistent: this bridge carries **OpenGL drawing commands**, and
+that is the entire list. Everything else your GPU can do stays on the Android
+side of the wall.
+
+## Recap
+
+- Software rendering is the default and it is **`llvmpipe`**. Check with
+  `glxinfo | grep -i "renderer string"` before and after everything.
+- The container cannot use the GPU directly because the vendor driver is an
+  **Android** library and the container is a **glibc** userland.
+- The fix moves the work, not the driver: `virgl_test_server_android` runs on
+  the Termux side and gets a real GL context; the container's Mesa forwards its
+  commands over a Unix socket.
+- Termux side: `pkg install x11-repo`, then `pkg install virglrenderer-android`,
+  then run the server **in its own session** so you can see it fail.
+- Container side: `export GALLIUM_DRIVER=virpipe`, confirm `/tmp/.virgl_test` is
+  visible, and re-read the renderer string. `virgl` in it is the win.
+- `export` reaches only the shell you typed it in — put it in the script that
+  launches your session, not in a terminal beside it.
+- **Zink** renders the server's side through Vulkan instead of GLES, which is
+  often better on Adreno — but check `vulkaninfo --summary` first, because
+  SwiftShader and lavapipe are software Vulkan and Zink on those is slower than
+  doing nothing.
+- `MESA_GL_VERSION_OVERRIDE` changes a reported number, not a capability.
+  Suspect it first when something renders garbage.
+- It gets hot, it throttles, and on a lot of phones it will not work at all —
+  which is a driver decision, not a mistake you made.
+
+Next, the other thing "it isn't in the repository" stops meaning: compiling for
+aarch64 on the device itself, in [Building Packages of Your
+Own](/hardware/building/).
 
 <LessonComplete client:only="react" slug="hardware/gpu" />

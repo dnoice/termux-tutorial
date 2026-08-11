@@ -6,10 +6,336 @@ sidebar:
 ---
 
 import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
 
-{/* STUB — created so the sidebar, the progress dashboard and the link
-    check all resolve. Brief: What PRoot actually is — ptrace-based syscall interception, not virtualisation — and why that answers "why not just root the phone". */}
+{/* No <TermuxTerminal> here, and none anywhere in this course. The simulator
+    cannot install a rootfs, open an X11 socket or reach a GPU, and this lesson
+    in particular has almost nothing to run — it exists to explain the
+    constraint that every later lesson bumps into. The landing page states the
+    reason for the whole course; don't restate it at length here. */}
 
-Coming up: what PRoot actually is — ptrace-based syscall interception, not virtualisation — and why that answers "why not just root the phone".
+Sooner or later, everyone who gets excited about Termux asks the same question:
+
+**"So… should I root my phone?"**
+
+Almost always, no. Not because rooting is bad — because it is a different
+subject, and it is not a prerequisite for anything you are about to do.
+
+## Two people ask that question
+
+The first genuinely wants to root. They like modifying Android at the system
+level, flashing custom firmware, changing things the OS keeps off-limits,
+seeing how far the hardware goes. That is a legitimate interest and a real
+craft. It is also not this course, and this course is not qualified to be a
+substitute for it. If that is you, go and enjoy it — on a spare device.
+
+The second thinks rooting is the next step toward a "real" Linux experience, or
+toward doing serious development on a phone. That is the person worth stopping,
+because the assumption is wrong and the bill is real.
+
+**For the work most people are actually trying to do with Termux, you do not
+need root at all.**
+
+## The bill, since it is worth knowing
+
+Not a moral argument. Just what it costs, so the decision is informed rather
+than discouraged:
+
+- **Unlocking the bootloader wipes the device.** Every time, by design — an
+  unlocked bootloader could otherwise be used to read the encrypted data of a
+  phone picked up off a table. There is no "unlock but keep my stuff" path.
+- **Plenty of phones cannot be unlocked at all.** Carrier-locked models, most US
+  Samsung variants, and a growing list of vendors who have stopped issuing
+  codes.
+- **On Samsung the Knox fuse is one-way.** Blow it and Secure Folder, Samsung
+  Wallet and Samsung Health stop working permanently. Reflashing stock firmware
+  does not bring them back, because what changed is a fuse.
+- **Play Integrity notices.** The check that replaced SafetyNet is what banking
+  apps, Google Wallet, employer device management and a fair number of games
+  consult before agreeing to run. Hiding root from it is possible, and it is an
+  arms race you have now enlisted in.
+- **Root is granted per app and felt by all of them.** The Android sandbox is
+  the only reason a flashlight app cannot read your messages. Root is the tool
+  whose entire purpose is switching that off.
+- **A bad flash bricks.** Rare with care; unrecoverable without a specialist
+  when it happens.
+
+On a spare phone, that is a fair price for an interesting afternoon. On your
+daily driver, it deserves more thought than "maybe root will give me more
+Linux."
+
+## What you actually wanted was a directory tree with `apt` in it
+
+And that does not need any of the above. Two commands:
+
+```bash
+proot-distro install debian
+proot-distro login debian
+```
+
+A full Debian userspace, alongside Termux, with no bootloader unlocked, no
+system partition touched, and nothing privileged granted. From there the
+limiting factor stops being whether the phone is rooted and becomes whether you
+understand the environment you are working in — which is a much better problem,
+because it is one you can solve by learning rather than by flashing.
+
+## What PRoot actually is
+
+PRoot is an ordinary, unprivileged program. It runs as your Termux user with
+exactly the permissions Termux already has, which is to say: the permissions of
+one normal Android app.
+
+The trick is `ptrace` — the same kernel facility a debugger uses. PRoot starts
+the program you asked for as its own child and asks the kernel to stop that
+child whenever it makes a system call. The child says "open
+`/etc/apt/sources.list`"; the kernel wakes PRoot first; PRoot rewrites that path
+into the real one, buried inside Termux's own private data directory; the call
+then continues. The program never finds out.
+
+That is the entire idea. **Nothing is emulated and nothing is virtualised.**
+
+| Layer | What is actually happening |
+| :---- | :------------------------- |
+| CPU | **Real.** Debian's `aarch64` binaries execute natively on the phone's own cores. |
+| Kernel | **Real, and Android's.** There is one kernel on this device and you are a guest on it. |
+| Filesystem | **Rewritten.** `/etc`, `/usr` and `/home` inside are paths inside Termux, translated on the way past. |
+| User ID | **A costume.** `whoami` says `root`. The kernel still sees the same app user it always did. |
+| System calls | **Intercepted.** Each one PRoot cares about stops the process on its way through. |
+
+:::note[Why not a proper container, like on a laptop?]
+Rootless containers — the `podman` and `bubblewrap` kind — are built on
+**unprivileged user namespaces**, and Android kernels have generally shipped
+with those disabled or restricted. That is the gap PRoot fills: when the kernel
+will not hand you a namespace, you fake the view from user space instead.
+
+This is also why "just use Docker" is not an option later in the course. There
+is no kernel support to build on.
+:::
+
+:::tip[It is not as slow as that description makes it sound]
+Stopping a process twice on every single system call would be brutal. Termux's
+build of `proot` uses a **seccomp** filter so the kernel only wakes it for the
+calls it actually needs to rewrite, and lets the rest through untouched. The tax
+is real — see below — but it is charged per relevant syscall, not per
+instruction.
+:::
+
+## Not a chroot, and not a VM
+
+Three different answers to "run another distribution's userland", with three
+different prices:
+
+| Approach | What it needs | Speed | On a stock phone? |
+| :------- | :------------ | :---- | :---------------- |
+| `chroot` | Real root (`CAP_SYS_CHROOT`) | Native — the kernel does the work | **No** |
+| **PRoot** | Nothing beyond normal app permissions | Native CPU, a toll on syscalls | **Yes** |
+| VM with KVM | Hardware virtualisation exposed to apps | Near native | Essentially never |
+| Emulator (QEMU, software) | Nothing | Translates every instruction — slow | Yes, and painful |
+
+`chroot` is the same idea done properly, by the kernel, for free — one syscall,
+no interception, no ongoing cost. It needs precisely the privilege you would
+have to root the phone to get, which is why it is not on the table.
+
+A VM goes the other way: its own kernel, its own everything, genuine isolation.
+That needs hardware virtualisation handed to an ordinary app, and stock Android
+does not do that. Without it you are emulating a CPU in software, and then even
+`ls` is slow.
+
+PRoot sits in the gap. Native speed for computation, a toll on the conversation
+with the kernel, no privileges required, and nothing about the phone modified.
+
+## What PRoot therefore cannot do
+
+Every item below is a consequence of the design, not a bug someone will fix in a
+later release. Reading them now saves you from debugging them later.
+
+- **No kernel modules.** `insmod` and `modprobe` will not work. Loading code
+  into the kernel is exactly the privilege you declined to take.
+- **No mounting.** `mount`, loop devices, an ISO you want to peek inside, a
+  network share — all of it needs real privilege. PRoot can bind directories
+  into the container when it starts, and that is the whole of what you get.
+- **No block devices.** `/dev` inside holds the handful of nodes Termux itself
+  can see: `null`, `zero`, `urandom`, `tty` and friends. There is no `/dev/sda`,
+  so no partitioning, no making filesystems, no disk tooling.
+- **No systemd.** This is the one that catches people. Nothing inside is PID 1
+  in Android's sense, so `systemctl` answers with `System has not been booted
+  with systemd as init system (PID 1). Can't operate.` Every guide on the
+  internet that ends "...then enable the service" stops working at that line.
+  Daemons get started by hand.
+- **No Docker.** Namespaces, cgroups and a cooperating kernel. None of those are
+  available.
+- **Raw sockets are a coin toss.** `ping` is the classic: it may work, or it may
+  answer `Operation not permitted`, and which one you get depends on the kernel
+  settings your manufacturer shipped rather than on anything you did.
+- **Ownership is decoration.** Inside, everything appears to belong to `root`
+  and `chown` appears to succeed. On the real filesystem every file still
+  belongs to the single Android app user Termux runs as. That illusion is enough
+  to keep `apt` happy, which is its whole job — do not build anything else on
+  it.
+
+:::caution[PRoot is not a sandbox. Read "container" as "directory tree", not as "contained".]
+Processes inside run under the same Android app identity as Termux itself. That
+means anything in the container can reach anything Termux can reach: your home
+directory, your SSH keys, your `~/storage` links into shared storage.
+
+Escaping it is not an exploit — there is nothing to escape. Treat code you run
+inside the container with exactly the suspicion you would give it outside.
+:::
+
+## The toll, and where you will actually feel it
+
+Computation is native. A tight arithmetic loop runs at roughly the speed it
+would in Termux, because PRoot is not involved in arithmetic. What costs is
+talking to the kernel — opening files, walking directories, starting processes.
+
+So the slowdown has a predictable shape:
+
+| Work | How it feels |
+| :--- | :----------- |
+| `apt install`, unpacking archives, compiling, `git` over a large tree | Noticeably slower. Thousands of file operations, each one intercepted. |
+| Starting programs | Slower. A shell script that spawns a process per line is the worst case in the whole system. |
+| Number crunching in a loop | Close to native. |
+
+And two costs that are physical rather than architectural, because this is a
+phone:
+
+- **Heat.** Sustained work inside the container is sustained CPU with an
+  overhead multiplier on top. A long build is a genuinely hot phone, and a hot
+  phone throttles, which makes the build longer.
+- **Disk.** A base Debian rootfs is **1.5–3 GB** before you install a single
+  thing into it. That is not a PRoot cost — it is what a distribution weighs —
+  but it lands on the same storage as your photos.
+
+Plug the phone in before anything long. That is not a slogan; a build that dies
+at 3% battery leaves a half-written rootfs behind.
+
+## Where this can simply not work
+
+Three failure modes that are about your specific device rather than about
+anything you typed:
+
+- **Android's phantom process killer.** From Android 12, the system caps how
+  many background child processes an app may have and kills the excess without
+  telling anyone. A container session is a tree of processes, so it is a natural
+  target: things die mid-build, silently, with no error that points anywhere
+  useful. The workaround is a device-level setting toggled over `adb` from a
+  computer — and its exact form has changed between Android versions, so if this
+  bites you, search for "phantom process" together with **your** Android
+  version rather than pasting a command from a 2022 forum thread.
+- **Vendor battery management.** The same aggressive OEM process killing that
+  ended your long-running scripts in course two ends container sessions, and the
+  fix is the one you already know: hold a wake lock and exempt Termux from
+  battery optimisation.
+- **Not enough free space.** The failure here is worse than it sounds, because a
+  rootfs that runs out of room mid-extraction leaves you with a large broken
+  directory and not much room to work in while you clear it up.
+
+None of these mean you did it wrong. They mean the phone in your hand has an
+opinion, and the honest thing is to know which failures are yours.
+
+## What you get in exchange
+
+A real Debian userland managed by `apt`, with tens of thousands of packages
+built for it:
+
+- **Software nobody ever packaged for Termux.** The Termux repositories are good
+  and they are not the Debian archive.
+- **Paths that match every guide you will ever read.** `/etc/nginx`, `/usr/lib`,
+  `/home/you`. No more translating someone's `/usr/bin` into `$PREFIX/bin` in
+  your head as you read.
+- **glibc.** Termux builds against Bionic, Android's own C library, and a great
+  deal of Linux software quietly assumes glibc and will not build without it.
+  Inside Debian, it just builds.
+
+And Termux itself does not go anywhere. It stays faster than the container, it
+stays the side of the device that can talk to Android, and you will keep using
+it. The container is an addition, not a replacement.
+
+### What that actually adds up to
+
+Between Termux and a PRoot distribution, with no root anywhere, you can keep
+substantial Git repositories, develop Python applications in real virtual
+environments, build command-line tools, run local web servers and APIs, work on
+Node projects, compile software from source, process large datasets, automate
+the annoying parts of your week, manage databases, use SSH in both directions,
+write shell scripts, build static sites, poke at networking with the tools an
+unprivileged user gets — and end up with codebases as organised and maintainable
+as anything you would write on a laptop.
+
+Is a phone identical to a Linux workstation? No. Hardware, background-process
+limits, permissions and sandboxing all differ, and this course spends its time
+on exactly those differences. But none of them are fixed by rooting either.
+
+:::tip[If you ever do need root, you will know why]
+There genuinely are things root enables that PRoot cannot reproduce: kernel
+changes, privileged system access, modifying protected Android components,
+anything that needs a real UID 0 rather than a convincing impression of one.
+
+The point is the order. Learn what you can do without it first. Build something.
+Automate something. Then, if you hit a specific, concrete requirement that
+demands root, you will understand precisely what you are buying and what you are
+paying — instead of assuming it was the entry fee.
+
+**Rooting should be the answer to a specific problem, not a prerequisite you
+assume before finding out what Termux already does.**
+:::
+
+## Two checks before you spend the disk
+
+Like every command in this course, these run on your actual phone — there is no
+practice terminal here to absorb a mistake.
+
+<Steps>
+
+1. **See how much room you have.**
+
+   ```bash
+   df -h ~
+   ```
+
+   Read the `Avail` column. The next lesson wants 1.5–3 GB and a desktop wants
+   more on top. Starting with 2 GB free is how you end up with a half-extracted
+   rootfs and nowhere to put anything while you delete it.
+
+   No tilde on your keyboard? `~` is **Volume Up + H**.
+
+2. **Confirm which Termux you are running.**
+
+   ```bash
+   uname -m
+   ```
+
+   `aarch64` is the 64-bit build and it is what you want — the widest choice of
+   distributions and the fewest surprises. Anything beginning `arm` is a 32-bit
+   Termux, where fewer rootfs images exist and more things go sideways.
+   `x86_64` means an emulator or a Chromebook, which works, but you are off the
+   path most instructions were written for.
+
+</Steps>
+
+## Recap
+
+- **Rooting should answer a specific problem, not be assumed as an entry fee.**
+  It buys genuine kernel privilege and costs a wiped device, Play Integrity, and
+  the sandbox protecting everything else on the phone. Nothing in this course
+  needs it — and if you later hit something that does, you will know exactly
+  what you are buying.
+- **PRoot is an unprivileged program that uses `ptrace` to intercept system
+  calls and rewrite paths.** Not a VM, not virtualisation, no emulation.
+- CPU work runs natively; syscalls pay a toll. That is why file-heavy work —
+  `apt`, builds, large trees — is where the slowness lives, and arithmetic is
+  not.
+- No kernel modules, no `mount`, no block devices, no systemd, no Docker. Design
+  consequences, not defects.
+- Root inside the container is a costume, and the container is not a security
+  boundary — it reaches whatever Termux reaches.
+- `chroot` would be free and needs root. A VM would be complete and needs
+  hardware virtualisation Android does not hand to apps. PRoot is the one that
+  runs on an unmodified phone.
+- What you get is a real `apt` distribution with glibc and ordinary paths, on a
+  device that is still under warranty.
+
+Next: spend the disk. [Installing a Full Distro](/container/first-distro/) puts a
+real Debian rootfs on the device and states the cost before you commit to it.
 
 <LessonComplete client:only="react" slug="container/why-proot" />

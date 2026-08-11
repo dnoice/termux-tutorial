@@ -6,10 +6,449 @@ sidebar:
 ---
 
 import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
 
-{/* STUB — created so the sidebar, the progress dashboard and the link
-    check all resolve. Brief: proot-distro: installing a real Debian rootfs, logging in, and what it costs in disk, battery and speed. */}
+{/* No <TermuxTerminal> and no <LiveSandbox> on this page, deliberately — and
+    none anywhere in this course. The simulator is an in-memory interpreter; it
+    cannot download a rootfs or exec into one, so a terminal here would fake the
+    single thing the lesson exists to teach. The landing page states the rule. */}
 
-Coming up: proot-distro: installing a real Debian rootfs, logging in, and what it costs in disk, battery and speed.
+The last lesson was the theory: what PRoot does to a syscall, and why that adds
+up to something worth calling a container. This one spends disk.
+
+By the end you'll have a real Debian filesystem on your phone, you'll have
+installed a package into it from Debian's own archive, and — read to the end for
+this one — you'll know how to take the whole thing back off in a single command.
+The removal section is last on purpose. Knowing exactly where the exit is
+changes how it feels to commit two gigabytes to a phone.
+
+Every command below runs on your actual device. There is no practice terminal in
+this course, so nothing here has been rehearsed on your behalf.
+
+## First: do you have the room?
+
+Check before you download, not after. Termux lives on internal storage, and so
+will the container:
+
+```bash
+df -h $PREFIX
+```
+
+You'll get one row, and it's the `Avail` column you care about:
+
+```text
+Filesystem       Size  Used Avail Use% Mounted on
+/dev/block/dm-4  105G   78G   24G  77% /data
+```
+
+Your numbers will differ, and so may the device name — that's fine. The row will
+almost certainly be mounted on `/data`, because Android puts apps, app data and
+your photos on the same partition. There is no separate "Termux disk" to fill
+up. Whatever you spend here comes out of the same pool as your camera roll.
+
+:::caution[How much, honestly]
+I'm not going to quote you a figure to the megabyte, because it moves with every
+Debian point release and every rebuild of the image. The shape of it:
+
+- The **download** is a compressed image, and it's the small number — don't plan
+  against it.
+- **Unpacked**, it is several times larger: a few hundred megabytes of files
+  sitting on your phone before you have installed a single thing into it.
+- After `apt upgrade`, the packages you actually came for, and apt's own cache
+  of everything it downloaded, you are into gigabytes.
+
+The course front page's **1.5–3 GB** is the figure to plan the phone around —
+not what you'll see on day one, but where this ends up. Don't start with less
+than about **4 GB free**. Android itself gets unpleasant near a full disk —
+apps fail to update, the camera refuses to save — and a container that fills the
+last of it will take the rest of the phone down with it.
+
+You'll measure the real number yourself in a minute. That is the honest way to
+know.
+:::
+
+:::note[The rootfs cannot live on the SD card]
+Course one's rule is doing real work here: shared storage has no Unix permission
+bits and no symlinks, and a Linux root filesystem is nothing *but* permission
+bits and symlinks. So there's no "install to SD card" option to go looking for —
+the container has to live in Termux's private storage, on `/data`, with
+everything else.
+:::
+
+## Install the tool
+
+```bash
+pkg install proot-distro
+```
+
+Small and fast — it's a shell script plus the `proot` binary it drives, and it
+pulls that in as a dependency. Nothing has been downloaded yet. `proot-distro`
+is the manager; the distributions come separately, which is the whole reason the
+next step is the expensive one.
+
+## See what's on offer
+
+```bash
+proot-distro list
+```
+
+Each entry names a distribution and — the part that matters — its **alias**. The
+alias is the short lowercase name you pass to every other `proot-distro`
+command, and it is not always what you'd guess from the pretty name.
+
+| Alias | Distribution |
+| :---- | :----------- |
+| `debian` | Debian |
+| `ubuntu` | Ubuntu |
+| `alpine` | Alpine Linux — tiny, musl-based, a different world |
+| `archlinux` | Arch Linux (ARM) |
+| `fedora` | Fedora |
+| `void` | Void Linux |
+
+That table is a sample, not the catalogue. The supported set changes between
+`proot-distro` versions, so what your copy prints is the authority — and the
+exact layout of the output has changed over the years too. Read it for aliases;
+ignore the formatting.
+
+:::tip[Why Debian for this course]
+Because it's the biggest, most boring, most-documented answer. When something
+breaks, the error text you paste into a search box will have been answered ten
+times already for Debian and maybe once for Void. Alpine is genuinely tempting
+on a phone — it's a fraction of the size — but it's musl rather than glibc, and
+a surprising amount of prebuilt Linux software quietly assumes glibc. Save the
+interesting distributions for after you've done this once with the dull one.
+:::
+
+Everything the rest of this course does is written against `debian`. If you
+install something else, expect to translate package names as you go.
+
+## Install Debian
+
+This is the step that costs. Set it up properly and it's one command.
+
+<Steps>
+
+1. **Get on Wi-Fi.** It's a large download. On mobile data you pay for it, and
+   you pay again for the retry if it dies partway.
+
+2. **Take the wakelock** so Android doesn't freeze Termux halfway through while
+   you're looking at something else:
+
+   ```bash
+   termux-wake-lock
+   ```
+
+   Same command course two used around long jobs, same cost — the CPU stays
+   awake and the battery notices. You'll give it back at the end.
+
+3. **Run the install:**
+
+   ```bash
+   proot-distro install debian
+   ```
+
+4. **Watch it go through two phases.** First a download, with the progress you'd
+   expect. Then extraction — and extraction is where people think it has hung.
+   A root filesystem is tens of thousands of small files, phone storage is not
+   fast at tens of thousands of small files, and PRoot is involved in writing
+   every one of them. Several quiet minutes here is normal, and a phone that's
+   noticeably warm at the end of it is normal too.
+
+5. **When the prompt comes back, find out what it actually cost:**
+
+   ```bash
+   du -sh $PREFIX/var/lib/proot-distro/installed-rootfs/debian
+   ```
+
+   That path is where your container lives — it is a perfectly ordinary
+   directory, and everything you ever do inside the container happens inside it.
+   `du` has to walk every one of those files to add them up, so give it a
+   moment.
+
+</Steps>
+
+:::caution[If it dies partway through]
+Interrupted downloads happen — the Wi-Fi drops, Android decides Termux has had
+enough, you fat-finger **Volume Down + C** (that's Ctrl-C, and it will abort the
+install).
+
+What you're left with is a partially extracted rootfs that `proot-distro login`
+may accept and then fail inside in confusing ways. Don't try to repair it. Take
+it off and start again:
+
+```bash
+proot-distro remove debian
+proot-distro install debian
+```
+
+The download cache means the second attempt is usually much faster than the
+first.
+:::
+
+:::note[If Android keeps killing it, and it isn't the network]
+Android 12 and later cap the number of background child processes an app may
+have, and kill the excess without telling anyone. Termux is exactly the kind of
+app that trips this, and the symptom is a process dying mid-job with no error
+that points at a cause.
+
+Keeping the screen on with Termux in the foreground avoids most of it. If it
+keeps happening, the term to search for is **phantom process killing** — the
+real fix involves developer options and ADB, and the exact steps differ by
+Android version, so I'd rather point you at the name than hand you a recipe for
+the wrong version of your OS.
+:::
+
+## Log in
+
+```bash
+proot-distro login debian
+```
+
+The prompt changes — usually to something like `root@localhost:~#`. That's the
+whole ceremony. You are now inside a Debian userland.
+
+Prove it:
+
+```bash
+cat /etc/os-release
+```
+
+Debian's name and version number, from Debian's own file. Now prove the other
+half, the half that matters more:
+
+```bash
+uname -r
+```
+
+That's **Android's kernel**, because there isn't another one. You did not boot a
+second operating system. You swapped userlands on the one that was already
+running — a different `/usr`, a different `/etc`, a different package manager,
+sitting on the same kernel, the same processes and the same network stack as
+Termux. Every genuinely strange thing in this course comes back to that
+sentence.
+
+:::note[You are root, and it's a costume]
+The container logs you in as `root`, so there's no `sudo` to type — in fact
+`sudo` usually isn't installed at all, and guides that tell you to type it will
+give you `command not found`. Drop the `sudo` and the command works.
+
+But that root is PRoot's polite fiction, exactly as the last lesson described.
+It's enough to satisfy `apt`, which is what it's for. It is not enough to mount
+a filesystem, load a kernel module, change a `sysctl`, or bind a port below
+1024 — those go to the real kernel, which knows precisely what you are and says
+no.
+:::
+
+## The first surprise: there is no systemd
+
+This is the one that catches everybody, usually about four minutes in, so let's
+get it over with now.
+
+```bash
+systemctl status
+```
+
+You'll get one of two answers, depending on the image:
+
+```text
+bash: systemctl: command not found
+```
+
+```text
+System has not been booted with systemd as init system (PID 1). Can't operate.
+```
+
+Both mean the same thing. **Nothing started before your shell did.** A normal
+Debian boots an init system which brings up services in order; `proot-distro
+login` does not boot anything. It runs a shell in a directory tree. There's no
+init of your own, no service manager, no `journalctl`, and no such thing as
+"starts at boot" — because there is no boot.
+
+Packages still install perfectly. Their services just sit there.
+
+| A guide written for a server says | What you do here |
+| :-------------------------------- | :--------------- |
+| `sudo apt install nginx` | `apt install nginx` — you're already root |
+| `systemctl start nginx` | Run the daemon yourself, from the shell |
+| `systemctl enable nginx` | Nothing. There's no boot to enable it for. |
+| `journalctl -u nginx` | Read the log file the daemon writes, or run it in the foreground and watch it |
+
+Some Debian packages still ship an old-style `/etc/init.d/` script, and
+`service <name> start` will sometimes work. Plenty won't. The move that always
+works is to run the program yourself and keep an eye on it.
+
+## What's actually in there
+
+A fresh rootfs is deliberately minimal — it's a base system, not an install DVD.
+
+**You have:** `apt` and `dpkg` with the entire Debian archive behind them, a
+real `/etc` you can edit, real permission bits, bash, coreutils, and the
+directory layout every Linux tutorial on the internet assumes.
+
+**You don't have:** an init system, `sudo`, a desktop, and possibly not even a
+text editor — `apt install nano` is a common first move. Documentation is often
+stripped from these images too, so `man` may be missing or empty. Nothing is
+broken; it just hasn't been installed yet.
+
+## Update it, then install something real
+
+Two package managers now live on your phone: `pkg` out in Termux, `apt` in here.
+They manage different software on different sides of the login, and mixing them
+up is the classic early mistake — the next lesson is entirely about that
+boundary. For now the rule is simple: **inside the container, it's `apt`.**
+
+<Steps>
+
+1. **Refresh Debian's package lists.**
+
+   ```bash
+   apt update
+   ```
+
+2. **Take the upgrades.**
+
+   ```bash
+   apt upgrade -y
+   ```
+
+   How much this pulls depends on how old the image you downloaded is. A freshly
+   rebuilt one might have nothing to do; a stale one might have a few hundred
+   megabytes of security updates. Both are normal.
+
+3. **Install something and run it.**
+
+   ```bash
+   apt install -y htop
+   htop
+   ```
+
+   Quit it with **q**.
+
+</Steps>
+
+That's the proof: your phone resolved a Debian mirror, verified signatures,
+unpacked a binary built for aarch64 by Debian, and ran it. Not an emulator, not
+a fake — Debian's actual package, on your actual hardware.
+
+:::note[What htop shows you, and what it can't]
+A short list — Termux's own processes and whatever you started. Not the phone.
+Android hides other apps' processes from unprivileged apps at the kernel level,
+and PRoot cannot unhide what the kernel won't show it. Same `/proc` as Termux,
+same restrictions.
+
+It will also feel a little sluggish compared to running `htop` out in Termux.
+That is the syscall interception you read about last lesson, showing up as
+something you can feel with a thumb. It gets more noticeable the more the
+program talks to the filesystem.
+:::
+
+:::caution[`apt update` can't reach the mirrors]
+If you get `Temporary failure resolving 'deb.debian.org'`, the container's DNS
+isn't working. Two things to try, in order:
+
+1. **Check the network from Termux first.** Exit the container and confirm the
+   phone is actually online. A VPN or a captive-portal Wi-Fi will break this in
+   ways that look like a container bug and aren't.
+2. If Termux is online and the container still can't resolve, its
+   `/etc/resolv.conf` is the suspect. Setting a nameserver inside the container
+   fixes it:
+
+   ```bash
+   echo "nameserver 9.9.9.9" > /etc/resolv.conf
+   ```
+
+   Be aware of what that does: it sends the container's DNS lookups to a third
+   party rather than whatever your network hands out. It's a reasonable fix, not
+   a free one, and any DNS server you trust will do.
+:::
+
+## Getting out
+
+```bash
+exit
+```
+
+Or **Ctrl-D**, which is **Volume Down + D** on a phone — Volume Down turns any
+letter into Ctrl plus that letter. Your Termux prompt comes back, and you are
+outside again.
+
+There is no container left running in the background. `proot-distro login`
+starts a shell; when that shell exits, the session is over. Anything you left
+running inside should be treated as gone with it.
+
+What *does* persist is the disk: every package you installed, every file you
+created, still sitting in that rootfs directory. Log back in with the same
+command and it's exactly as you left it.
+
+Give the wakelock back now that the long job is done:
+
+```bash
+termux-wake-unlock
+```
+
+## Taking it all back off
+
+The promise from the top of the lesson, and it's a single command:
+
+```bash
+proot-distro remove debian
+```
+
+:::danger[No confirmation, no undo, no trash]
+It removes the rootfs directory and everything in it, immediately. Every package
+you installed inside, every file you created inside, every config you edited
+inside — all of it lived in that directory, and none of it is anywhere else.
+
+There's no prompt asking if you're sure. Be sure before you press enter.
+:::
+
+Two more you'll want to know about:
+
+```bash
+proot-distro clear-cache
+```
+
+`proot-distro` keeps the tarball it downloaded so a reinstall doesn't have to
+fetch it again. Handy when you're experimenting, dead weight when you're not —
+that command frees it.
+
+```bash
+pkg uninstall proot-distro
+```
+
+And that removes the manager itself, once no distributions are left. Check your
+work the way you started:
+
+```bash
+df -h $PREFIX
+```
+
+The `Avail` column should be back roughly where it was. That's the entire
+commitment you made, undone — which is exactly why it was safe to make.
+
+## Recap
+
+- **Check `df -h $PREFIX` before you download.** Termux and your photos share
+  the `/data` partition; plan for gigabytes and keep about 4 GB free.
+- `pkg install proot-distro` gets the manager; `proot-distro list` shows the
+  distributions and, more importantly, their **aliases**.
+- `proot-distro install debian` downloads and extracts a real rootfs into
+  `$PREFIX/var/lib/proot-distro/installed-rootfs/debian`. Take
+  `termux-wake-lock` first; the quiet extraction phase is not a hang.
+- `proot-distro login debian` drops you into Debian as a fake root. `uname -r`
+  still reports **Android's kernel** — you changed userland, not operating
+  system.
+- **There is no systemd.** No init, no `systemctl`, no `journalctl`, no
+  "starts at boot". Services install fine; you run them yourself.
+- Inside, it's `apt`, and you don't type `sudo`. `apt update && apt upgrade -y`,
+  then install something real to prove the whole chain works.
+- `exit` (or **Volume Down + D**) leaves. Nothing keeps running; the disk keeps
+  everything.
+- `proot-distro remove debian` deletes the container instantly and completely.
+  Reversible in one command — but only in the direction of gone.
+
+Next: two package managers, two homes and two sets of paths, and how to move
+files between them without losing them — [Living in the
+Container](/container/living-in-it/).
 
 <LessonComplete client:only="react" slug="container/first-distro" />

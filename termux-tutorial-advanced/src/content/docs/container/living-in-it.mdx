@@ -6,10 +6,529 @@ sidebar:
 ---
 
 import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
 
-{/* STUB — created so the sidebar, the progress dashboard and the link
-    check all resolve. Brief: Two package managers, two homes, two sets of paths. Moving files across the boundary without losing them. */}
+{/* No <TermuxTerminal> on this page — no page in this course has one. The
+    simulator is an interpreter over an in-memory filesystem; it cannot install
+    a rootfs or open a PRoot session, so it would have to invent every answer on
+    this page. The landing page states the reason. Every command here runs on a
+    real device. */}
 
-Coming up: two package managers, two homes, two sets of paths. Moving files across the boundary without losing them.
+Debian is installed and you can log into it. From here you own two of nearly
+everything: two package managers, two home directories, two sets of paths, and
+two answers to the question *who am I*. None of that is hard. It is just easy to
+lose track of — and losing track is how people lose work.
+
+So this lesson is about knowing, at any moment, which side of the boundary
+you're standing on, and where to put a file so it's still there next month.
+
+:::note[Read your own help text once]
+`proot-distro --help` and `proot-distro login --help` are both short, and worth
+five minutes. proot-distro has grown options over the years, so a command copied
+off a forum post may well predate your install. Where anything on this page
+disagrees with your device's help text, **your device wins.**
+:::
+
+## Which side am I on?
+
+The everyday tell is the prompt. Termux hands you the shell you set up in course
+one — fish, most likely, with the prompt you chose. `proot-distro login` drops
+you into **bash as root**, and root's prompt ends in `#`:
+
+```text
+root@localhost:~#
+```
+
+`$` outside, `#` inside is a Unix convention older than Android, and once you've
+noticed it you don't stop noticing it. When you want certainty instead of a
+habit:
+
+```bash
+id -u
+```
+
+`0` means you're inside the container. Anything else — some number in the tens of
+thousands — means you're in Termux, running as the Android user ID the system
+handed the app.
+
+Leaving is `exit`, or **Ctrl-D** — on a phone, **Volume Down + D** — the same as
+ending any other shell.
+
+:::tip[The extra keys still work inside]
+The volume-key mappings belong to the **Termux app's terminal**, not to the shell
+running in it. So Volume Down + C is still Ctrl-C inside the container, and
+Volume Up + E is still Esc — which you'll want the first time you open `nano` or
+`vim` in there and need to get back out.
+:::
+
+:::note[Keep one session on each side]
+You don't have to keep logging in and out. Open a second Termux session (swipe in
+from the left edge, **New session**), log that one into Debian, and leave the
+first one in Termux. Swiping between them is faster than `exit`, and every mistake
+in this lesson is a mistake about which side you were on — so make the two sides
+visibly different things.
+:::
+
+For one command, you don't need a session at all:
+
+```bash
+proot-distro login debian -- apt update
+```
+
+Everything after the `--` runs inside, and the prompt comes straight back to
+Termux when it finishes. That's the form to reach for inside the scripts from
+course two.
+
+## Two package managers
+
+`pkg` is Termux's. `apt` is Debian's. They install different software, from
+different repositories, into different directories, and neither one has any idea
+the other exists.
+
+| | Outside (Termux) | Inside (Debian) |
+| :--- | :--------------- | :-------------- |
+| Install | `pkg install <name>` | `apt install <name>` |
+| Refresh lists | `pkg update` | `apt update` |
+| Upgrade | `pkg upgrade` | `apt upgrade` |
+| What's installed | `pkg list-installed` | `apt list --installed` |
+| Where binaries land | `$PREFIX/bin` | `/usr/bin` |
+| Need `sudo`? | No — there's nothing to elevate to | No — you already are root |
+
+Type `pkg` inside and you get *command not found*: Debian has never heard of it,
+because `pkg` is a Termux wrapper and this is not Termux.
+
+:::caution[`apt` works on **both** sides, and that is the trap]
+`pkg` is a thin wrapper around Termux's own `apt`, which means `apt install
+python` typed on the **Termux** side succeeds perfectly — it installs Termux's
+python. No error, no warning, no hint that you meant the other one. Half an hour
+later you're inside the container wondering why it can't find a package you
+watched install.
+
+The habit that makes this impossible: **`pkg` outside, `apt` inside, always.**
+Then a command on the wrong side fails loudly instead of succeeding quietly.
+:::
+
+:::note[Everything inside is slower, and `apt` is where you'll feel it]
+PRoot intercepts every system call the container makes — that's the mechanism
+from [Root Without Rooting](/container/why-proot/), and it is not free. Unpacking
+a package is thousands of small file operations, which is precisely the workload
+that costs the most. A package that installs in seconds under `pkg` can take
+minutes under `apt`. It isn't broken. It's the price.
+
+`apt` also keeps every `.deb` it downloads. Inside the container:
+
+```bash
+apt clean
+```
+
+empties `/var/cache/apt/archives` and gives you back real disk — often several
+hundred megabytes after a big install.
+:::
+
+## Two home directories
+
+Outside:
+
+```bash
+echo $HOME
+```
+
+```text
+/data/data/com.termux/files/home
+```
+
+Inside:
+
+```bash
+echo $HOME
+```
+
+```text
+/root
+```
+
+**`~` is not a place.** It's an abbreviation for whatever `$HOME` currently says.
+The same keystroke lands in two completely unrelated directories depending on
+which side typed it, and `cd ~` inside takes you to `/root` — a directory that
+exists only within the rootfs.
+
+:::note[Your shell doesn't come with you either]
+Inside is bash, with bash's defaults. The fish setup from course one — the
+prompt, the autosuggestions, the abbreviations, `config.fish` — lives on the
+Termux side and does not cross.
+
+You can `apt install fish` inside, and it's a reasonable move if you plan to
+spend real time in there. Just be clear about what you've made: a **second** fish,
+with a second config at `/root/.config/fish/config.fish`, that knows nothing
+about the first one.
+:::
+
+:::danger[`/root` is inside the container, and the container is one command from gone]
+`proot-distro remove debian` deletes the rootfs and everything in it. That is the
+correct way to uninstall a distribution, and it is exactly why nothing you care
+about should be living in `/root`.
+
+It's worse than that, though, because the habit from course one doesn't cover
+you. `tar czf … -C ~ projects` archives your **Termux** home. `pkg list-installed`
+lists **Termux** packages. `/root` is in neither. Everything you have been doing
+to protect your work backs up precisely zero bytes from inside the container.
+:::
+
+## Where the container actually lives
+
+It's a folder. That's the whole trick:
+
+```bash
+ls $PREFIX/var/lib/proot-distro/installed-rootfs/
+```
+
+```text
+debian
+```
+
+```bash
+ls $PREFIX/var/lib/proot-distro/installed-rootfs/debian
+```
+
+```text
+bin  boot  dev  etc  home  lib  media  mnt  opt
+proc  root  run  sbin  srv  sys  tmp  usr  var
+```
+
+That's an entire Linux filesystem sitting inside `$PREFIX` —
+`/data/data/com.termux/files/usr`, the same variable from course one. Debian's
+`/etc` is a subdirectory of Termux's package folder. Nothing more mystical than
+that is going on.
+
+To see what it's costing you:
+
+```bash
+du -sh $PREFIX/var/lib/proot-distro/installed-rootfs/debian
+df -h $HOME
+```
+
+The first one walks tens of thousands of small files, so give it a minute before
+deciding it has hung. The second tells you how much room is left to lose.
+
+:::caution[Two consequences worth holding on to]
+**One: it's under `$PREFIX`, not under `$HOME`.** Uninstalling Termux, or
+clearing its data in Android settings, takes the container with it exactly the
+way it takes your packages. That's the course-one warning again, except now it's
+two gigabytes instead of twenty megabytes.
+
+**Two: you can read and write those files from Termux, without logging in.**
+That's a real rescue hatch — mangle `/etc/apt/sources.list` badly enough that a
+login is useless and you can still fix it from outside with the tools you already
+have. It is not a day-to-day habit: the container isn't running, the permissions
+you see are the app's, and it's easy to leave a file the inside can't use. But
+the door is there when you need it.
+:::
+
+When you do want it gone, use the tool:
+
+```bash
+proot-distro remove debian
+```
+
+rather than pointing `rm -rf` at that path by hand. It's the supported route, and
+a hand-typed `rm -rf` on a path that long is exactly the stray-space accident the
+beginner course spent a whole aside on.
+
+## Crossing the boundary
+
+The mechanism is `--bind`: take a directory on the Termux side and make it appear
+at a path inside the container. One copy of the files, two names for them.
+
+<Steps>
+
+1. **Make the folder on the Termux side**, where you'd want it anyway.
+
+   ```bash
+   mkdir -p ~/code
+   ```
+
+2. **Log in with the bind.**
+
+   ```bash
+   proot-distro login debian --bind ~/code:/root/code
+   ```
+
+   Read the argument as **source:target** — the path on the Termux side, then the
+   path it should show up at inside. Your shell expands `~` before proot-distro
+   ever sees it, so what actually arrives is a plain absolute path.
+
+3. **Write something from inside.**
+
+   ```bash
+   touch /root/code/from-inside
+   ```
+
+4. **Leave and look from outside.**
+
+   ```bash
+   exit
+   ls ~/code
+   ```
+
+   ```text
+   from-inside
+   ```
+
+   Nothing was copied and nothing was synced. There is one file, in one place,
+   reachable by two paths.
+
+</Steps>
+
+:::danger[The bind lasts exactly as long as the login]
+This is the single most expensive mistake on this page. Next time you type
+`proot-distro login debian` **without** the `--bind`, `/root/code` is no longer
+your Termux folder. It's either missing, or — depending on your version — an
+empty directory left behind inside the rootfs.
+
+If it's the second one, nothing warns you. You can `cd` into it, work in it all
+evening, and never notice that everything you wrote is sitting **inside the
+container**, outside your backups, one `proot-distro remove` from oblivion.
+
+The fix is to stop typing the login by hand. In fish:
+
+```fish
+alias --save debian 'proot-distro login debian --bind $HOME/code:/root/code'
+```
+
+fish writes that to `~/.config/fish/functions/debian.fish`, and from now on
+`debian` is the only way you log in. On bash, the same line without `--save`,
+added to `~/.bashrc`.
+:::
+
+### The shortcut: `--termux-home`
+
+```bash
+proot-distro login debian --termux-home
+```
+
+This mounts your Termux home as the home directory inside the container, so `~`
+finally means one thing on both sides. Prove it on your own device before you
+build on it — inside, `touch ~/marker`, then `exit` and run `ls ~/marker` in
+Termux. If the file is there, it did what you think it did.
+
+The trade-off is that your Termux home is now the container's home, **dotfiles
+and all**. `.bashrc`, `.config`, `.cache` and `.local` end up shared between a
+bionic system and a glibc one, and some tools do not enjoy that at all. It's tidy
+for one project and messy as a permanent arrangement. An explicit `--bind` gives
+you the sharing without the collision.
+
+### What's already bound
+
+A normal login binds a set of Android and Termux paths in for you. The exact set
+depends on your proot-distro version and your Android release, so **check rather
+than assume.** Inside the container:
+
+```bash
+ls /sdcard
+ls /data/data/com.termux/files/home
+```
+
+If `/sdcard` lists your phone's storage, the bridge from course one is already
+reachable: `~/storage/shared` on the outside and `/sdcard` on the inside are the
+same files. If it doesn't, add `--bind /sdcard:/sdcard` to your login and it
+will. Going the other way, `--isolated` switches the whole default set off, for
+when you want the container to be genuinely sealed.
+
+:::caution[Being root does not make shared storage behave]
+`/sdcard` inside the container is the same Android storage layer course one
+warned you about, seen from a different angle. It still has **no Unix permission
+bits and no symlinks**. `chmod +x` there still does nothing. `git clone` there
+still produces a repo that reports every file as modified. `python -m venv` still
+falls over.
+
+That rule is enforced *below* PRoot, by Android itself, and no amount of `uid=0`
+reaches down that far. Media and finished files, yes. Code, no. Same as it ever
+was.
+:::
+
+## Which side to keep your code on
+
+| What | Which side | Why |
+| :--- | :--------- | :-- |
+| Source, git repos, notes | **Termux side** (`~`), bound in | Survives `proot-distro remove`, and your existing backup already catches it |
+| Anything `apt` installed | Inside | It *is* the container |
+| venvs, `node_modules`, compiled output | The side that built it | It's linked to that system's libraries and won't run on the other |
+| Media, archives, backups | `~/storage/shared` | Survives an uninstall — but nothing there can be executable |
+
+The short version: **source outside, build inside.** You keep the thing that's
+hard to replace on the side that's hard to delete, and you let the disposable
+half live in the disposable container.
+
+:::note[A binary belongs to the system that built it]
+Termux is compiled against Android's C library, **bionic**. Debian is compiled
+against **glibc**. A binary built inside the container will not run in Termux, and
+a Termux binary will not run inside the container — same phone, same CPU, same
+file sitting right there in a bound folder, and it still won't start.
+
+That extends to anything with compiled parts: a Python virtualenv, a
+`node_modules` with native modules, a Rust `target/`. Build them inside, use them
+inside. It's fine for a bound folder to hold both your source and a
+`node_modules` built inside — just remember that the folder now has a **side**,
+even though it lives on the Termux disk.
+:::
+
+## You are root in there
+
+```bash
+id
+```
+
+```text
+uid=0(root) gid=0(root) groups=0(root)
+```
+
+That's real in the way that matters daily. `apt` installs without complaint,
+`/etc` is writable, you can add users, and nothing ever asks you for `sudo` —
+which is just as well, because a fresh rootfs doesn't ship it and you don't need
+it.
+
+What it is not is authority over the phone. PRoot answers the container's
+questions about identity; it cannot change what the Android kernel will actually
+do.
+
+- **No kernel modules, no mounting real filesystems, no raw hardware.** Those
+  calls go to the real kernel and the real kernel says no.
+- **Ports below 1024 are usually refused.** `proot-distro login` carries a
+  `--fix-low-ports` option for the common cases and it's worth trying; moving the
+  service to a port above 1024 is the fix that always works.
+- **Ownership is theatre.** From the Termux side, look at the container's own
+  files:
+
+  ```bash
+  ls -ln $PREFIX/var/lib/proot-distro/installed-rootfs/debian/etc | head
+  ```
+
+  Every one of them shows a single numeric UID — the Termux app's. `chown` inside
+  generally reports success, because PRoot answers where the kernel would have
+  refused, but the file on disk never changes hands. Harmless while you stay in
+  the container. Worth knowing before you hand that rootfs to anything else.
+
+Root inside is enough to run a distribution. It is not enough to change the
+phone, and that is the same sentence as "no root required".
+
+## A command lives on exactly one side
+
+Install something inside and watch what happens when you leave:
+
+```bash
+apt install figlet
+command -v figlet
+```
+
+```text
+/usr/bin/figlet
+```
+
+```bash
+exit
+figlet hi
+```
+
+You get your shell's version of *command not found*. Nothing is broken.
+`/usr/bin` inside the container is a path Termux's `PATH` has never heard of, and
+`figlet` was never installed on this side.
+
+It fails the same way in reverse. The `termux-*` commands from course two live in
+`$PREFIX/bin`, which is not on the container's `PATH`. On a default login that
+directory is often visible inside at its full absolute path, so you can *technically*
+call one — but don't build anything on it:
+
+:::caution[Don't run Termux:API from inside the container]
+Those commands expect the Termux app's own environment and Android's own tooling.
+Under PRoot the results range from "works" to "hangs forever with no message",
+depending on the command, the device and the Android version, and you will not
+enjoy debugging which one you got.
+
+The arrangement that always works is boring: run the `termux-*` command **on the
+Termux side**, redirect its output into a bound folder, and read the file from
+inside. Course two's scripts and schedulers already run out there anyway.
+:::
+
+Three symptoms, one cause each. They cover most of the confusion this setup
+generates:
+
+| Symptom | What actually happened |
+| :------ | :--------------------- |
+| `command not found` right after a successful install | You installed on one side and you're standing on the other |
+| The install succeeded but the container can't see the package | You ran `apt` in **Termux** |
+| A file you definitely saved isn't there | You logged in without the `--bind` |
+
+## Losing the container without losing your work
+
+The container is expensive to download and cheap to recreate. Your work is the
+opposite. Two habits keep those facts from getting mixed up.
+
+<Steps>
+
+1. **Keep the source on the Termux side and bind it in.** That's the whole
+   argument above: `~/code` sits inside `~`, which is what your course-one backup
+   already archives to `~/storage/shared/`. Nothing new to remember.
+
+2. **Write down what you installed inside.** With the bind active, so the list
+   lands on the Termux side:
+
+   ```bash
+   apt-mark showmanual > /root/code/debian-packages.txt
+   ```
+
+   That's the container's answer to `pkg list-installed`. It includes chunks of
+   the base system that the rootfs image marked as manually installed — that's
+   fine, `apt` skips whatever is already there.
+
+3. **Rebuilding, if it comes to that:**
+
+   ```bash
+   proot-distro install debian
+   proot-distro login debian --bind ~/code:/root/code
+   apt update
+   apt install -y $(cat /root/code/debian-packages.txt)
+   ```
+
+   If `apt` objects to a name in the list, delete that line and run it again.
+   It's not instant — it's a download and a lot of unpacking — but it's
+   unattended, and it costs you an evening's battery instead of a project.
+
+</Steps>
+
+:::note[There is a full backup, and it's a plan rather than a step]
+`proot-distro backup` exists and writes an entire rootfs out to an archive. Read
+`proot-distro backup --help` on your own install before trusting a command from
+anywhere, including this page — the options have moved across releases.
+
+Two things hold whichever version you have. The archive is measured in
+**gigabytes**, and compressing gigabytes on a phone is slow enough that you want
+the thing plugged in and left alone. You also need room for the rootfs *and* its
+archive at once, so check `df -h $HOME` first — and put the result in
+`~/storage/shared/`, or it dies alongside the app it was meant to protect.
+:::
+
+## Recap
+
+- **`pkg` outside, `apt` inside.** Termux also has an `apt`, so the wrong one
+  succeeds silently — the habit is what protects you.
+- **`~` is `$HOME`, and `$HOME` is different on each side**:
+  `/data/data/com.termux/files/home` outside, `/root` inside.
+- `id -u` answers "which side am I on" with certainty; the prompt's `#` answers it
+  at a glance. `exit` or Ctrl-D (Volume Down + D) gets you out.
+- The container is a **folder under `$PREFIX`** —
+  `$PREFIX/var/lib/proot-distro/installed-rootfs/debian`. It is not in your home
+  directory, so nothing you back up today contains any of it.
+- **`--bind /outside/path:/inside/path` shares one directory across the
+  boundary**, and it only lasts for that login. Save the whole login line as an
+  alias so you can't forget it.
+- **Source lives outside and gets bound in; builds live inside.** bionic and glibc
+  binaries can't run on each other's side, whatever folder they're in.
+- You're root inside, which runs a distribution and changes nothing about the
+  phone. Shared storage still has no exec bit, root or not.
+- Back up the **source** plus `apt-mark showmanual`, not two gigabytes of rootfs.
+
+Next: the container is settled, so the course turns to the screen — starting with
+the display server on its own, in [A Display Server on
+Android](/desktop/x11-server/).
 
 <LessonComplete client:only="react" slug="container/living-in-it" />

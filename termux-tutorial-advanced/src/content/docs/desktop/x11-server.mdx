@@ -6,10 +6,573 @@ sidebar:
 ---
 
 import LessonComplete from '../../../components/profile/LessonComplete.tsx';
+import { Steps } from '@astrojs/starlight/components';
 
-{/* STUB — created so the sidebar, the progress dashboard and the link
-    check all resolve. Brief: Termux:X11 — the display server on its own, proven working before any desktop is involved. */}
+{/* No practice terminal, like every lesson in this course. The simulator
+    cannot open an X11 socket or hand a surface to Android, and a fake answer
+    to `termux-x11 :0` would be a lie about the one thing being taught. The
+    landing page states the general rule; this file inherits it. */}
 
-Coming up: termux:X11 — the display server on its own, proven working before any desktop is involved.
+Everything so far in this course has happened in text. You [installed a whole
+Debian](/container/first-distro/) and it still talks to you in the same eighty
+columns Termux always did.
+
+Graphics are a separate problem, and it is worth being precise about what the
+problem is. A Linux program does not draw on a screen. It connects to a
+**display server**, hands it drawing requests, and gets keyboard and mouse
+events back. On a desktop that server is Xorg or a Wayland compositor. On your
+phone there is no such thing — Android draws its own way, and nothing in Linux
+knows how to talk to it.
+
+So this lesson installs one. **Termux:X11 is a real X server, built for Android,
+running on the Termux side of your device.** No container, no desktop, nothing
+from the last three lessons. One server, one window on screen, and a single
+clock to prove it.
+
+That restraint is the whole point. Set this up alone and you end up with a
+sentence you can trust for the rest of the course: *the display server works.*
+When something later shows you a black screen — and something will — that
+sentence is what turns a mystery into a search with one half already eliminated.
+
+## Why not VNC
+
+VNC is the answer most guides reach for, and it does work. It is worth
+understanding why this course doesn't use it, because the reason is visible from
+the first second you touch either one.
+
+A VNC setup runs an X server that draws into an ordinary chunk of memory, then
+**encodes that memory as an image stream** and serves it over a TCP port. A VNC
+client app on the same phone connects to `localhost`, decodes the stream, and
+paints it. Your pixels take this route:
+
+| | With VNC | With Termux:X11 |
+| :--- | :------- | :-------------- |
+| Where drawing lands | an in-memory framebuffer | a surface Android already knows how to composite |
+| What happens next | encoded, sent over a local TCP socket, decoded by a client app | handed to Android's compositor |
+| CPU cost per frame | encode **and** decode, on the same device, for the same picture | neither |
+| Input | the client app synthesises key and pointer events | real Android input events |
+| What you install | a server package plus a separate viewer app | one package plus one app |
+
+That encode/decode round trip is the lag. It is not your phone being slow; it is
+your phone compressing a video of itself and then watching it.
+
+:::note[VNC is not wrong — it is a different tool]
+Termux:X11's own launcher recommends `pkg install tigervnc` in the two cases
+where it genuinely can't help: a **headless** environment with no Android UI at
+all, and devices too old to run it. It is also the right choice when you want to
+see the desktop **from another machine** — a laptop across the room can open a
+VNC client; it cannot open an Android surface on your phone.
+
+For a desktop you look at on the device it runs on, Termux:X11 wins on every
+axis that matters.
+:::
+
+## Two halves again — and this time it says so out loud
+
+A package and a companion app, installed from one matched source. **This is the
+third time the series has hit this pattern**, and by now it deserves a name:
+
+| Course | Package | App |
+| :----- | :------ | :-- |
+| Two | `termux-api` | Termux:API |
+| Three | `termux-x11-nightly` | Termux:X11 |
+
+The rule underneath is always the same: **the two halves have to be a matched
+pair**, and what proves a pair is a signing key. F-Droid, Google Play and GitHub
+each sign with a different one, so halves from different sources are strangers.
+
+What differs is *who checks*, and it changes the symptom completely:
+
+:::tip[The Termux:API hang does not happen here]
+For Termux:API, **Android** does the checking, and Android's way of refusing is
+to drop the request without a word — which is why a mismatch there hangs
+forever.
+
+For Termux:X11, **the package does its own checking**. `termux-x11` is not
+really a program; it is a small loader that finds the installed Termux:X11 app,
+verifies the app's signature against the one it was built for, and then runs the
+X server code out of the app's own APK.
+
+So a mismatch here **prints a message and exits**. App not installed: a message
+saying so. Wrong build: a message about a signature mismatch. Either way you have
+your answer in under a second.
+
+One useful consequence: the pair that must match is the **package and the app**,
+not Termux itself. A Termux from F-Droid alongside the Termux:X11 APK below is a
+normal, working setup. (The one exception is further down, and it is opt-in.)
+:::
+
+:::caution[Termux:X11 is not on F-Droid, and that is not a mistake]
+Search F-Droid for it and you will not find it — there is no `com.termux.x11`
+page there. The app is published only from the project's own **nightly release
+tag on GitHub**, so this is the one plugin in the series you will sideload.
+
+That means turning on "install unknown apps" for your browser or file manager,
+once. If your device policy forbids sideloading, this lesson stops here, and
+that is a real wall rather than something to work around.
+:::
+
+:::caution[One hard requirement: Android 8 or newer]
+The project states Android 8 as its floor, and the launcher refuses outright
+below Android 7 — it prints why and exits rather than failing strangely. Check
+before you install anything:
+
+```bash
+getprop ro.build.version.sdk
+```
+
+**26 or higher** is Android 8. Below that, `pkg install tigervnc` is the
+documented route to a desktop on this device, and the rest of this lesson will
+not work no matter what you try.
+:::
+
+## Install the package half
+
+<Steps>
+
+1. **Refresh, as always.**
+
+   ```bash
+   pkg update
+   ```
+
+2. **Add the graphical repository.** X11 packages are not in the main Termux
+   repo; they live in a second one you have to opt into.
+
+   ```bash
+   pkg install x11-repo
+   ```
+
+3. **Refresh again**, so the new repo's package list actually lands.
+
+   ```bash
+   pkg update
+   ```
+
+4. **Install the server package.**
+
+   ```bash
+   pkg install termux-x11-nightly
+   ```
+
+   The name is `termux-x11-nightly`. The `-nightly` is part of the package name,
+   not a channel you are opting into — there is no "stable" one to prefer. It
+   also declares itself as providing plain `termux-x11`, so you may see that
+   name in `apt` output; ask for the full name and you will always get the right
+   thing.
+
+5. **Confirm the two commands exist.**
+
+   ```bash
+   command -v termux-x11 termux-x11-preference
+   ```
+
+   Two paths back, both ending in `/bin/`. Nothing back means step 4 failed —
+   re-run it and read the output rather than pressing on.
+
+</Steps>
+
+:::caution[If the x11 repo 404s or "has no installation candidate"]
+The graphical repo is mirrored separately from the main one, and a mirror can
+lag or go down. The symptom is `pkg update` erroring on the x11 lines, or
+`termux-x11-nightly` reporting no installation candidate seconds after you added
+the repo.
+
+`termux-change-repo` — from course one — is the fix. Switch to a different
+mirror, `pkg update` again, then retry the install. Nothing is wrong with your
+device.
+:::
+
+The Termux side of this is **well under a megabyte**. After the gigabytes the
+container cost you, that is worth noticing: almost all of Termux:X11 lives in
+the app.
+
+## Install the app half
+
+<Steps>
+
+1. **Open the nightly release page** of `termux/termux-x11` on GitHub, on the
+   phone itself. It is easiest to browse there directly rather than download on
+   a computer and transfer.
+
+2. **Download `termux-x11-universal-debug.apk`.** Roughly **13 MB**. "Universal"
+   means it carries every CPU architecture, so you do not have to know which one
+   your phone is — that is the file you want.
+
+3. **Install it.** Android will ask whether your browser may install unknown
+   apps; approve, install, come back.
+
+4. **Open Termux:X11 once.** Unlike Termux:API, this one has a real interface.
+   You should get a mostly empty screen with a **PREFERENCES** button on it.
+
+   That screen means *"I am running and nothing has connected to me yet"* — the
+   correct state right now, and one worth recognising, because it is also what
+   you will see later when a server has died without telling you.
+
+</Steps>
+
+:::note[Nightly means nightly]
+That release tag is rebuilt continuously, so the file you download today is not
+byte-identical to the one someone else downloaded last month. Keep the two
+halves roughly in step: if you `pkg upgrade` the package months from now and
+things stop working, re-download the APK before you debug anything else.
+:::
+
+:::tip[The sharedUid build, and the one thing it costs you]
+There is a second APK on that page: `termux-x11-universal-sharedUid-debug.apk`.
+It solves a real Android problem — once Termux:X11 is in front, Android treats
+**Termux** as backgrounded and gives it less CPU, which slows down the very
+programs you are trying to watch. That variant runs as part of Termux itself, so
+Android counts them as one app and stops throttling.
+
+The catch is exactly the signature rule above: sharing a UID **requires matching
+signatures**, so it only works with a Termux installed **from GitHub**. F-Droid
+or Play builds of Termux cannot use it.
+
+Start with the regular APK. If everything works but feels sluggish once you have
+a real workload, that is when the trade — reinstalling Termux from GitHub, which
+wipes your home directory and packages — might be worth considering.
+:::
+
+## Start the server
+
+The server is a long-running process. Give it a Termux session of its own — that
+is what sessions were for in course one — or background it with `&` and accept
+that its log lines will land on top of your prompt.
+
+<Steps>
+
+1. **Open the Termux:X11 app first**, so it is sitting there waiting. Swipe back
+   to Termux.
+
+2. **Start the server on display 0.**
+
+   ```bash
+   termux-x11 :0 &
+   ```
+
+   The server announces itself to the app repeatedly until the app answers, so
+   the order is forgiving in practice. Start with this order anyway — when
+   something goes wrong you want one variable to chase, not two.
+
+3. **Switch to Termux:X11.** The PREFERENCES screen should be replaced by a
+   black rectangle.
+
+   Black is correct. That is an X display with nothing drawn on it yet, which is
+   precisely what you asked for.
+
+</Steps>
+
+:::note[About that `:0`]
+The number is a display slot, and it is yours to choose — `:0`, `:1`, anything.
+The project's own README mostly writes `:1`, so you will see both in the wild.
+Nothing is special about either. What matters is that **the server and every
+client agree**, and the next section is about the file that makes that agreement
+concrete.
+
+Bring the app forward from the shell instead of the app switcher, if you prefer:
+
+```bash
+am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity
+```
+:::
+
+## `DISPLAY`, and the socket it names
+
+X clients find their server through one environment variable:
+
+```bash
+export DISPLAY=:0
+```
+
+That is a complete address, and it is less mysterious than it looks. It resolves
+to a **Unix domain socket** — a file that two processes on one machine talk
+through. Look at it:
+
+```bash
+ls -l $TMPDIR/.X11-unix/
+```
+
+```text
+srwxrwxrwx 1 u0_a123 u0_a123 0 Aug 11 14:02 X0
+```
+
+Your owner and timestamp will differ. Three things to read there.
+
+- **`X0` is `:0`.** Display `n` is the file `Xn` in that directory. Start the
+  server as `:1` and you get `X1` instead.
+- **That leading `s` is the file type** — the same slot that holds `d` for a
+  directory. `s` means socket. It has no contents; `cat` it and you learn
+  nothing. It is an address that two processes connect to.
+- **`$TMPDIR` is Termux's own temp directory**, `$PREFIX/tmp`, not the `/tmp`
+  you know from a normal Linux box. Termux:X11 derives the socket path from
+  `$TMPDIR`, and the X libraries in the Termux packages look in the same place.
+  That is the entire reason the two halves agree without you telling either one
+  where to look.
+
+Hold on to that last point. It is the single most useful fact in this lesson,
+because it is what breaks the moment anything that cannot see that directory
+tries to draw: no shared path, no socket, no picture.
+
+:::tip[fish does not have `export`]
+Course one put you in fish, where the equivalent is:
+
+```fish
+set -x DISPLAY :0
+```
+
+Or skip the question entirely — this form sets the variable for one command only
+and works in every shell:
+
+```bash
+env DISPLAY=:0 xclock
+```
+:::
+
+## The test: one client, on purpose
+
+Now prove it, with the smallest thing that can possibly draw. Two tiny packages:
+
+```bash
+pkg install xorg-xclock xorg-xdpyinfo
+```
+
+:::note[`xterm` is not a Termux package]
+If you have followed X11 guides before you will expect `pkg install xterm` here.
+It does not exist in Termux's repositories — `xclock`, `xeyes` and `xdpyinfo`
+are packaged (as `xorg-xclock`, `xeyes` and `xorg-xdpyinfo`), and they are
+better tests anyway, being smaller and unmistakably graphical.
+
+`pkg search` is how you check any of this for yourself rather than trusting a
+guide, this one included.
+:::
+
+**First, the connection, with no pixels involved:**
+
+```bash
+export DISPLAY=:0
+xdpyinfo | head -n 2
+```
+
+```text
+name of display:    :0
+version number:     11.0
+```
+
+Full `xdpyinfo` output runs to a screenful — vendor, screen dimensions, colour
+depths, the extension list. The first two lines are the ones that matter here: a
+client opened the socket, spoke the X protocol, and got a sane reply. The
+plumbing is proven before anything visual is at stake.
+
+**Then the pixels:**
+
+```bash
+xclock &
+```
+
+Switch to Termux:X11. There should be a clock in the corner of the black
+rectangle.
+
+:::caution[What success actually looks like — read this before you decide it failed]
+The clock will have **no title bar, no border, no shadow**, it will sit wherever
+it feels like, and you will not be able to move it. It may be tiny.
+
+**That is correct.** Title bars, dragging and stacking are the job of a *window
+manager*, and you have not installed one. An X server on its own draws exactly
+what clients ask for and arranges nothing.
+
+If you were expecting something that looks like a desktop, what you were
+expecting is a **window manager** — a separate program, a separate install, and
+not this lesson's job. What is on your screen right now is the layer everything
+else sits on, working.
+:::
+
+When you have seen it, take it away:
+
+```bash
+pkill xclock
+```
+
+## When it doesn't work
+
+Every row here is a distinct failure with a distinct fix. Find your symptom
+before changing anything.
+
+| What you see | What it means | What to do |
+| :----------- | :------------ | :--------- |
+| `termux-x11: command not found` | The package half is missing | `pkg install x11-repo` then `pkg install termux-x11-nightly` |
+| A message that the package is not installed | The **app** half is missing | Install the APK from the nightly release tag |
+| A message about a **signature mismatch** | The APK is not the matching build — a third-party or stale copy | Re-download `termux-x11-universal-debug.apk` from the official release tag |
+| App still shows **PREFERENCES** after you started the server | The server exited, or was never running | Back in Termux, look at what `termux-x11 :0` actually printed |
+| `Error: Can't open display: :0` from a client | `DISPLAY` is unset or points at a display nothing is serving | `echo $DISPLAY`, then check for `X0` in `$TMPDIR/.X11-unix/` |
+| **Black screen with a visible cursor**, nothing else | A known device-specific drawing problem | Restart the server as `termux-x11 :0 -legacy-drawing` |
+| Colours are wrong — blues and reds swapped | The same, in a different form | Restart the server as `termux-x11 :0 -force-bgra` |
+| Everything is microscopic | The display's DPI does not match a phone screen | Add `-dpi 120` and adjust from there |
+| `Make sure an X server isn't already running` | A previous server is still alive, or left its socket behind | `pkill termux-x11`, check `$TMPDIR/.X11-unix/`, try again |
+
+:::caution[Those last flags are the honest part of this course]
+`-legacy-drawing` and `-force-bgra` exist because **some devices simply render
+wrong**, and the project says so in plain language rather than pretending
+otherwise. There is no list of which phones. You find out by looking.
+
+If your black screen has a cursor on it, try `-legacy-drawing` before you
+suspect anything you did. It is one flag and it costs you nothing to rule out.
+:::
+
+Want to see what the server itself thinks is happening?
+
+```bash
+TERMUX_X11_DEBUG=1 termux-x11 :0 > ~/x11.log 2>&1
+```
+
+It is verbose enough that reading it live is hopeless — send it to a file, as
+above, then search it.
+
+## Living inside the surface
+
+The Termux:X11 window is a different app from Termux, and a couple of habits
+from the last two courses stop applying the moment you tap into it. Worth
+knowing now, while there is only a clock at stake.
+
+**The volume-key modifiers are Termux's, not Android's.** Volume Down + a letter
+gives you Ctrl + that letter *in Termux's terminal view*. Inside the Termux:X11
+surface you are not in that view, so volume keys are just volume keys again.
+
+**Back toggles the soft keyboard.** This is the real one, and it is genuinely
+useful: pressing Back inside the Termux:X11 window shows and hides the keyboard
+rather than leaving the app. Note the contrast with Termux itself, where
+**Volume Up + Q or K** toggles the *extra-keys row* and nothing toggles the soft
+keyboard — a myth this series has corrected twice already.
+
+**Termux:X11 has its own key row**, with the modifiers a phone keyboard lacks.
+**Three-finger swipe down** shows and hides it. You can also switch it on from
+the shell:
+
+```bash
+termux-x11-preference "showAdditionalKbd"="true"
+```
+
+`termux-x11-preference list` dumps every setting the app has, which beats
+guessing at menu names. It needs the app to be running — foreground or
+background — or it will wait indefinitely.
+
+**There is a mouse, and you already have it.** Touch is interpreted one of two
+ways, chosen in Preferences:
+
+| Gesture | Does |
+| :------ | :--- |
+| Tap | Left click |
+| Two-finger tap | **Right click** |
+| Three-finger tap | Middle click |
+| Two-finger swipe | Scroll, vertical or horizontal |
+| Three-finger swipe down | Show/hide the extra key row |
+
+*Touchpad emulation* moves a pointer the way a laptop trackpad does; *simulated
+touchscreen* puts the pointer where your finger is. Neither is correct in
+general — try both once you have something worth clicking on.
+
+Preferences are reachable three ways: the **PREFERENCES** button on the empty
+screen, a button in the app's notification, and a long-press on the Termux:X11
+launcher icon.
+
+:::note[Android 13+ will hide the notification unless you let it]
+Same rule that bit `termux-notification` in course two, different app.
+**Settings → Apps → Termux:X11 → Notifications → Allow**, or you lose the
+notification route into Preferences and the "Exit" button that lives there.
+:::
+
+## Stopping it — and the part that costs you battery
+
+This is the piece people miss, and it is the reason a phone gets warm in a
+pocket for an hour after the fun stopped.
+
+**Closing the app does not stop the server.** Exiting from the Termux:X11
+notification closes the *activity* — the window. The `termux-x11` process is
+still running in Termux, still holding its display, still burning cycles. Two
+separate things, two separate ways to stop them:
+
+```bash
+# Stop the X server (the process in Termux)
+pkill termux-x11
+
+# Close the Android window, leaving the server running
+am broadcast -a com.termux.x11.ACTION_STOP -p com.termux.x11
+```
+
+If the server is in your foreground session rather than backgrounded, Ctrl-C
+works too — on a phone, **Volume Down + C**.
+
+:::caution[The cheap lesson still has a running cost]
+Nothing here is close to the container's disk footprint, and this lesson is the
+least likely in the course to fail. But an X server plus a live Android surface
+is real work: **screen-on time, CPU, and heat**, for as long as it runs.
+
+Get into the habit now, while it is one clock. `pkill termux-x11` when you are
+done, every time.
+:::
+
+:::note[If the server dies on its own after a while]
+Android 12 and 13 added a limit on how many background child processes an app
+may keep — "phantom process" killing — and Termux is exactly the kind of app
+that trips it. The symptom is things vanishing with no error, minutes after they
+worked.
+
+There is a widely shared workaround that needs a computer and `adb`. It does not
+apply to every device or Android version, and it is outside what this course can
+verify for you, so treat it as a lead rather than an instruction. **Name the
+symptom first:** if processes disappear on their own rather than failing to
+start, this is the direction to search in.
+:::
+
+## What you actually bought
+
+One clock, and it looks like nothing. Here is what it is worth.
+
+You can now say, with evidence: *the display server runs on this device, the
+socket exists at a path I can point at, and a client can connect to it and put
+pixels on the screen.* Every one of those is checkable in a couple of seconds —
+`ls $TMPDIR/.X11-unix/`, then `xclock`.
+
+Everything graphical from here is layers on top of exactly this. When one of
+them fails, and one will, you will not be looking at a black screen with six
+possible causes. You will run `xclock` first, and the answer splits the problem
+in half before you have debugged anything.
+
+Confident instructions that fail silently are the worst thing a course like this
+can hand you. A two-second test you trust is the antidote.
+
+## Recap
+
+- Linux programs draw by talking to a **display server**. Android has none, so
+  you install one: **Termux:X11**.
+- **Not VNC** — VNC encodes a video stream and decodes it on the same device.
+  Termux:X11 hands a real Android surface to the compositor. VNC still wins for
+  headless devices and for viewing from another machine.
+- **Two halves, one matched source** — the third time in this series. Here the
+  matched pair is the **package and the app**, not Termux itself.
+  `pkg install x11-repo` then `pkg install termux-x11-nightly`, and
+  `termux-x11-universal-debug.apk` from the project's nightly release tag. It is
+  **not on F-Droid**; you sideload this one.
+- The mismatch here **reports itself** — package missing, app missing, or
+  signature mismatch, each with a message and an immediate exit. No silent hang.
+- `termux-x11 :0 &` starts the server; `export DISPLAY=:0` (fish:
+  `set -x DISPLAY :0`) tells clients where to find it.
+- `DISPLAY=:0` means **the socket `X0` in `$TMPDIR/.X11-unix/`**. Both halves
+  derive that path from `$TMPDIR`, which is why they agree — and why anything
+  that cannot see that directory cannot draw.
+- Test with `xdpyinfo` for the connection and `xclock` for the pixels.
+  **`xterm` is not packaged for Termux.**
+- An undecorated, unmovable clock on black **is success**. Window management is
+  somebody else's job.
+- Black screen with a cursor → `-legacy-drawing`. Swapped colours →
+  `-force-bgra`. Both exist because some devices really do render wrong.
+- Inside the surface: **Back toggles the keyboard**, three-finger swipe down
+  toggles the key row, two-finger tap is right click. Termux's volume-key
+  modifiers do not reach in there.
+- **Closing the app does not stop the server.** `pkill termux-x11`, or it keeps
+  running and keeps costing you battery.
+
+Next: put something worth looking at on that black rectangle, in [Bringing Up
+XFCE](/desktop/xfce/).
 
 <LessonComplete client:only="react" slug="desktop/x11-server" />
