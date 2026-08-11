@@ -1432,12 +1432,21 @@ body::before {
    it needs to read as the thing that is not moving. */
 .hub__promise {
 	margin: 0.85rem 0 0;
-	max-inline-size: 44rem;
+	max-inline-size: 46rem;
 	font-family: var(--font-ui);
 	font-size: var(--text-sm);
-	font-weight: 600;
+	/* 500, not 600. At one sentence a heavier weight read as emphasis; at four
+	   it reads as shouting, and it would compete with the rotating paragraph
+	   above rather than anchoring it. The UI face and the full-strength ink
+	   already separate this from the lede — weight does not need to as well. */
+	font-weight: 500;
 	line-height: var(--leading-normal);
 	color: var(--fg-default);
+}
+
+/* The audience question earns the emphasis the rest no longer takes. */
+.hub__promise b {
+	font-weight: 700;
 }
 
 /* Command names in the rotating copy stay commands. */

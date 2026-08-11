@@ -29,24 +29,29 @@ export interface HeroVariant {
 /*
  * Never rotates. The one line that has to answer "so what is this?".
  *
- * IT ALSO HAS TO CLOSE A GAP THE HEADLINES OPEN. Every rotating headline sells
- * capability — searching a 200,000-line file, automating at scale. Lesson one
- * is "here is which APK to download, and why the Play Store build is a dead
- * end". Both are true, but a reader who arrives expecting a power tour and
- * lands on an install guide has been mis-sold, and the only line that can
- * prevent that is this one.
+ * IT CARRIES TWO SEPARATE IDEAS, and the previous version collided them.
+ * "Three courses, from your first install … You don't need Termux installed to
+ * start" put an install and a not-install two sentences apart. Both were true —
+ * the curriculum teaches installing, and the site's own terminal lets you
+ * practise before you do — but the line never did that reconciling, so the
+ * reader had to. The two ideas are now stated separately:
  *
- * So it names the ARC rather than the format. "Three hands-on courses" said
- * nothing about where a novice enters; "from your first install to scripts of
- * your own" says we start before you have the app and end somewhere worth
- * reaching. That is the actual product.
+ *   1. THE CURRICULUM assumes nothing and begins with installation and setup.
+ *   2. THE SITE has a live terminal, so learning starts immediately.
  *
- * The third beat previously read "Nothing to install to start" — two `to`
- * phrases colliding with no object, so the reader had to guess whether "install"
- * meant the courses, the terminal or Termux. Naming Termux removes the guess.
+ * The live terminal is framed as HOW you learn rather than as a reason not to
+ * install anything, which is what removes the contradiction rather than hiding
+ * it.
+ *
+ * IT ALSO NAMES ITS AUDIENCE. "New to Linux, or just new to Termux?" answers
+ * the only question a stranger is actually asking — is this meant for me — and
+ * answers it for both people who arrive: the one who has never opened a
+ * terminal, and the one who has used Linux for years and never touched a phone
+ * with it. The rotating headlines above sell capability; this is the line that
+ * says who is invited.
  */
 export const HERO_PROMISE =
-	'Three courses, from your first install to scripts of your own. A live terminal in every lesson. You don’t need Termux installed to start.';
+	'New to Linux, or just new to Termux? Start here. Three courses guide you through installing and setting up Termux, learning the command line, and eventually writing scripts of your own. Every lesson includes a live terminal, so you can learn by doing from the very start.';
 
 /*
  * Variant 0 is the fallback that ships in the HTML, so it has to work for
