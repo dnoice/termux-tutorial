@@ -1,0 +1,133 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SeriesDashboard from '../components/SeriesDashboard.tsx';
+import { COURSES, COURSE_MANIFEST } from '../lib/courses.ts';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const TITLE = 'Termux Tutorial — Linux on your Android phone';
+const DESCRIPTION =
+	'A three-part, hands-on Termux course with a live terminal in every lesson. Start at the beginning, or pick up where you left off.';
+
+/* Reference pages worth surfacing from the hub, so a returning learner who just
+   wants a command does not have to walk into a course to find one. Only listed
+   for courses that actually exist — `present` is derived from whether the
+   course's LESSONS array parsed, not from a hand-maintained flag. */
+const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
+	{ href: `${base}/${c.id}/reference/cheatsheet/`, label: `${c.name} cheatsheet` },
+	{ href: `${base}/${c.id}/reference/troubleshooting/`, label: `${c.name} troubleshooting` },
+]);
+---
+
+<Layout title={TITLE} description={DESCRIPTION}>
+	<div class="hub">
+		<header class="hub__top">
+			<a class="hub__mark" href={`${base}/`}>
+				<span>&gt;_</span>
+				Termux Tutorial
+			</a>
+			<button class="hub__theme" type="button" aria-live="polite" aria-label="Toggle theme">
+				<svg data-mode="light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+					<circle cx="12" cy="12" r="4"></circle>
+					<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+				</svg>
+				<svg data-mode="dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+					<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path>
+				</svg>
+				<svg data-mode="auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+					<rect x="2" y="4" width="20" height="14" rx="2"></rect>
+					<path d="M8 21h8M12 18v3"></path>
+				</svg>
+			</button>
+		</header>
+
+		<section class="hub__hero">
+			<h1>Linux on the phone in your pocket</h1>
+			<p class="hub__lede">
+				Android runs Linux underneath — Termux is the terminal it never shipped
+				with. Three courses take you from your first command to a phone that
+				talks to its own hardware and serves work to the internet. Every lesson
+				has a live terminal, so you can start before you install anything.
+			</p>
+		</section>
+
+		<h2>Where you are</h2>
+		{/* client:only — progress is per-browser, so there is nothing meaningful to
+		    prerender, and a server-rendered 0% flipping to 45% on hydration is a
+		    worse first frame than a one-line skeleton. */}
+		<SeriesDashboard client:only="react" courses={COURSE_MANIFEST} base={base} />
+
+		<h2>The three courses</h2>
+		<p class="hub__note">
+			Each one assumes the one before it. If you have used a terminal before,
+			skim the beginner course and start at Intermediate — nothing is re-taught
+			later.
+		</p>
+
+		<div class="hub__courses">
+			{
+				COURSES.map((c) =>
+					c.present ? (
+						<a class="course" href={`${base}/${c.id}/`}>
+							<span class="course__kicker">
+								<span class="course__num">{c.number}</span>
+								Course {c.number}
+							</span>
+							<h3 class="course__title">{c.name}</h3>
+							<p class="course__body">{c.blurb}</p>
+							<span class="course__foot">
+								<span>{c.lessons.length} lessons</span>
+								<span class="course__cta">Open →</span>
+							</span>
+						</a>
+					) : (
+						<div class="course course--soon">
+							<span class="course__kicker">
+								<span class="course__num">{c.number}</span>
+								Course {c.number}
+							</span>
+							<h3 class="course__title">{c.name}</h3>
+							<p class="course__body">{c.blurb}</p>
+							<span class="course__foot">
+								<span>Not written yet</span>
+							</span>
+						</div>
+					)
+				)
+			}
+		</div>
+
+		{
+			REFERENCES.length > 0 && (
+				<>
+					<h2>Straight to a command</h2>
+					<p class="hub__note">
+						For when you do not want a lesson, you want the flag you forgot.
+					</p>
+					<ul class="hub__links">
+						{REFERENCES.map((r) => (
+							<li>
+								<a href={r.href}>{r.label}</a>
+							</li>
+						))}
+					</ul>
+				</>
+			)
+		}
+
+		<h2>What this site knows about you</h2>
+		<p class="hub__note">
+			Nothing. There is no account, no analytics and no backend — the whole
+			thing is static files. Your name, avatar and progress live in this
+			browser's local storage and are never sent anywhere, which is also why
+			the dashboard above is empty on a new device. The one exception is
+			documented on the lesson that carries it: booting the optional Debian
+			sandbox fetches it from Leaning Technologies, and only when you click.
+		</p>
+
+		<footer class="hub__foot">
+			<span>Built with Astro + Starlight. BSD 3-Clause.</span>
+			<a href="https://github.com/dnoice/termux-tutorial">Source on GitHub</a>
+		</footer>
+	</div>
+</Layout>

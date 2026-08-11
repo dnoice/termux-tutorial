@@ -12,9 +12,10 @@ touching a device.
 All three courses live in **this one repository** and deploy as **one GitHub
 Pages site**.
 
-| Course | Directory | Published at | Status |
+| Piece | Directory | Published at | Status |
 | :--- | :--- | :--- | :--- |
-| **Beginner** | `termux-tutorial-for-beginners/` | `/termux-tutorial/` | 11 lessons — audited, complete |
+| **Hub** | `hub/` | `/termux-tutorial/` | The front door + cross-course dashboard |
+| **Beginner** | `termux-tutorial-for-beginners/` | `/termux-tutorial/beginner/` | 11 lessons — audited, complete |
 | **Intermediate** | `termux-tutorial-intermediate/` | `/termux-tutorial/intermediate/` | 8 lessons — audited, fixes in progress |
 | **Advanced** | `termux-tutorial-advanced/` | `/termux-tutorial/advanced/` | Not started |
 
@@ -35,10 +36,15 @@ builds each course separately — with its own guards and typecheck — then
 assembles them:
 
 ```text
-_site/                 <- beginner course (the site root)
-_site/intermediate/    <- intermediate course
-_site/advanced/        <- advanced course, when it exists
+_site/                 <- the hub (the front door)
+_site/beginner/        <- course 1
+_site/intermediate/    <- course 2
+_site/advanced/        <- course 3, when it exists
 ```
+
+The hub reads each course's `LESSONS` array **from disk at build time** for its
+dashboard totals, and fails the build if a course is present but unparseable —
+so it can never quietly ship claiming a finished course does not exist.
 
 Each course keeps its own `package.json`, dependencies, build guards and `base`.
 They are independent projects that happen to ship together.
@@ -69,7 +75,7 @@ They are independent projects that happen to ship together.
 ```bash
 cd termux-tutorial-for-beginners
 npm install
-npm run dev      # http://localhost:4321/termux-tutorial/
+npm run dev      # http://localhost:4321/termux-tutorial/beginner/
 npm run build    # curriculum guard + astro build + link check
 npm run check    # typecheck (astro build does NOT typecheck)
 ```

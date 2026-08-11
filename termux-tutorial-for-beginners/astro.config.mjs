@@ -557,6 +557,9 @@ export default defineConfig({
 			components: {
 				// Inject the local profile badge above the default sidebar nav.
 				Sidebar: './src/components/overrides/Sidebar.astro',
+				// The series switcher — the only route out of a course. See the
+				// component header for why it hangs off SiteTitle.
+				SiteTitle: './src/components/overrides/SiteTitle.astro',
 				// One cycling button instead of a <select> for three options —
 				// see the file header for the geometry it replaces.
 				ThemeSelect: './src/components/overrides/ThemeSelect.astro',

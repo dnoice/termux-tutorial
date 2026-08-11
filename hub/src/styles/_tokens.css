@@ -1,0 +1,250 @@
+/* EXTRACTED VERBATIM from termux-tutorial-for-beginners/src/styles/global.css.
+   Do not hand-edit: change the course tokens and re-extract, or the hub and the
+   courses drift into two slightly different products. */
+
+:root {
+	/* Type — four faces, named for the ROLE each one actually plays.
+	   --font-ui was called --font-body until this pass, which was the same
+	   lying-token pattern as the already-fixed --fg-body: it resolves to
+	   Inter, the UI chrome face, while the face that actually sets body prose
+	   is --font-detail (Source Serif 4) — as `.sl-markdown-content
+	   { font-family: var(--font-detail) }` further down this file proves.
+	   Renamed across all 13 consumers; the rename was safe to do in one pass
+	   because the React islands had just stopped reading it from inline style
+	   objects, leaving this file as its only consumer (verified by grep over
+	   src/, scripts/, astro.config.mjs and the root docs: 0 stragglers).
+	   FONT_FACES in astro.config.mjs keys off family NAMES, not token names,
+	   so it needed no mirroring edit. */
+	--font-heading: 'Crimson Pro Variable', 'Georgia', 'Cambria', serif;
+	--font-detail: 'Source Serif 4 Variable', 'Georgia', serif;
+	--font-ui: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono Variable', 'Fira Code', 'Cascadia Code', 'SF Mono', monospace;
+
+	/* Bridge Starlight's font vars to the Fire Watch stack. */
+	--sl-font: var(--font-ui);
+	--sl-font-mono: var(--font-mono);
+
+	/* Radii (Fire Watch) */
+	--radius-sm: 4px;
+	--radius-md: 6px;
+	--radius-lg: 8px;
+	--radius-xl: 12px;
+	--radius-full: 9999px;
+
+	/* Motion (Fire Watch) */
+	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+	--dur-fast: 120ms;
+	--dur-normal: 200ms;
+	--dur-slow: 350ms;
+	--tmx-ease: var(--ease-out); /* legacy alias */
+
+	/* Shape helpers used by this site's components. */
+	--tmx-radius: var(--radius-xl);
+
+	/* ---------------------------------------------------------------- *
+	 * TYPE SCALE — a real modular scale (1.25 / major third), replacing
+	 * twelve ad-hoc values of which five sat inside a 0.27rem band.
+	 * Sizes are roles, not measurements: pick by what the text IS.
+	 * ---------------------------------------------------------------- */
+	--text-2xs: 0.6875rem;  /* 11px — kickers, badges */
+	--text-xs: 0.8125rem;   /* 13px — meta, captions, chrome */
+	--text-sm: 0.9375rem;   /* 15px — dense UI, sidebar */
+	--text-base: 1.0625rem; /* 17px — body prose (editorial, generous) */
+	--text-md: 1.1875rem;   /* 19px — lede, card titles */
+	--text-lg: 1.5rem;      /* 24px — h3 */
+	--text-xl: 1.9375rem;   /* 31px — h2 */
+	--text-2xl: 2.4375rem;  /* 39px — h1 */
+	--text-3xl: 3.0625rem;  /* 49px — hero */
+
+	/* Line heights, paired to role: tighter as type gets larger. */
+	--leading-tight: 1.15;  /* display + headings */
+	--leading-snug: 1.35;   /* card/panel titles */
+	--leading-normal: 1.55; /* UI text */
+	--leading-prose: 1.7;   /* running body copy */
+
+	--weight-normal: 400;
+	--weight-medium: 500;
+	--weight-semibold: 600;
+	--weight-bold: 700;
+
+	/* Tracking. Large type needs negative tracking; small caps need positive. */
+	--tracking-display: -0.02em;
+	--tracking-heading: -0.01em;
+	--tracking-normal: 0;
+	--tracking-wide: 0.14em;
+
+	/* ---------------------------------------------------------------- *
+	 * VERTICAL RHYTHM — one block-spacing token. Rhythm used to be set in
+	 * SEVEN independent places (1 / 1.5 / 1.9 / 2.25 / 2.5rem), three of
+	 * them locked inside JSX where CSS could not reach them, so a lesson
+	 * page changed gap depending on which component came next.
+	 * ---------------------------------------------------------------- */
+	--space-block: 2rem;
+	--space-block-lg: 2.5rem;
+}
+
+:root,
+:root[data-theme='dark'] {
+	color-scheme: dark;
+
+	/* Canvas */
+	--bg-canvas: #0e1014;
+	--bg-surface: #141820;
+	--bg-surface-alt: #1a1f28;
+	--bg-elevated: #222833;
+	--bg-hover: rgba(212, 177, 92, 0.07);
+	--bg-active: rgba(212, 177, 92, 0.12);
+
+	/* Borders */
+	--border-default: #2e3540;
+	--border-muted: #22272f;
+	--border-subtle: rgba(212, 177, 92, 0.1);
+
+	/* Text — parchment-cream family */
+	--fg-default: #e8dfcc;
+	--fg-body: #cfc5b0;
+	--fg-secondary: #b5ac99;
+	--fg-muted: #8e8676;
+	--fg-subtle: #6b6454;
+	--fg-on-emphasis: #0e1014;
+
+	/* Semantic (cool canvas tuning) */
+	--color-success: #5fb573;
+	--color-danger: #cc6449;
+	--color-warning: #d4b15c;
+	--color-info: #7fb6e0;
+	--color-accent: #c89aab;
+	--color-critical: #d94e3a;
+	--color-link: #7fb6e0;
+
+	/* Brand — brass gold */
+	--color-brand: #d4b15c;
+	--color-brand-muted: rgba(212, 177, 92, 0.14);
+	--color-brand-emphasis: #e8c878;
+
+	/* Shadows (neutral-cool) */
+	--shadow-sm: 0 1px 2px rgba(4, 6, 10, 0.4);
+	--shadow-md: 0 4px 8px rgba(4, 6, 10, 0.45), 0 0 1px rgba(4, 6, 10, 0.25);
+	--shadow-lg: 0 8px 24px rgba(4, 6, 10, 0.5);
+	--shadow-xl: 0 12px 40px rgba(4, 6, 10, 0.55);
+
+	/* Button sheen. This was a literal `color-mix(in srgb, #ffffff 40%, transparent)`
+	   inside the ::before rule — the ONE hex outside these two theme blocks. It is
+	   per-theme because the sweep has to contrast with the button surface, and the
+	   two themes' surfaces sit on opposite sides of mid-grey. On obsidian
+	   (--bg-surface #141820) a 40% white wipe reads clearly. */
+	--tmx-sheen: rgba(255, 255, 255, 0.4);
+	/* The primary button's fill is brass in BOTH themes, so its sweep is chosen
+	   against brass, not against the page. Identical to --tmx-sheen here; it is
+	   the light block where the two part company. */
+	--tmx-sheen-on-brand: rgba(255, 255, 255, 0.4);
+
+	/* Terminal screen (obsidian, one step off canvas). */
+	--tmx-screen: #0e1014;
+	/* Dark-LOCKED (identical in both themes). Any copy rendered on a --tmx-screen
+	   surface must use these: the panel stays obsidian while the theme flips, so
+	   theme-following --fg-* tokens drop to ~3:1 on it in light mode. */
+	/* The key row's label colour. Read four times by .tmx-terminal__key (the
+	   label plus three color-mix fills) and, until now, defined nowhere — an
+	   undefined custom property invalidates the whole declaration at
+	   computed-value time, so the labels fell back to the inherited colour and
+	   the fills to transparent. The row was legible by accident of inheritance
+	   rather than by design. #e8dfcc is the intended value: it is what
+	   TermuxTerminal.tsx passes to xterm as `foreground`, so the key labels and
+	   the text on the screen above them are now provably the same ink. */
+	--tmx-screen-ink: #e8dfcc;
+	--tmx-screen-muted: #8e8676;
+	--tmx-screen-brand: #d4b15c;
+
+	/* Scatter Field, dark ink — shows at full over the obsidian. */
+	--tmx-bg-image: url('../assets/linux_scatter_field_v3.svg');
+	/* Was 1. At full strength the field's monospace fragments read as CONTENT
+	   rather than texture — `drwxr-xr-x 2 user user 4096 …` landing on a prose
+	   baseline is the noise the deleted scrim was compensating for. Dimming the
+	   cause is cheaper than covering it. */
+	--tmx-bg-opacity: 0.55;
+	/* Inline-field ink. One token, one SVG, both themes. */
+}
+
+:root[data-theme='light'] {
+	color-scheme: light;
+
+	--bg-canvas: #f5f0e8;
+	--bg-surface: #faf7f2;
+	--bg-surface-alt: #efe9de;
+	--bg-elevated: #ffffff;
+	--bg-hover: rgba(139, 115, 78, 0.06);
+	--bg-active: rgba(139, 115, 78, 0.1);
+
+	--border-default: #d4c9b5;
+	--border-muted: #e8e0d2;
+	--border-subtle: rgba(139, 115, 78, 0.08);
+
+	--fg-default: #2c2418;
+	--fg-body: #3d3d3d;
+	--fg-secondary: #4a4a4a;
+	--fg-muted: #6b5d4f;
+	--fg-subtle: #9c8e7c;
+	--fg-on-emphasis: #faf7f2;
+
+	--color-success: #3d7a45;
+	--color-danger: #8b2d2d;
+	--color-warning: #8b6914;
+	--color-info: #4a6fa5;
+	--color-accent: #6b4c8a;
+	--color-critical: #b22222;
+	--color-link: #4a6fa5;
+
+	/* #8b6914 measured 4.48:1 on the #f5f0e8 canvas — AA is 4.5:1, so brass as
+	   TEXT missed by 0.02, which is a fail however cosmetic it sounds. Stepped
+	   down the same hue to the first value clearing 4.5 on both light surfaces
+	   (4.63:1 on canvas, 4.92:1 on #faf7f2 cards). Visually indistinguishable;
+	   it just stops being a violation. */
+	--color-brand: #886713;
+	--color-brand-muted: rgba(136, 103, 19, 0.1);
+	/* "Emphasis" means FURTHER FROM THE CANVAS, not lighter. On the dark theme
+	   that happens to mean lighter (#e8c878); on parchment it must mean darker.
+	   The old #a67c1a was lighter than --color-brand, so it moved toward the
+	   cream canvas — prose links measured 3.35:1 and inline code 3.18:1, both
+	   under AA. #6f5310 is ~6.2:1 on #f5f0e8 and lifts links, inline code, the
+	   active TOC entry and the site title above AA in one edit. */
+	--color-brand-emphasis: #6f5310;
+
+	--shadow-sm: 0 1px 2px rgba(44, 36, 24, 0.08);
+	--shadow-md: 0 2px 8px rgba(44, 36, 24, 0.1), 0 0 1px rgba(44, 36, 24, 0.06);
+	--shadow-lg: 0 4px 16px rgba(44, 36, 24, 0.12);
+	--shadow-xl: 0 8px 32px rgba(44, 36, 24, 0.14);
+
+	/* See the dark block. On parchment the sweep has to be INK, not light: the
+	   ghost button's surface is --bg-surface #faf7f2, so the dark theme's 40%
+	   white wipe resolved to #fffdfb over #faf7f2 — a 1.02:1 step, i.e. no
+	   visible sweep at all. The light theme was silently missing an interaction
+	   affordance the dark theme had. Warm dark ink at 18% gives the same
+	   perceived sweep strength against cream. */
+	--tmx-sheen: rgba(44, 36, 24, 0.18);
+	/* ...but the PRIMARY button's fill is dark brass even here, so the parchment
+	   ink sweep would vanish on it. That one surface keeps the white wipe. */
+	--tmx-sheen-on-brand: rgba(255, 255, 255, 0.4);
+
+	/* Terminal screens stay obsidian even on parchment — inset devices. */
+	--tmx-screen: #0e1014;
+	/* Dark-LOCKED (identical in both themes). Any copy rendered on a --tmx-screen
+	   surface must use these: the panel stays obsidian while the theme flips, so
+	   theme-following --fg-* tokens drop to ~3:1 on it in light mode. */
+	/* The key row's label colour. Read four times by .tmx-terminal__key (the
+	   label plus three color-mix fills) and, until now, defined nowhere — an
+	   undefined custom property invalidates the whole declaration at
+	   computed-value time, so the labels fell back to the inherited colour and
+	   the fills to transparent. The row was legible by accident of inheritance
+	   rather than by design. #e8dfcc is the intended value: it is what
+	   TermuxTerminal.tsx passes to xterm as `foreground`, so the key labels and
+	   the text on the screen above them are now provably the same ink. */
+	--tmx-screen-ink: #e8dfcc;
+	--tmx-screen-muted: #8e8676;
+	--tmx-screen-brand: #d4b15c;
+
+	/* Scatter Field, sepia ink on parchment — the light-theme twin. */
+	--tmx-bg-image: url('../assets/linux_scatter_field_v3_light.svg');
+	--tmx-bg-opacity: 0.8;
+}

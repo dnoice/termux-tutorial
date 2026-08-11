@@ -2671,3 +2671,94 @@ a.tmx-btn--primary:hover {
 :root:not([data-theme='light']) .site-title {
 	color: var(--color-brand);
 }
+
+/* --- Series switcher (components/overrides/SiteTitle.astro) ----------
+   The only route out of a course. Each course is its own Starlight site, so
+   without this the sidebar is a dead end: no hub, no siblings, back button
+   only. Sits in the header because that is where "take me elsewhere" is
+   already expected, and because overriding PageFrame to add a bar once took
+   the sticky header with it. */
+.tmx-series {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	min-width: 0;
+}
+.tmx-series__home {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	flex: 0 0 auto;
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	color: var(--color-brand);
+	text-decoration: none;
+}
+.tmx-series__home-label {
+	font-family: var(--font-ui);
+	font-size: var(--text-2xs);
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--fg-muted);
+}
+.tmx-series__nav {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 2px;
+	border: 1px solid var(--border-subtle);
+	border-radius: var(--radius-full);
+	background: var(--bg-surface);
+}
+.tmx-series__link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.25rem 0.6rem;
+	border-radius: var(--radius-full);
+	font-family: var(--font-ui);
+	font-size: var(--text-2xs);
+	font-weight: 600;
+	color: var(--fg-secondary);
+	text-decoration: none;
+	white-space: nowrap;
+	transition:
+		background var(--dur-fast) var(--ease-out),
+		color var(--dur-fast) var(--ease-out);
+}
+a.tmx-series__link:hover {
+	background: var(--bg-hover);
+	color: var(--fg-default);
+}
+/* The course you are in. aria-current does the announcing; this shows it. */
+.tmx-series__link[aria-current='page'] {
+	background: var(--color-brand-muted);
+	color: var(--color-brand-emphasis);
+}
+/* A course with nothing behind it must not look clickable. */
+.tmx-series__link[data-unbuilt] {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+.tmx-series__num {
+	font-family: var(--font-mono);
+	opacity: 0.75;
+}
+.tmx-series__title {
+	min-width: 0;
+}
+/* Phones: the numerals carry the meaning, the words do not fit. The site
+   title goes too — the switcher IS the identity at this width. */
+@media (max-width: 50rem) {
+	.tmx-series__label,
+	.tmx-series__home-label,
+	.tmx-series__title {
+		display: none;
+	}
+	.tmx-series {
+		gap: 0.5rem;
+	}
+}

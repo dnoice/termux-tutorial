@@ -1,0 +1,69 @@
+---
+/*
+ * SiteTitle override — the series switcher.
+ *
+ * THE PROBLEM. Each course is a self-contained Starlight site. Its sidebar
+ * knows its own lessons and nothing else, so once a learner is inside a course
+ * there is no way out except the browser's back button: no route to the hub, no
+ * route to a sibling course. Three courses that cannot see each other are three
+ * websites, not a series.
+ *
+ * WHY THIS COMPONENT. `SiteTitle` is the one override that renders in the
+ * header on EVERY page, on both the desktop and mobile layouts, and it already
+ * owns the "click here to go home" affordance. Replacing it puts the series
+ * navigation exactly where a person already looks for it, without adding a
+ * second bar or overriding PageFrame — which, the last time it was overridden,
+ * took the sticky header with it.
+ *
+ * Paths are derived from BASE_URL, never hardcoded: this file is copied into
+ * each course verbatim, and each course's own `base` tells it which segment it
+ * is. `CURRENT` is the only line that differs between copies.
+ */
+import Default from '@astrojs/starlight/components/SiteTitle.astro';
+
+/** Which course this copy lives in. The ONLY line to change when copying. */
+const CURRENT = 'intermediate';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+/** Series root = this course's base minus its own segment. */
+const root = base.replace(/\/[^/]+$/, '');
+
+const COURSES = [
+	{ id: 'beginner', label: 'Beginner', short: '1' },
+	{ id: 'intermediate', label: 'Intermediate', short: '2' },
+	{ id: 'advanced', label: 'Advanced', short: '3', unbuilt: true },
+];
+---
+
+<div class="tmx-series">
+	<a class="tmx-series__home" href={`${root}/`} title="All three courses">
+		<span aria-hidden="true">&gt;_</span>
+		<span class="tmx-series__home-label">Series</span>
+	</a>
+
+	<nav class="tmx-series__nav" aria-label="Courses in this series">
+		{
+			COURSES.map((c) =>
+				c.unbuilt ? (
+					<span class="tmx-series__link" data-unbuilt aria-disabled="true" title="Not written yet">
+						<span class="tmx-series__num">{c.short}</span>
+						<span class="tmx-series__label">{c.label}</span>
+					</span>
+				) : (
+					<a
+						class="tmx-series__link"
+						href={`${root}/${c.id}/`}
+						aria-current={c.id === CURRENT ? 'page' : undefined}
+					>
+						<span class="tmx-series__num">{c.short}</span>
+						<span class="tmx-series__label">{c.label}</span>
+					</a>
+				)
+			)
+		}
+	</nav>
+
+	{/* Starlight's own title still renders — it carries the site name, the link
+	    home, and the logo slot other overrides may rely on. */}
+	<div class="tmx-series__title"><Default><slot /></Default></div>
+</div>

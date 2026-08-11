@@ -4,13 +4,15 @@
 # courses cannot each deploy themselves — they are built separately and
 # assembled into a single tree here:
 #
-#   dist/                    <- beginner   (base /termux-tutorial)
-#   dist/intermediate/       <- intermediate (base /termux-tutorial/intermediate)
-#   dist/advanced/           <- advanced   (not built yet)
+#   _site/                   <- the hub    (base /termux-tutorial)
+#   _site/beginner/          <- course 1   (base /termux-tutorial/beginner)
+#   _site/intermediate/      <- course 2   (base /termux-tutorial/intermediate)
+#   _site/advanced/          <- course 3   (not built yet)
 #
-# The beginner course is the site root because it is the entry point and every
-# link in it already resolves against /termux-tutorial. Each course keeps its
-# own package.json, its own guards, and its own base.
+# The HUB is the site root: it is the front door, and the only page that can
+# see all three courses at once. Each course keeps its own package.json, its
+# own guards and its own base — they are independent projects that ship
+# together.
 #
 # NOTE: Pages from a PRIVATE repository requires GitHub Pro or higher. On the
 # free plan this workflow will build and then fail at the deploy step until the
@@ -52,8 +54,25 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: |
+            hub/package-lock.json
             termux-tutorial-for-beginners/package-lock.json
             termux-tutorial-intermediate/package-lock.json
+
+      # --------------------------------------------------------------------- hub
+      - name: Install — hub
+        working-directory: hub
+        run: npm ci
+
+      - name: Typecheck — hub
+        working-directory: hub
+        run: npm run check
+
+      - name: Build — hub
+        working-directory: hub
+        # Reads each course's LESSONS array from disk for its dashboard totals,
+        # and FAILS if a course is present but unparseable — so the hub can
+        # never quietly ship claiming a finished course does not exist.
+        run: npm run build
 
       # ---------------------------------------------------------------- beginner
       - name: Install — beginner
@@ -89,17 +108,46 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf _site
-          # The beginner course is the root of the published site.
-          cp -r termux-tutorial-for-beginners/dist _site
-          # Each later course nests under it, at the path its own `base` expects.
-          mkdir -p _site/intermediate
-          cp -r termux-tutorial-intermediate/dist/. _site/intermediate/
-          echo "Assembled $(find _site -name '*.html' | wc -l) HTML pages:"
-          echo "  root:         $(find _site -maxdepth 1 -name '*.html' | wc -l)"
-          echo "  intermediate: $(find _site/intermediate -name '*.html' | wc -l)"
-          # Fail loudly rather than deploying half a site.
-          test -f _site/index.html
-          test -f _site/intermediate/index.html
+          # The hub is the root of the published site.
+          cp -r hub/dist _site
+          # Each course nests under it, at the path its own `base` expects.
+          for course in beginner:termux-tutorial-for-beginners                         intermediate:termux-tutorial-intermediate; do
+            seg="${course%%:*}"; dir="${course##*:}"
+            mkdir -p "_site/$seg"
+            cp -r "$dir/dist/." "_site/$seg/"
+            echo "  $seg: $(find "_site/$seg" -name '*.html' | wc -l) pages"
+          done
+          echo "Assembled $(find _site -name '*.html' | wc -l) HTML pages total."
+
+          # Fail loudly rather than deploying half a site. Each of these is a
+          # page a visitor can reach from the hub's own markup, so a missing one
+          # is a broken link on the front door.
+          for must in index.html beginner/index.html intermediate/index.html; do
+            test -f "_site/$must" || { echo "MISSING: _site/$must"; exit 1; }
+          done
+
+          # The hub links into each course by path. Verify those targets exist
+          # in the ASSEMBLED tree — no individual course's own link check can
+          # see across the boundary, so this is the only place it can be caught.
+          node -e '
+            const { readFileSync, existsSync } = require("node:fs");
+            const html = readFileSync("_site/index.html", "utf8");
+            const base = "/termux-tutorial";
+            const links = [...html.matchAll(/href="([^"]+)"/g)]
+              .map((m) => m[1])
+              .filter((h) => h.startsWith(base + "/"));
+            const missing = [...new Set(links)].filter((h) => {
+              const rel = h.slice(base.length).replace(/^\//, "").replace(/\/$/, "");
+              if (!rel) return false;
+              return !existsSync("_site/" + rel) && !existsSync("_site/" + rel + "/index.html");
+            });
+            if (missing.length) {
+              console.error("Hub links with no target in the assembled site:");
+              for (const m of missing) console.error("  " + m);
+              process.exit(1);
+            }
+            console.log("Hub cross-links resolve: " + new Set(links).size + " checked, 0 broken.");
+          '
 
       - name: Configure Pages
         if: github.event_name != 'pull_request'
