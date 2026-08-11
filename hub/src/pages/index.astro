@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import SettingsDialog from '../components/SettingsDialog.astro';
+import Hero from '../components/Hero.astro';
 import SeriesDashboard from '../components/SeriesDashboard.tsx';
 import { COURSES, COURSE_MANIFEST } from '../lib/courses.ts';
 
@@ -58,14 +59,7 @@ const REFS = [
 		</header>
 
 		<div class="hub__band hub__band--lead">
-		<section class="hub__hero">
-			<h1>Linux on the phone in your pocket</h1>
-			<p class="hub__lede">
-				Android runs Linux underneath — Termux is the terminal it never shipped
-				with. Three courses, a live terminal in every lesson, nothing to install
-				to start.
-			</p>
-		</section>
+		<Hero />
 
 		<section class="hub__panel">
 			<h2>Your progress</h2>

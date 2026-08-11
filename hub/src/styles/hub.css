@@ -1420,3 +1420,32 @@ body::before {
 		transform: translateY(6px) scale(0.985);
 	}
 }
+
+/* --- The fixed promise line -----------------------------------------
+   The one line under the hero that never rotates. It is the constant answer to
+   "so what is this site offering me", which is what lets the ten rotating
+   headlines be evocative rather than explanatory — none of them has to carry
+   the pitch on its own.
+
+   Weighted a step up from the lede above it: it is the most load-bearing
+   sentence on the page, and after a rotating headline and a rotating paragraph
+   it needs to read as the thing that is not moving. */
+.hub__promise {
+	margin: 0.85rem 0 0;
+	max-inline-size: 44rem;
+	font-family: var(--font-ui);
+	font-size: var(--text-sm);
+	font-weight: 600;
+	line-height: var(--leading-normal);
+	color: var(--fg-default);
+}
+
+/* Command names in the rotating copy stay commands. */
+.hub__lede code {
+	font-family: var(--font-mono);
+	font-size: 0.92em;
+	padding: 0.05em 0.3em;
+	border-radius: var(--radius-sm, 4px);
+	background: var(--color-brand-muted);
+	color: var(--color-brand-emphasis);
+}

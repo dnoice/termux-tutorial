@@ -1,0 +1,130 @@
+---
+import { HERO_VARIANTS, HERO_PROMISE, splitCopy } from '../lib/hero.ts';
+
+/*
+ * Renders variant 0 into the markup and lets an inline script swap in the next
+ * one from a shuffled deck.
+ *
+ * WHY THE DEFAULT IS REAL COPY, not an empty <h1> the script fills: with no JS,
+ * a thrown script, or a blocked bundle, the page still has a working hero
+ * instead of a blank headline. It is also what the crawler and the social
+ * unfurl see, which is why variant 0 is the one that assumes least.
+ *
+ * WHY THE SWAP IS INLINE AND SYNCHRONOUS, immediately after the markup: it runs
+ * before the browser paints this element, so nobody watches "Beyond the
+ * interface" flip to something else. A deferred or module script would paint
+ * first and swap after — a visible flicker on every single load, and a content
+ * change a screen reader has already read aloud.
+ */
+const fallback = HERO_VARIANTS[0];
+const segments = splitCopy(fallback.copy);
+---
+
+<section class="hub__hero">
+	<h1 id="hero-title">{fallback.title}</h1>
+	<p class="hub__lede" id="hero-copy">
+		{segments.map((s) => (s.code ? <code>{s.text}</code> : s.text))}
+	</p>
+	<p class="hub__promise">{HERO_PROMISE}</p>
+</section>
+
+{/* The variants, serialised once from the same array the fallback came from.
+    A JSON script tag rather than a JS literal: the browser does not parse it as
+    code, and nothing here can become an injection point. */}
+<script is:inline type="application/json" id="hero-variants" set:html={JSON.stringify(HERO_VARIANTS)} />
+
+<script is:inline>
+	(() => {
+		const titleEl = document.getElementById('hero-title');
+		const copyEl = document.getElementById('hero-copy');
+		const dataEl = document.getElementById('hero-variants');
+		if (!titleEl || !copyEl || !dataEl) return;
+
+		/** @type {{title: string, copy: string}[]} */
+		let variants;
+		try {
+			variants = JSON.parse(dataEl.textContent || '[]');
+		} catch {
+			return; // The markup fallback is already correct; leave it alone.
+		}
+		if (!Array.isArray(variants) || variants.length < 2) return;
+
+		/*
+		 * Namespaced `tmx:` deliberately. The settings dialog reports how much
+		 * this site has stored by summing keys with that prefix, so a key outside
+		 * the convention would be invisible there — and invisible storage is
+		 * exactly what the site tells people it does not do.
+		 */
+		const KEY = 'tmx:hero:v1';
+
+		const load = () => {
+			try {
+				return JSON.parse(localStorage.getItem(KEY) || '{}');
+			} catch {
+				return {};
+			}
+		};
+		const save = (state) => {
+			try {
+				localStorage.setItem(KEY, JSON.stringify(state));
+			} catch {
+				/* Rotation is a nicety. Without storage every load reshuffles,
+				   which is still fine — just less evenly distributed. */
+			}
+		};
+
+		/* Fisher-Yates. `sort(() => Math.random() - 0.5)` is the usual shortcut
+		   and it is not a shuffle: comparator-based sorts with an inconsistent
+		   comparator bias heavily toward the original order. */
+		function shuffled(n) {
+			const a = Array.from({ length: n }, (_, i) => i);
+			for (let i = a.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[a[i], a[j]] = [a[j], a[i]];
+			}
+			return a;
+		}
+
+		const state = load();
+		const valid = (i) => Number.isInteger(i) && i >= 0 && i < variants.length;
+
+		let deck = Array.isArray(state.deck) ? state.deck.filter(valid) : [];
+		const last = valid(state.last) ? state.last : null;
+
+		if (deck.length === 0) {
+			deck = shuffled(variants.length);
+			/* A fresh deck can legally open with the card the last one closed on,
+			   which reads as "the rotation is broken" even though it is the one
+			   sequence random is entitled to produce. Swap it away. */
+			if (last !== null && deck[0] === last) {
+				const swap = deck.findIndex((i) => i !== last);
+				if (swap > 0) [deck[0], deck[swap]] = [deck[swap], deck[0]];
+			}
+		}
+
+		const next = deck.shift();
+		save({ deck, last: next });
+
+		const variant = variants[next];
+		if (!variant) return;
+
+		titleEl.textContent = variant.title;
+
+		/* Rebuild the paragraph as nodes so backticked spans stay <code>. Built
+		   with createElement rather than innerHTML — the strings are ours, but a
+		   habit of assigning innerHTML is how one eventually is not. */
+		copyEl.textContent = '';
+		String(variant.copy)
+			.split('`')
+			.forEach((text, i) => {
+				if (!text) return;
+				if (i % 2 === 1) {
+					const code = document.createElement('code');
+					code.textContent = text;
+					copyEl.appendChild(code);
+				} else {
+					copyEl.appendChild(document.createTextNode(text));
+				}
+			});
+	})();
+</script>
