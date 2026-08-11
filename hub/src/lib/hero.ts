@@ -29,14 +29,24 @@ export interface HeroVariant {
 /*
  * Never rotates. The one line that has to answer "so what is this?".
  *
- * It ended "Nothing to install to start", which had two `to` phrases colliding
- * and no object: install WHAT, and start WHAT? The reader had to guess between
- * the courses, the terminal and Termux itself. Naming Termux removes the guess,
- * and "to start" now clearly attaches to beginning the course rather than to
- * the install.
+ * IT ALSO HAS TO CLOSE A GAP THE HEADLINES OPEN. Every rotating headline sells
+ * capability — searching a 200,000-line file, automating at scale. Lesson one
+ * is "here is which APK to download, and why the Play Store build is a dead
+ * end". Both are true, but a reader who arrives expecting a power tour and
+ * lands on an install guide has been mis-sold, and the only line that can
+ * prevent that is this one.
+ *
+ * So it names the ARC rather than the format. "Three hands-on courses" said
+ * nothing about where a novice enters; "from your first install to scripts of
+ * your own" says we start before you have the app and end somewhere worth
+ * reaching. That is the actual product.
+ *
+ * The third beat previously read "Nothing to install to start" — two `to`
+ * phrases colliding with no object, so the reader had to guess whether "install"
+ * meant the courses, the terminal or Termux. Naming Termux removes the guess.
  */
 export const HERO_PROMISE =
-	'Three hands-on courses. A live terminal in every lesson. You don’t need Termux installed to start.';
+	'Three courses, from your first install to scripts of your own. A live terminal in every lesson. You don’t need Termux installed to start.';
 
 /*
  * Variant 0 is the fallback that ships in the HTML, so it has to work for
