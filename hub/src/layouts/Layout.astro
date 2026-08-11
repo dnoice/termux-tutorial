@@ -67,50 +67,5 @@ const canonical = `${site}${base}/`;
 	<body>
 		<slot />
 
-		<script is:inline>
-			/*
-			 * The theme toggle: light -> dark -> auto, mirroring the courses'
-			 * ThemeSelect so the control behaves identically on both sides of a
-			 * navigation. Writes the same key, so the choice survives the jump.
-			 */
-			(() => {
-				const root = document.documentElement;
-				const order = ['light', 'dark', 'auto'];
-				const label = {
-					light: 'Theme: light. Switch to dark.',
-					dark: 'Theme: dark. Switch to system.',
-					auto: 'Theme: system. Switch to light.',
-				};
-				const apply = (mode) => {
-					const resolved =
-						mode === 'auto'
-							? matchMedia('(prefers-color-scheme: dark)').matches
-								? 'dark'
-								: 'light'
-							: mode;
-					root.setAttribute('data-theme', resolved);
-					root.setAttribute('data-tmx-mode', mode);
-					try {
-						localStorage.setItem('starlight-theme', mode);
-					} catch {
-						/* preference simply will not persist */
-					}
-					for (const b of document.querySelectorAll('.hub__theme')) {
-						b.setAttribute('aria-label', label[mode]);
-					}
-				};
-				document.addEventListener('click', (e) => {
-					const btn = e.target instanceof Element && e.target.closest('.hub__theme');
-					if (!btn) return;
-					const now = root.getAttribute('data-tmx-mode') || 'auto';
-					apply(order[(order.indexOf(now) + 1) % order.length]);
-				});
-				// Follow the system while the choice is "auto".
-				matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-					if ((root.getAttribute('data-tmx-mode') || 'auto') === 'auto') apply('auto');
-				});
-				apply(root.getAttribute('data-tmx-mode') || 'auto');
-			})();
-		</script>
 	</body>
 </html>

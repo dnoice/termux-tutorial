@@ -292,10 +292,18 @@ body::before {
 	text-underline-offset: 0.2em;
 }
 
-/* A course with nothing behind the link yet must not pretend to be clickable. */
+/* A course with nothing behind it must not pretend to be clickable — but it
+   has done nothing wrong either. `cursor: not-allowed` is the browser's
+   "you are forbidden" cursor, and pointing it at a course that simply is not
+   written yet reads as a scolding. The default arrow says "not interactive"
+   without the reprimand; the dimming and the "Not written yet" label already
+   carry the meaning, and they carry it to people who never see a cursor. */
 .course--soon {
-	opacity: 0.62;
-	cursor: not-allowed;
+	opacity: 0.7;
+	cursor: default;
+	/* Softer than dimming alone: a dashed edge reads as a placeholder, which is
+	   exactly what this is. */
+	border-style: dashed;
 }
 
 .course__kicker {
@@ -535,39 +543,7 @@ body::before {
 	color: inherit;
 }
 
-/* Theme toggle mirrors the courses' control: one button, three states. */
-.hub__theme {
-	display: grid;
-	place-items: center;
-	inline-size: 40px;
-	block-size: 40px;
-	padding: 0;
-	border-radius: var(--radius-md);
-	border: 1px solid var(--border-default);
-	background: var(--bg-raised);
-	color: var(--fg-secondary);
-	cursor: pointer;
-}
-
-.hub__theme:hover {
-	color: var(--color-brand-emphasis);
-	border-color: color-mix(in srgb, var(--color-brand) 50%, var(--border-default));
-}
-
-.hub__theme svg {
-	inline-size: 18px;
-	block-size: 18px;
-	grid-area: 1 / 1;
-	display: none;
-}
-
-:root[data-tmx-mode='light'] .hub__theme svg[data-mode='light'],
-:root[data-tmx-mode='dark'] .hub__theme svg[data-mode='dark'],
-:root:not([data-tmx-mode]) .hub__theme svg[data-mode='auto'],
-:root[data-tmx-mode='auto'] .hub__theme svg[data-mode='auto'] {
-	display: block;
-}
-
+/* Visually hidden, still announced. */
 .sr-only {
 	position: absolute;
 	inline-size: 1px;
@@ -750,7 +726,7 @@ body::before {
    pointer while a finger is still valid input. */
 @media (any-pointer: coarse) {
 	.btn,
-	.hub__theme {
+	.hub__settings {
 		min-block-size: 44px;
 	}
 
@@ -791,7 +767,8 @@ body::before {
    ornament or the controls. */
 @media print {
 	body::before,
-	.hub__theme,
+	.hub__settings,
+	.settings,
 	.dash__actions {
 		display: none !important;
 	}
@@ -810,5 +787,636 @@ body::before {
 	.hub__band--lead,
 	.hub__band--tail {
 		display: block;
+	}
+}
+
+/* ================================================================== *
+ * PROFILE PAGE
+ *
+ * A form page, not a dashboard, so it deliberately does NOT take the
+ * one-screen treatment — `.hub--page` opts out of the 100dvh column. Forcing
+ * a form to fit a viewport is how you end up with 11px labels.
+ * ================================================================== */
+.hub--page {
+	min-block-size: auto;
+}
+
+.hub__crumb {
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+}
+
+.hub__crumb a {
+	color: var(--fg-muted);
+	text-decoration: none;
+}
+
+.hub__crumb a:hover {
+	color: var(--color-brand-emphasis);
+}
+
+.hub__hero--page h1 {
+	font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+}
+
+.prof {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+	align-items: start;
+}
+
+.prof__card {
+	padding: 1.15rem 1.25rem;
+	background: var(--bg-surface);
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-lg);
+}
+
+.prof__card h2 {
+	margin: 0 0 0.9rem;
+	font-family: var(--font-ui);
+	font-size: var(--text-2xs);
+	font-weight: 600;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--fg-muted);
+}
+
+/* --- Identity -------------------------------------------------------- */
+.prof__id {
+	display: flex;
+	gap: 0.9rem;
+	align-items: flex-start;
+}
+
+.prof__avatar {
+	display: grid;
+	place-items: center;
+	inline-size: 3rem;
+	block-size: 3rem;
+	flex: 0 0 auto;
+	border-radius: var(--radius-full);
+	border: 2px solid var(--color-brand);
+	background: var(--bg-raised);
+	font-size: 1.4rem;
+	line-height: 1;
+	/* Initials are letters, not an emoji: they need the UI face at a smaller
+	   size or two capitals overflow the circle. */
+	font-family: var(--font-ui);
+	font-weight: 700;
+}
+
+.prof__name {
+	flex: 1;
+	min-inline-size: 0;
+}
+
+.prof__name label {
+	display: block;
+	margin-block-end: 0.3rem;
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+	font-weight: 600;
+	color: var(--fg-secondary);
+}
+
+.prof__row {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.prof__name input {
+	flex: 1;
+	min-inline-size: 0;
+	min-block-size: 44px;
+	padding: 0 0.7rem;
+	font-family: var(--font-ui);
+	font-size: var(--text-sm);
+	color: var(--fg-default);
+	background: var(--bg-raised);
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-md);
+}
+
+.prof__name input:focus-visible {
+	outline: 2px solid var(--color-brand);
+	outline-offset: 1px;
+}
+
+.prof__hint {
+	margin: 0.55rem 0 0;
+	font-family: var(--font-ui);
+	font-size: var(--text-2xs);
+	line-height: var(--leading-normal);
+	color: var(--fg-muted);
+}
+
+.prof__hint code {
+	font-family: var(--font-mono);
+}
+
+/* --- Avatar picker --------------------------------------------------- */
+.prof__emoji {
+	margin: 1rem 0 0;
+	padding: 0;
+	border: 0;
+}
+
+.prof__emoji legend {
+	padding: 0;
+	margin-block-end: 0.45rem;
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+	font-weight: 600;
+	color: var(--fg-secondary);
+}
+
+.prof__emoji-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+.prof__emoji-btn {
+	inline-size: 2.4rem;
+	block-size: 2.4rem;
+	display: grid;
+	place-items: center;
+	font-size: 1.15rem;
+	line-height: 1;
+	background: var(--bg-raised);
+	border: 1px solid var(--border-subtle);
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.prof__emoji-btn:hover {
+	border-color: var(--color-brand);
+}
+
+/* aria-pressed carries the state; this is what shows it. */
+.prof__emoji-btn[aria-pressed='true'] {
+	border-color: var(--color-brand);
+	background: var(--color-brand-muted);
+	box-shadow: inset 0 0 0 1px var(--color-brand);
+}
+
+.prof__emoji-btn--initials {
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+	font-weight: 700;
+	color: var(--fg-secondary);
+}
+
+/* --- Progress -------------------------------------------------------- */
+.prof__total {
+	margin: 0 0 0.9rem;
+	font-family: var(--font-ui);
+	font-size: var(--text-sm);
+	color: var(--fg-secondary);
+}
+
+.prof__total strong {
+	font-size: var(--text-xl);
+	color: var(--color-brand);
+	font-variant-numeric: tabular-nums;
+}
+
+.prof__courses {
+	display: grid;
+	gap: 0.9rem;
+}
+
+.prof__course-head {
+	display: flex;
+	justify-content: space-between;
+	gap: 0.75rem;
+	font-family: var(--font-ui);
+	font-size: var(--text-sm);
+}
+
+.prof__course-head a {
+	color: var(--fg-default);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.prof__course-head a:hover {
+	color: var(--color-brand-emphasis);
+}
+
+.prof__course-head span {
+	color: var(--fg-muted);
+	font-size: var(--text-xs);
+	font-variant-numeric: tabular-nums;
+}
+
+.prof__course-actions {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.75rem;
+	margin-block-start: 0.35rem;
+	font-family: var(--font-ui);
+	font-size: var(--text-2xs);
+}
+
+.prof__course-actions a {
+	color: var(--color-brand-emphasis);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.prof__done {
+	color: var(--color-success, var(--fg-muted));
+	font-weight: 600;
+}
+
+/* --- Buttons that read as links -------------------------------------- */
+.prof__linkish {
+	padding: 0.2rem 0;
+	background: none;
+	border: 0;
+	font-family: inherit;
+	font-size: inherit;
+	color: var(--fg-muted);
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+	cursor: pointer;
+}
+
+.prof__linkish:hover:not(:disabled) {
+	color: var(--fg-default);
+}
+
+.prof__linkish:disabled {
+	opacity: 0.4;
+	cursor: default;
+	text-decoration: none;
+}
+
+.prof__linkish--danger:hover {
+	color: var(--color-danger);
+}
+
+/* Destructive actions confirm in place. A native confirm() cannot be styled
+   and is trivially suppressed by the browser; a modal is a lot of machinery
+   for two buttons. */
+.prof__confirm {
+	display: inline-flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+	font-family: var(--font-ui);
+	font-size: var(--text-2xs);
+	color: var(--fg-secondary);
+}
+
+.prof__confirm button {
+	padding: 0.25rem 0.55rem;
+	font: inherit;
+	font-weight: 600;
+	background: var(--bg-raised);
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-md);
+	color: var(--fg-default);
+	cursor: pointer;
+}
+
+.prof__confirm button:first-of-type {
+	border-color: var(--color-danger);
+	color: var(--color-danger);
+}
+
+/* --- Backup ---------------------------------------------------------- */
+.prof__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-block: 0.9rem 0;
+}
+
+.prof__danger {
+	margin-block-start: 1rem;
+	padding-block-start: 0.9rem;
+	border-block-start: 1px solid var(--border-subtle);
+}
+
+/* --- Status ----------------------------------------------------------
+   One live region for saves, imports and resets alike. It reserves its line
+   whether or not there is a message, so announcing one never shifts the
+   layout under the pointer mid-click. */
+.prof__status {
+	grid-column: 1 / -1;
+	min-block-size: 1.4em;
+	margin: 0;
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+	font-weight: 600;
+}
+
+.prof__status--ok {
+	color: var(--color-success, var(--color-brand-emphasis));
+}
+
+.prof__status--err {
+	color: var(--color-danger);
+}
+
+@media (any-pointer: coarse) {
+	.prof__emoji-btn {
+		inline-size: 44px;
+		block-size: 44px;
+	}
+
+	.prof__linkish,
+	.prof__confirm button {
+		min-block-size: 44px;
+	}
+}
+
+@media (forced-colors: active) {
+	.prof__card {
+		border: 1px solid CanvasText;
+	}
+
+	/* Selection is signalled with brass plus an inset shadow, and the OS
+	   discards both. */
+	.prof__emoji-btn[aria-pressed='true'] {
+		border: 2px solid Highlight;
+	}
+}
+
+/* ================================================================== *
+ * SETTINGS DIALOG
+ *
+ * Replaces the lone theme button that used to sit in the masthead. See the
+ * component header for why: a preference in a navigation slot has no peers to
+ * explain it, and a masthead is where the eye goes for destinations.
+ * ================================================================== */
+.hub__settings {
+	display: grid;
+	place-items: center;
+	inline-size: 40px;
+	block-size: 40px;
+	padding: 0;
+	border-radius: var(--radius-md);
+	border: 1px solid var(--border-default);
+	background: var(--bg-raised);
+	color: var(--fg-secondary);
+	cursor: pointer;
+	transition:
+		color var(--dur-fast) var(--ease-out),
+		border-color var(--dur-fast) var(--ease-out);
+}
+
+.hub__settings:hover {
+	color: var(--color-brand-emphasis);
+	border-color: color-mix(in srgb, var(--color-brand) 50%, var(--border-default));
+}
+
+.hub__settings svg {
+	inline-size: 18px;
+	block-size: 18px;
+}
+
+/* --- The dialog itself ----------------------------------------------
+   A native <dialog>, so the top layer, focus trap, Escape handling and
+   inertness of the page behind all come from the platform. */
+.settings {
+	inline-size: min(28rem, calc(100vw - 2rem));
+	max-block-size: min(40rem, calc(100dvh - 2rem));
+	padding: 0;
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-lg);
+	background: var(--bg-surface);
+	color: var(--fg-body);
+	box-shadow: var(--shadow-xl);
+	overflow: auto;
+}
+
+.settings::backdrop {
+	background: rgb(0 0 0 / 0.5);
+	backdrop-filter: blur(2px);
+}
+
+.settings__inner {
+	display: grid;
+	gap: 1.25rem;
+	padding: 1.25rem;
+}
+
+.settings__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.settings__head h2 {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: var(--text-lg);
+	font-weight: 700;
+	color: var(--fg-default);
+}
+
+.settings__close {
+	inline-size: 32px;
+	block-size: 32px;
+	display: grid;
+	place-items: center;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: var(--radius-md);
+	background: none;
+	color: var(--fg-muted);
+	font-size: var(--text-sm);
+	cursor: pointer;
+}
+
+.settings__close:hover {
+	color: var(--fg-default);
+	border-color: var(--border-default);
+}
+
+.settings__group {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.settings__group h3 {
+	margin: 0;
+	font-family: var(--font-ui);
+	font-size: var(--text-2xs);
+	font-weight: 600;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--fg-muted);
+}
+
+/* --- Theme choices --------------------------------------------------- */
+.settings__choices {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 0.35rem;
+}
+
+.settings__choice {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.35rem;
+	min-block-size: 44px;
+	padding: 0 0.5rem;
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+	font-weight: 600;
+	color: var(--fg-secondary);
+	background: var(--bg-raised);
+	border: 1px solid var(--border-subtle);
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.settings__choice:hover {
+	border-color: var(--color-brand);
+}
+
+/* aria-pressed is the state; this shows it. */
+.settings__choice[aria-pressed='true'] {
+	border-color: var(--color-brand);
+	background: var(--color-brand-muted);
+	color: var(--color-brand-emphasis);
+}
+
+.settings__hint {
+	margin: 0;
+	font-family: var(--font-ui);
+	font-size: var(--text-2xs);
+	line-height: var(--leading-normal);
+	color: var(--fg-muted);
+}
+
+/* --- Switch ---------------------------------------------------------- */
+.settings__switch {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	min-block-size: 44px;
+	font-family: var(--font-ui);
+	font-size: var(--text-sm);
+	color: var(--fg-body);
+	cursor: pointer;
+}
+
+.settings__switch input {
+	inline-size: 1.1rem;
+	block-size: 1.1rem;
+	accent-color: var(--color-brand);
+	cursor: pointer;
+}
+
+.settings__replay {
+	justify-self: start;
+}
+
+.settings__replay:disabled {
+	opacity: 0.55;
+	cursor: default;
+}
+
+.settings__links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	font-family: var(--font-ui);
+	font-size: var(--text-sm);
+}
+
+.settings__links a {
+	color: var(--color-brand-emphasis);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.settings__links a:hover {
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+}
+
+.settings__foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding-block-start: 0.9rem;
+	border-block-start: 1px solid var(--border-subtle);
+	font-family: var(--font-ui);
+	font-size: var(--text-xs);
+}
+
+.settings__foot a {
+	color: var(--fg-muted);
+}
+
+/* --- The motion override --------------------------------------------
+   `data-tmx-motion` is the site-level override the dialog writes. It has to
+   work in BOTH directions: someone can ask for less movement than their system
+   does, or opt back into it. So the animations are keyed on the attribute when
+   it is present, and on the media query only when it is absent — which is what
+   `:root:not([data-tmx-motion])` buys.
+
+   Kept next to the dialog that sets it, rather than filed with the other
+   motion rules, because the two are meaningless apart. */
+:root[data-tmx-motion='reduce'] .hub__mark-caret {
+	animation: none;
+	opacity: 1;
+}
+
+:root[data-tmx-motion='reduce'] .hub__mark-chevron,
+:root[data-tmx-motion='reduce'] .course,
+:root[data-tmx-motion='reduce'] .meter__fill {
+	transition: none;
+}
+
+/* Someone who explicitly asked FOR motion gets it back, even if their OS is
+   set to reduce — that is the whole point of an override. */
+:root[data-tmx-motion='no-preference'] .hub__mark-caret {
+	animation: hub-caret 1.25s steps(1, end) infinite;
+}
+
+@media (any-pointer: coarse) {
+	.hub__settings {
+		inline-size: 44px;
+		block-size: 44px;
+	}
+}
+
+@media (forced-colors: active) {
+	.settings {
+		border: 1px solid CanvasText;
+	}
+
+	.settings__choice[aria-pressed='true'] {
+		border: 2px solid Highlight;
+	}
+}
+
+/* A dialog that animates in is pleasant; one that animates in when the reader
+   asked for stillness is not. */
+@media (prefers-reduced-motion: no-preference) {
+	:root:not([data-tmx-motion='reduce']) .settings[open] {
+		animation: settings-in 180ms var(--ease-out);
+	}
+}
+
+@keyframes settings-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px) scale(0.985);
 	}
 }

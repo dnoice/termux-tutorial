@@ -179,7 +179,10 @@ export default function SeriesDashboard({ courses, base }: Props) {
 						Revisit the beginner course
 					</a>
 				)}
-				<a className="btn" href={`${base}/beginner/progress/`}>
+				{/* The hub owns identity now. This used to send people INTO the
+				    beginner course to edit a profile that is supposed to be theirs
+				    across all three — and edits made there never reached the others. */}
+				<a className="btn" href={`${base}/profile/`}>
 					Manage your profile
 				</a>
 			</div>

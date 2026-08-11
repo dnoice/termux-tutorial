@@ -1,0 +1,53 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SettingsDialog from '../components/SettingsDialog.astro';
+import ProfileManager from '../components/ProfileManager.tsx';
+import { COURSE_MANIFEST } from '../lib/courses.ts';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const TITLE = 'Your profile — Termux Tutorial';
+const DESCRIPTION =
+	'Set the name and avatar used across all three Termux courses, review your progress, and back it up to a file.';
+---
+
+<Layout title={TITLE} description={DESCRIPTION}>
+	<div class="hub hub--page">
+		<header class="hub__top">
+			<a class="hub__mark" href={`${base}/`}>
+				<svg class="hub__mark-icon" viewBox="0 0 34 24" aria-hidden="true" focusable="false">
+					<path
+						class="hub__mark-chevron"
+						d="M3.4 4.2 L6.9 1.2 L18.4 12 L6.9 22.8 L3.4 19.8 L11.7 12 Z"
+					/>
+					<rect class="hub__mark-caret" x="20.5" y="18.4" width="11.5" height="3.4" rx="1.7" />
+				</svg>
+				Termux Tutorial
+			</a>
+			<SettingsDialog base={base} />
+		</header>
+
+		<nav class="hub__crumb" aria-label="Breadcrumb">
+			<a href={`${base}/`}>← All courses</a>
+		</nav>
+
+		<section class="hub__hero hub__hero--page">
+			<h1>Your profile</h1>
+			<p class="hub__lede">
+				One name and avatar for all three courses. Everything here is stored in
+				this browser — there is no account and nothing is sent anywhere.
+			</p>
+		</section>
+
+		{/* client:only for the same reason as the dashboard: this data exists only
+		    in the visitor's browser, so there is nothing to prerender, and a
+		    server-rendered "Guest" flipping to a real name would be a worse first
+		    frame than a one-line skeleton. */}
+		<ProfileManager client:only="react" courses={COURSE_MANIFEST} base={base} />
+
+		<footer class="hub__foot">
+			<span>Built with Astro + Starlight. BSD 3-Clause.</span>
+			<a href="https://github.com/dnoice/termux-tutorial">Source on GitHub</a>
+		</footer>
+	</div>
+</Layout>

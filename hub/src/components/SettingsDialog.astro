@@ -1,0 +1,254 @@
+---
+/*
+ * Settings — a native <dialog>, not a hand-rolled modal.
+ *
+ * WHY IT EXISTS. The theme control used to be a lone icon button in the
+ * masthead. It looked fine, and it never sat right: a masthead is where the eye
+ * goes for "where can I go", and a theme switch is not a destination. It was a
+ * preference wearing navigation's clothes, with no peers to explain it. Given a
+ * settings surface it has a home, and room for the other preferences that had
+ * nowhere to live.
+ *
+ * WHY <dialog>. `showModal()` gives focus trapping, Escape-to-close, inertness
+ * of the page behind, and the top layer — four things that are tedious and
+ * easy to get subtly wrong by hand. The fallback matters too: with no JS the
+ * dialog never opens, and the button is simply absent rather than dead.
+ *
+ * Everything here writes to localStorage keys the whole series already shares,
+ * so a preference set on the hub is in force inside a course and vice versa.
+ */
+interface Props {
+	/** Series root, for the links out. */
+	base: string;
+}
+const { base } = Astro.props;
+---
+
+<button class="hub__settings" type="button" data-settings-open aria-haspopup="dialog">
+	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<circle cx="12" cy="12" r="3"></circle>
+		<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"></path>
+	</svg>
+	<span class="sr-only">Settings</span>
+</button>
+
+<dialog class="settings" data-settings aria-labelledby="settings-title">
+	<form method="dialog" class="settings__inner">
+		<header class="settings__head">
+			<h2 id="settings-title">Settings</h2>
+			<button class="settings__close" type="submit" aria-label="Close settings">✕</button>
+		</header>
+
+		<section class="settings__group">
+			<h3>Appearance</h3>
+			{/* Radios, not a cycling button: three states are worth showing all at
+			    once, and a radio group is the one control a screen reader already
+			    knows how to describe as "one of three". */}
+			<div class="settings__choices" role="radiogroup" aria-label="Theme">
+				<button type="button" class="settings__choice" data-theme-set="light">
+					<span aria-hidden="true">☀</span> Light
+				</button>
+				<button type="button" class="settings__choice" data-theme-set="dark">
+					<span aria-hidden="true">☾</span> Dark
+				</button>
+				<button type="button" class="settings__choice" data-theme-set="auto">
+					<span aria-hidden="true">🖳</span> System
+				</button>
+			</div>
+			<p class="settings__hint" data-theme-hint></p>
+		</section>
+
+		<section class="settings__group">
+			<h3>Motion</h3>
+			<label class="settings__switch">
+				<input type="checkbox" data-motion-toggle />
+				<span>Reduce animation</span>
+			</label>
+			<p class="settings__hint">
+				Your system setting is honoured automatically. This is here for when you
+				want less movement on this site only — or more of it than your system
+				allows.
+			</p>
+			<button type="button" class="btn settings__replay" data-replay>
+				Replay the boot animation
+			</button>
+			<p class="settings__hint">
+				It plays once per visit. This clears that, so the next page load shows
+				it again.
+			</p>
+		</section>
+
+		<section class="settings__group">
+			<h3>Your data</h3>
+			<p class="settings__hint" data-storage-size>Measuring…</p>
+			<div class="settings__links">
+				<a href={`${base}/profile/`}>Profile &amp; backup →</a>
+			</div>
+			<p class="settings__hint">
+				Name, avatar and lesson progress live in this browser only. No account,
+				nothing sent anywhere.
+			</p>
+		</section>
+
+		<footer class="settings__foot">
+			<a href="https://github.com/dnoice/termux-tutorial">Source</a>
+			<button class="btn btn--primary" type="submit">Done</button>
+		</footer>
+	</form>
+</dialog>
+
+<script is:inline>
+	(() => {
+		const dlg = document.querySelector('[data-settings]');
+		const openBtn = document.querySelector('[data-settings-open]');
+		if (!dlg || !openBtn) return;
+
+		const root = document.documentElement;
+		const THEME_KEY = 'starlight-theme'; // shared with the courses, deliberately
+		const MOTION_KEY = 'tmx:motion';
+		const SPLASH_KEY = 'tmx:splash-seen';
+
+		const store = {
+			get(k) {
+				try {
+					return localStorage.getItem(k);
+				} catch {
+					return null;
+				}
+			},
+			set(k, v) {
+				try {
+					localStorage.setItem(k, v);
+					return true;
+				} catch {
+					return false;
+				}
+			},
+			del(k) {
+				try {
+					localStorage.removeItem(k);
+				} catch {
+					/* nothing to do */
+				}
+			},
+		};
+
+		/* --- Theme. Same contract as the courses' ThemeSelect: the KEY holds the
+		   choice (light|dark|auto) and data-theme holds the resolved value, so
+		   Starlight's own pre-paint script agrees with us. */
+		const resolve = (mode) =>
+			mode === 'auto'
+				? matchMedia('(prefers-color-scheme: dark)').matches
+					? 'dark'
+					: 'light'
+				: mode;
+
+		const themeHint = dlg.querySelector('[data-theme-hint]');
+
+		function applyTheme(mode) {
+			root.setAttribute('data-theme', resolve(mode));
+			root.setAttribute('data-tmx-mode', mode);
+			store.set(THEME_KEY, mode);
+			for (const b of dlg.querySelectorAll('[data-theme-set]')) {
+				b.setAttribute('aria-pressed', String(b.dataset.themeSet === mode));
+			}
+			if (themeHint) {
+				themeHint.textContent =
+					mode === 'auto'
+						? `Following your system, which is currently ${resolve('auto')}.`
+						: `Always ${mode}, whatever your system says.`;
+			}
+		}
+
+		for (const b of dlg.querySelectorAll('[data-theme-set]')) {
+			b.addEventListener('click', () => applyTheme(b.dataset.themeSet));
+		}
+		matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+			if ((root.getAttribute('data-tmx-mode') || 'auto') === 'auto') applyTheme('auto');
+		});
+
+		/* --- Motion. The OS preference is authoritative until someone overrides
+		   it HERE; `data-tmx-motion` is what the stylesheet reads, so the override
+		   works in both directions — quieter than the system asked, or louder. */
+		const motionBox = dlg.querySelector('[data-motion-toggle]');
+
+		function applyMotion(pref) {
+			if (pref === null) {
+				root.removeAttribute('data-tmx-motion');
+				store.del(MOTION_KEY);
+			} else {
+				root.setAttribute('data-tmx-motion', pref);
+				store.set(MOTION_KEY, pref);
+			}
+			if (motionBox) {
+				motionBox.checked =
+					pref === 'reduce' ||
+					(pref === null && matchMedia('(prefers-reduced-motion: reduce)').matches);
+			}
+		}
+
+		if (motionBox) {
+			motionBox.addEventListener('change', () => {
+				const systemWants = matchMedia('(prefers-reduced-motion: reduce)').matches;
+				// Clear the override when the choice matches the system again, so the
+				// site keeps following the OS rather than pinning a stale copy of it.
+				const want = motionBox.checked ? 'reduce' : 'no-preference';
+				applyMotion(want === (systemWants ? 'reduce' : 'no-preference') ? null : want);
+			});
+		}
+
+		/* --- Replay the splash. */
+		const replay = dlg.querySelector('[data-replay]');
+		if (replay) {
+			replay.addEventListener('click', () => {
+				try {
+					sessionStorage.removeItem(SPLASH_KEY);
+				} catch {
+					/* nothing to clear */
+				}
+				replay.textContent = 'Cleared — reload to see it';
+				replay.disabled = true;
+			});
+		}
+
+		/* --- How much is stored. Concrete beats "some data". */
+		const sizeEl = dlg.querySelector('[data-storage-size]');
+		function measure() {
+			if (!sizeEl) return;
+			let bytes = 0;
+			let keys = 0;
+			try {
+				for (let i = 0; i < localStorage.length; i++) {
+					const k = localStorage.key(i);
+					if (!k || !k.startsWith('tmx:')) continue;
+					bytes += k.length + (localStorage.getItem(k) || '').length;
+					keys++;
+				}
+			} catch {
+				sizeEl.textContent = 'This browser is blocking storage, so nothing is saved.';
+				return;
+			}
+			sizeEl.textContent = keys
+				? `${keys} item${keys === 1 ? '' : 's'}, about ${Math.max(1, Math.round(bytes / 1024))} KB in this browser.`
+				: 'Nothing saved yet.';
+		}
+
+		/* --- Open / close. */
+		openBtn.addEventListener('click', () => {
+			applyTheme(store.get(THEME_KEY) || 'auto');
+			applyMotion(store.get(MOTION_KEY));
+			measure();
+			dlg.showModal();
+		});
+
+		// Clicking the backdrop closes it. <dialog> reports backdrop clicks as
+		// clicks on the dialog itself, so compare against the inner panel.
+		dlg.addEventListener('click', (e) => {
+			if (e.target === dlg) dlg.close();
+		});
+
+		// Restore the initial state on load, before anyone opens anything.
+		applyTheme(store.get(THEME_KEY) || 'auto');
+		applyMotion(store.get(MOTION_KEY));
+	})();
+</script>
