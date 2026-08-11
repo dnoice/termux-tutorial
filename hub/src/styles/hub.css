@@ -424,6 +424,82 @@ body::before {
 	font-size: 1.2rem;
 	line-height: 1;
 	flex: 0 0 auto;
+	/* It is a link now, so it needs to look reachable without shouting. */
+	text-decoration: none;
+	color: inherit;
+	position: relative;
+
+	/*
+	 * Animate box-shadow and transform ONLY. Both are composited, so the ring
+	 * can breathe without ever triggering layout — which matters here more than
+	 * usual: this sits in a grid track sized `auto`, and animating anything
+	 * geometric would reflow the name and the percentage beside it on every
+	 * frame.
+	 */
+	transition:
+		box-shadow var(--dur-normal) var(--ease-out),
+		border-color var(--dur-normal) var(--ease-out),
+		transform var(--dur-normal) var(--ease-out);
+}
+
+/*
+ * The halo. A second ring drawn OUTSIDE the border, expanding from nothing —
+ * `box-shadow` spread rather than an extra element, so there is nothing to
+ * position and nothing to hide from assistive tech.
+ *
+ * Two rings rather than one: a tight bright edge and a wider soft one. A single
+ * shadow at this size reads as a blur; the pair reads as a ring with light
+ * behind it, which is the difference between "glowing" and "smudged".
+ */
+.dash__avatar:hover,
+.dash__avatar:focus-visible {
+	border-color: var(--color-brand-emphasis);
+	transform: scale(1.06);
+	box-shadow:
+		0 0 0 3px color-mix(in srgb, var(--color-brand) 30%, transparent),
+		0 0 0 7px color-mix(in srgb, var(--color-brand) 10%, transparent);
+	outline: none;
+}
+
+/* Touch never hovers, so the press is the only feedback available. */
+.dash__avatar:active {
+	transform: scale(0.98);
+}
+
+/* The halo is decoration; the ring itself is the affordance. Under reduced
+   motion the colour still changes — feedback survives, movement does not. */
+@media (prefers-reduced-motion: reduce) {
+	:root:not([data-tmx-motion='no-preference']) .dash__avatar {
+		transition: border-color var(--dur-fast) var(--ease-out);
+	}
+
+	:root:not([data-tmx-motion='no-preference']) .dash__avatar:hover,
+	:root:not([data-tmx-motion='no-preference']) .dash__avatar:focus-visible,
+	:root:not([data-tmx-motion='no-preference']) .dash__avatar:active {
+		transform: none;
+	}
+}
+
+/* Same again for the site-level override, which can ask for stillness even
+   when the OS has not. */
+:root[data-tmx-motion='reduce'] .dash__avatar {
+	transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+:root[data-tmx-motion='reduce'] .dash__avatar:hover,
+:root[data-tmx-motion='reduce'] .dash__avatar:focus-visible,
+:root[data-tmx-motion='reduce'] .dash__avatar:active {
+	transform: none;
+}
+
+/* box-shadow is discarded in forced-colors, so the halo simply would not
+   exist. Give focus something the OS will actually draw. */
+@media (forced-colors: active) {
+	.dash__avatar:hover,
+	.dash__avatar:focus-visible {
+		outline: 2px solid Highlight;
+		outline-offset: 2px;
+	}
 }
 
 .dash__who {
