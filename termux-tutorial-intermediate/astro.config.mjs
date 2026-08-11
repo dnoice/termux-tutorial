@@ -688,6 +688,23 @@ export default defineConfig({
 		rehypePlugins: [rehypeBasePaths],
 	},
 	vite: {
+		/*
+		 * A UNIQUE HMR WEBSOCKET PATH, so this project can be told apart behind
+		 * the monorepo's single-port dev proxy (scripts/dev.mjs).
+		 *
+		 * Vite's default is `/`, which means every project in this repo would
+		 * tell the browser to open `ws://<host>:<port>/`. Four identical socket
+		 * URLs behind one proxy cannot be routed, so every connection would land
+		 * on whichever project owns `/` — and Vite 7 stamps a per-server token on
+		 * the handshake, so the mis-routed ones are rejected outright rather than
+		 * merely confused. The symptom is nasty precisely because it is partial:
+		 * one project hot-reloads, the rest silently stop, with nothing in the
+		 * terminal and one line in the browser console.
+		 *
+		 * Must match `hmrPathOf()` in scripts/projects.mjs. Running this course
+		 * standalone is unaffected — the client reads the same value either way.
+		 */
+		server: { hmr: { path: '/@hmr/intermediate' } },
 		ssr: {
 			// xterm's Node entry (`main`) is UMD, so `import { Terminal }` fails
 			// under SSR. noExternal tells Vite to bundle it and honour the ESM

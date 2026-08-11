@@ -30,11 +30,13 @@
  * Run it locally after assembling:  node scripts/check-assembled-links.mjs _site
  */
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join, relative, dirname, resolve, posix } from 'node:path';
+import { join, relative, dirname, resolve } from 'node:path';
+import { COURSES, SERIES_BASE } from './projects.mjs';
 
 const ROOT = resolve(process.argv[2] ?? '_site');
-/** The series base — the path GitHub Pages serves the assembled tree from. */
-const BASE = process.env.BASE ?? '/termux-tutorial';
+const BASE = SERIES_BASE;
+/** Slot names, from the manifest — never a second hand-written list. */
+const SLOTS = COURSES.map((c) => c.slot);
 
 if (!existsSync(ROOT)) {
 	console.error(`✗ No assembled tree at ${ROOT}. Build and assemble first.`);
@@ -84,7 +86,7 @@ for (const file of pages) {
 	const html = readFileSync(file, 'utf8');
 	/** Which slot this page lives in — '' for the hub, else 'beginner' etc. */
 	const slot = relative(ROOT, dirname(file)).split(/[\\/]/)[0] ?? '';
-	const owner = ['beginner', 'intermediate', 'advanced'].includes(slot) ? slot : '';
+	const owner = SLOTS.includes(slot) ? slot : '';
 
 	for (const m of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
 		const url = m[1];
@@ -105,9 +107,7 @@ for (const file of pages) {
 		const rel = pathPart.slice(BASE.length) || '/';
 		// Which slot does this link point INTO?
 		const targetSlot = rel.replace(/^\//, '').split('/')[0] ?? '';
-		const targetOwner = ['beginner', 'intermediate', 'advanced'].includes(targetSlot)
-			? targetSlot
-			: '';
+		const targetOwner = SLOTS.includes(targetSlot) ? targetSlot : '';
 		if (targetOwner !== owner) crossCount++;
 
 		if (!targetExists(rel)) {

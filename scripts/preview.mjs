@@ -24,9 +24,16 @@
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, extname, resolve, normalize } from 'node:path';
+import { PROJECTS, SERIES_BASE, baseOf } from './projects.mjs';
 
 const ROOT = resolve(process.argv[2] ?? '_site');
-const BASE = process.env.BASE ?? '/termux-tutorial';
+const BASE = SERIES_BASE;
+/*
+ * The same default port as `npm run dev`, deliberately: the URL you visit is
+ * identical whether you are running the live dev proxy or previewing the built
+ * artifact. Only one can hold the port at a time, and the EADDRINUSE handler
+ * below says which.
+ */
 const PORT = Number(process.env.PORT ?? 4321);
 
 if (!existsSync(ROOT)) {
@@ -117,11 +124,12 @@ server.on('error', (err) => {
 });
 
 server.listen(PORT, () => {
-	console.log(`\n  Assembled series preview — serving ${ROOT}\n`);
-	console.log(`  Hub           http://localhost:${PORT}${BASE}/`);
-	console.log(`  Profile       http://localhost:${PORT}${BASE}/profile/`);
-	console.log(`  Beginner      http://localhost:${PORT}${BASE}/beginner/`);
-	console.log(`  Intermediate  http://localhost:${PORT}${BASE}/intermediate/`);
-	console.log(`  Advanced      http://localhost:${PORT}${BASE}/advanced/`);
-	console.log(`\n  Cross-course links and the series switcher work here.\n`);
+	console.log(`\n  ${'─'.repeat(58)}`);
+	console.log(`  Termux Tutorial series — built artifact, as Pages will serve it`);
+	console.log(`  ${'─'.repeat(58)}\n`);
+	console.log(`    →  http://localhost:${PORT}${BASE}/\n`);
+	for (const p of PROJECTS) {
+		console.log(`    · ${p.label.padEnd(13)} http://localhost:${PORT}${baseOf(p)}/`);
+	}
+	console.log(`\n  No live reload — this is the built output. Use \`npm run dev\` to edit.\n`);
 });

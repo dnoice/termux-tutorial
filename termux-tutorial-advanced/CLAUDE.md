@@ -10,13 +10,34 @@ records the decisions that are easy to undo by accident.
 `AGENTS.md` points here. Keep the knowledge in this file only, so the two
 cannot drift apart.
 
-## Run commands from this directory
+## Where to run npm
 
-The repo root for `npm` purposes is `termux-tutorial-advanced/` — the directory
-holding `package.json` and `node_modules`. Its parent, `termux-tutorials/`, is
-the MONOREPO ROOT: it holds the git repository, the hub, the two sibling
-courses, the shared `global-docs/`, and the **one** deploy workflow. `npm`
-commands run **here**, not there.
+**The monorepo root now has a `package.json`, and it is the normal place to
+work.** `npm run dev` there starts all four projects behind ONE port and ONE
+URL — `http://localhost:4321/termux-tutorial/` — routed by the same path
+prefixes GitHub Pages uses. That is the only configuration in which the series
+switcher and cross-course links resolve; a single course's dev server cannot
+serve them, because they are absolute paths into siblings that do not exist in
+its tree.
+
+| Where | Command | For |
+| :---- | :------ | :-- |
+| root | `npm run dev` | Everything, one URL. The normal one. |
+| root | `npm run build` | All four + assemble + cross-course link check |
+| root | `npm run check` | Typecheck all four |
+| here | `npm run build` | This course alone — curriculum guard, build, link check |
+| here | `npm run check` | This course alone |
+
+This directory still holds its own `package.json`, `node_modules` and lockfile,
+and the guards below are still this course's own. The root is an orchestrator,
+**not** an npm workspace: hoisting would put four projects' Astro/Vite/xterm
+resolutions in one tree, and the xterm SSR alias resolves through Node's own
+resolver precisely because that resolution is load-bearing.
+
+The four-project topology lives in `scripts/projects.mjs` at the root. It used
+to be written by hand in `deploy.yml`, the README and each course's link
+checker — four copies of one fact, which is the shape of every drift bug this
+repo has produced.
 
 Git lives at the monorepo root, not in this directory (`.git` is one level up).
 The baseline for this course is the commit

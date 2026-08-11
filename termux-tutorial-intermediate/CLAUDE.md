@@ -9,11 +9,30 @@ editing; it records the decisions that are easy to undo by accident.
 `AGENTS.md` points here. Keep the knowledge in this file only, so the two
 cannot drift apart.
 
-## Run commands from this directory
+## Where to run npm
 
-The repo root (the directory holding `package.json`) is
-`termux-tutorial-intermediate/`. Its parent is the MONOREPO ROOT, holding the
-sibling courses, the shared `global-docs/`, and the one deploy workflow. `npm` commands run **here**, not there.
+**The monorepo root has a `package.json`, and it is the normal place to work.**
+`npm run dev` there starts all four projects behind ONE port and ONE URL —
+`http://localhost:4321/termux-tutorial/` — routed by the same path prefixes
+GitHub Pages uses. That is the only configuration in which the series switcher
+and cross-course links resolve: they are absolute paths into sibling courses,
+which do not exist in this project's own dev tree.
+
+| Where | Command | For |
+| :---- | :------ | :-- |
+| root | `npm run dev` | Everything, one URL. The normal one. |
+| root | `npm run build` | All four + assemble + cross-course link check |
+| root | `npm run check` | Typecheck all four |
+| here | `npm run build` | This course alone — curriculum guard, build, link check |
+| here | `npm run check` | This course alone |
+
+This directory keeps its own `package.json`, `node_modules` and lockfile, and
+the guards described below are still its own. The root is an orchestrator, **not**
+an npm workspace: hoisting would merge four projects' Astro/Vite/xterm
+resolutions into one tree, and the xterm SSR alias resolves through Node's own
+resolver precisely because that resolution is load-bearing.
+
+The four-project topology lives in `scripts/projects.mjs` at the root.
 
 The repo is under git as of 2026-08-10, with a baseline commit taken before any
 multi-agent workflow runs. Standing rule: commit a clean baseline BEFORE

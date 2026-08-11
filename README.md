@@ -68,50 +68,73 @@ They are independent projects that happen to ship together.
   Obsidian (dark), brass gold as the single accent. Plain CSS with tokens; no
   framework.
 
-## Working on a course
+## Running it — one command, one URL
 
-`npm` commands run **inside a course directory**, never at this root:
+Everything runs **from this root**. There is one address to remember, and it is
+the same path GitHub Pages serves:
+
+```bash
+npm run install:all     # once — installs all four projects
+npm run dev             # → http://localhost:4321/termux-tutorial/
+```
+
+That starts all four dev servers on internal ports and puts a reverse proxy in
+front of them, routing by the same path prefixes production uses. **The URL in
+your address bar is character-for-character the production URL**, the series
+switcher works, cross-course links resolve, and live reload is proxied so edits
+in any of the four projects still hot-reload. Ctrl-C stops all four.
+
+| From the root | What it does |
+| :------------ | :----------- |
+| `npm run dev` | All four dev servers behind one URL. **This is the normal one.** |
+| `npm run build` | Builds all four, assembles `_site/`, verifies every cross-course link |
+| `npm run preview` | Serves the built `_site/` at the same URL — what Pages will actually serve |
+| `npm run check` | Typechecks all four (`astro build` does **not** typecheck) |
+| `npm run check:links` | Cross-course link check alone, against an existing `_site/` |
+| `npm run check:hmr` | Each project's HMR path matches what the proxy routes |
+| `npm run install:all` | `npm install` in all four |
+
+**Live reload needed one non-obvious thing.** Vite builds its HMR WebSocket URL
+from `server.hmr.path`, not from the page's base — and the default is `/`, so
+all four dev servers would tell the browser to open `ws://localhost:4321/`. Four
+identical URLs cannot be routed, and Vite 7 stamps a per-server token on the
+handshake, so the three that reached the wrong server would be *rejected*. The
+symptom is the nasty kind: the hub hot-reloads, the three courses silently stop,
+and nothing appears in any terminal. Each project therefore declares a unique
+`vite.server.hmr.path` (`/@hmr/<id>`), and `npm run check:hmr` — which also runs
+in CI — fails if a config and the manifest ever disagree.
+
+The four-project layout lives in **`scripts/projects.mjs`** and nowhere else.
+Adding a course is one entry there — the dev proxy, the assembler, the link
+checker and CI all read it. It used to be spelled out by hand in `deploy.yml`,
+in this README, and in each course's link checker, which is precisely the shape
+of every drift bug this repo has produced: a fact that must be edited in four
+places, where nothing fails if you edit three.
+
+### Working inside one course
+
+You can still drive a single project directly, and the per-course guards are
+where the detail lives:
 
 ```bash
 cd termux-tutorial-for-beginners
-npm install
-npm run dev      # http://localhost:4321/termux-tutorial/beginner/
 npm run build    # curriculum guard + astro build + link check
-npm run check    # typecheck (astro build does NOT typecheck)
+npm run check    # typecheck
 ```
 
-Read that course's `CLAUDE.md` first. Both are long and both are load-bearing —
-they record the decisions that are expensive to undo by accident.
+Read that course's `CLAUDE.md` first. They are long and load-bearing — they
+record the decisions that are expensive to undo by accident.
 
 Adding a lesson means registering its slug in three places — `src/lib/progress.ts`,
 the `sidebar` array in `astro.config.mjs`, and the `<LessonComplete slug="…">` in
 the lesson. `scripts/check-curriculum.mjs` fails the build if they disagree.
 
-## Previewing the whole series
-
-A dev server serves **one** project at **one** base. The series switcher and
-every cross-course link are absolute paths that only line up once all four
-projects sit in one tree — so those links 404 on a dev server while being
-perfectly correct in production. Verify them by assembling, the way Pages does:
-
-```bash
-# From this root, after `npm run build` in each of the four projects
-rm -rf _site && cp -r hub/dist _site
-for p in beginner:termux-tutorial-for-beginners \
-         intermediate:termux-tutorial-intermediate \
-         advanced:termux-tutorial-advanced; do
-  mkdir -p "_site/${p%%:*}" && cp -r "${p##*:}/dist/." "_site/${p%%:*}/"
-done
-
-node scripts/check-assembled-links.mjs _site   # the only check that sees across courses
-PORT=4400 node scripts/preview.mjs _site       # click the switcher for real
-```
-
-`check-assembled-links.mjs` is the guard that **cannot** live in a course. Each
-course's own `check-links.mjs` walks its own `dist/` and is blind to its
-siblings, so it defers cross-course links; this resolves them. It runs in
-`deploy.yml` too, but running it locally is the point — a broken cross-course
-link should not be something you discover from a failed deploy.
+One thing a single course **cannot** check: links into its siblings. Each
+course's `check-links.mjs` walks its own `dist/` and is blind across the
+boundary, so it *defers* those links; `scripts/check-assembled-links.mjs`
+resolves them against the assembled tree. That guard cannot live inside a
+course, and it is why a broken cross-course link should never be something you
+discover from a failed deploy.
 
 ## Before deploying
 

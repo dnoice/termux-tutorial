@@ -1,0 +1,42 @@
+{
+	"name": "termux-tutorial",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"description": "A three-part interactive Termux course series — one repository, one GitHub Pages site, one URL.",
+	"homepage": "https://dnoice.github.io/termux-tutorial/",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/dnoice/termux-tutorial.git"
+	},
+	"author": "dnoice",
+	"license": "MIT",
+	"engines": {
+		"node": ">=20"
+	},
+	"//": [
+		"THIS IS AN ORCHESTRATOR, NOT A WORKSPACE. It has no dependencies of its",
+		"own and deliberately does NOT declare npm workspaces: hoisting a shared",
+		"node_modules would put the four projects' Astro/Vite/xterm resolutions in",
+		"one tree, and the xterm SSR alias in each course resolves through Node's",
+		"own resolver (createRequire) precisely because that resolution is load-",
+		"bearing. Each project keeps its own node_modules and its own lockfile;",
+		"these scripts just stop you having to visit four directories to use them.",
+		"",
+		"Every script reads the four-project topology from scripts/projects.mjs, so",
+		"adding a course is one edit there rather than four edits spread across",
+		"this file, deploy.yml, and the README."
+	],
+	"scripts": {
+		"dev": "node scripts/check-hmr.mjs && node scripts/dev.mjs",
+		"start": "node scripts/dev.mjs",
+		"build": "node scripts/assemble.mjs --build && node scripts/check-assembled-links.mjs _site",
+		"assemble": "node scripts/assemble.mjs",
+		"preview": "node scripts/preview.mjs _site",
+		"check": "node scripts/each.mjs run check",
+		"check:hmr": "node scripts/check-hmr.mjs",
+		"check:links": "node scripts/check-assembled-links.mjs _site",
+		"install:all": "node scripts/each.mjs install",
+		"clean": "node scripts/each.mjs run clean --if-present"
+	}
+}

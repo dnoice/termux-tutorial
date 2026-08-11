@@ -59,6 +59,14 @@ jobs:
             termux-tutorial-intermediate/package-lock.json
             termux-tutorial-advanced/package-lock.json
 
+      # Cheap, dependency-free, and guards a failure that is otherwise silent:
+      # the single-port dev proxy routes HMR sockets by each project's
+      # `server.hmr.path`, so a project whose astro.config disagrees with
+      # scripts/projects.mjs simply stops hot-reloading, with nothing in any
+      # terminal. It costs nothing to check here and an afternoon to find by hand.
+      - name: Check HMR routing consistency
+        run: node scripts/check-hmr.mjs
+
       # --------------------------------------------------------------------- hub
       - name: Install — hub
         working-directory: hub
@@ -118,39 +126,26 @@ jobs:
         run: npm run build
 
       # ---------------------------------------------------------------- assemble
+      #
+      # Both steps run the SAME scripts a developer runs locally, and both read
+      # the four-project layout from scripts/projects.mjs. This used to be the
+      # layout written out a third time in inline shell, which meant CI could
+      # assemble the site differently from every local machine and nothing would
+      # say so. It also meant assembly existed only here — so the one
+      # arrangement in which cross-course links resolve was the one nobody could
+      # reproduce before pushing.
       - name: Assemble the site
-        run: |
-          set -euo pipefail
-          rm -rf _site
-          # The hub is the root of the published site.
-          cp -r hub/dist _site
-          # Each course nests under it, at the path its own `base` expects.
-          for course in beginner:termux-tutorial-for-beginners                         intermediate:termux-tutorial-intermediate                         advanced:termux-tutorial-advanced; do
-            seg="${course%%:*}"; dir="${course##*:}"
-            mkdir -p "_site/$seg"
-            cp -r "$dir/dist/." "_site/$seg/"
-            echo "  $seg: $(find "_site/$seg" -name '*.html' | wc -l) pages"
-          done
-          echo "Assembled $(find _site -name '*.html' | wc -l) HTML pages total."
+        run: node scripts/assemble.mjs
 
-          # Fail loudly rather than deploying half a site. Each of these is a
-          # page a visitor can reach from the hub's own markup, so a missing one
-          # is a broken link on the front door.
-          for must in index.html beginner/index.html intermediate/index.html advanced/index.html; do
-            test -f "_site/$must" || { echo "MISSING: _site/$must"; exit 1; }
-          done
-
-          # Cross-course links resolve ONLY in the assembled tree — no course's
-          # own check-links.mjs can see a sibling, so they defer them here.
-          #
-          # This used to be an inline script that read _site/index.html and
-          # nothing else: one page out of forty-five, and the one least likely
-          # to be wrong, since the hub generates its links from a manifest.
-          # Every hand-authored cross-course link in every lesson went
-          # unchecked. The script walks the whole tree, and it lives in the repo
-          # so it can be run locally against a local assembly rather than only
-          # discovered to be failing here, after a push.
-          node scripts/check-assembled-links.mjs _site
+      # Cross-course links resolve ONLY in the assembled tree — no course's own
+      # check-links.mjs can see a sibling, so each one defers them to this.
+      #
+      # The previous check read _site/index.html and nothing else: one page out
+      # of forty-five, and the one least likely to be wrong, since the hub
+      # generates its links from a manifest. Every hand-authored cross-course
+      # link in every lesson went unchecked.
+      - name: Verify cross-course links
+        run: node scripts/check-assembled-links.mjs _site
 
       - name: Configure Pages
         if: github.event_name != 'pull_request'
