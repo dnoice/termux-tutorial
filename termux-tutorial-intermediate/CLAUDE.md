@@ -45,10 +45,16 @@ All three courses live in the same repository —
 Pages site, assembled by `.github/workflows/deploy.yml` at the repo root:
 
 ```text
-_site/                 <- beginner      (base /termux-tutorial)
-_site/intermediate/    <- intermediate  (base /termux-tutorial/intermediate)
-_site/advanced/        <- advanced, when it exists
+_site/                 <- the hub       (base /termux-tutorial)
+_site/beginner/        <- course one    (base /termux-tutorial/beginner)
+_site/intermediate/    <- this course   (base /termux-tutorial/intermediate)
+_site/advanced/        <- course three  (base /termux-tutorial/advanced)
 ```
+
+The hub owns the site root. This tree used to show the beginner course there and
+described advanced as "when it exists" — both true before the hub was built and
+before course three shipped. `scripts/projects.mjs` at the monorepo root is the
+one place the layout is declared; prefer it over any prose, including this.
 
 Pages publishes one artifact per repository, which is why the courses cannot
 each deploy themselves. Each keeps its own `package.json`, guards and `base`;
@@ -57,9 +63,12 @@ they are independent projects that ship together.
 Two consequences worth holding on to:
 
 - **This course's link checker cannot see its siblings.** Cross-course links
-  resolve only after assembly, so `scripts/check-links.mjs` carries an explicit
-  `SIBLING_COURSES` allowlist. Add a course when it starts being assembled and
-  not before — an entry for an undeployed course turns a real 404 into a pass.
+  resolve only after assembly, so `scripts/check-links.mjs` recognises them and
+  **defers** them: `COURSE_SEGMENTS` lists the assembled courses explicitly (so a
+  typo in the segment is still caught) and `SIBLING_PREFIXES` is derived from it.
+  Deferred is not skipped — `scripts/check-assembled-links.mjs` at the monorepo
+  root resolves them against the assembled tree, where all four projects exist at
+  once. Add a course when it starts being assembled and not before.
 - **The storage keys must stay distinct.** One origin, several paths, and
   `localStorage` is scoped to the origin. Sharing a key makes each course
   overwrite the other's progress and profile, silently.
@@ -72,25 +81,31 @@ unified with the beginner course's `tmx:beginners:v1`.**
 `src/lib/progress.ts` line 10. It looks like a copy-paste leftover from the
 port. It is the opposite: it is the fix.
 
-Both courses ship to **paths on one origin** —
-`dnoice.github.io/termux-tutorial` and
-`dnoice.github.io/termux-tutorial-intermediate` — and `localStorage` is scoped
-to the origin, not the path. A shared key means both sites read and write the
-same object: ticking a lesson here overwrites the beginner course's `completed`
-array with slugs it does not recognise, and the profile name and avatar
-ping-pong between the two courses. There is no error, no warning, and no
-recovery — the learner just finds their other course blank.
+All four projects ship to **paths under one origin AND one base directory** —
+`dnoice.github.io/termux-tutorial/{,beginner/,intermediate/,advanced/}` — and
+`localStorage` is scoped to the origin, not the path. That makes this *more*
+dangerous than it was when the courses were separate repos, not less. A shared
+key means every one of them reads and writes the same object: ticking a lesson
+here overwrites another course's `completed` array with slugs it does not
+recognise, and the profile name and avatar ping-pong between them. There is no
+error, no warning, and no recovery — the learner just finds their other course
+blank.
 
 The same separation runs through the export/import format. `EXPORT_KIND` is
-`termux-intermediate-progress` against the beginner's
-`termux-beginners-progress`, and `importProgress()` rejects the wrong file *by
+`termux-intermediate-progress` against `termux-beginners-progress` and
+`termux-advanced-progress`, and `importProgress()` rejects the wrong file *by
 name* ("That's a JSON file, but not a Termux: Intermediate progress file")
 rather than accepting it and silently pruning every slug. The likeliest wrong
 file a learner will pick is the other course's export, so it gets a real
 message.
 
-If a future pass adds course three, it needs a third key. `v1` is a schema
-version, not a course counter — bump it only when the stored *shape* changes.
+Course three exists and has its own key (`tmx:advanced:v1`). `v1` is a schema
+version, not a course counter — bump it only when the stored *shape* changes,
+never to distinguish a course.
+
+The hub reads all three keys and writes the shared profile back into each of
+them (`hub/src/lib/store.ts`). That is the payoff for keeping them distinct, and
+another reason not to "consolidate" them.
 
 **One key is correctly shared and should stay that way:** `starlight-theme`.
 Light/dark is a preference about a site that visibly looks like one site; it
@@ -116,7 +131,7 @@ should carry across. The rule is not "never share storage", it is "never share
   mirrored in `FONT_FACES`, or the face simply will not load.
 - **No CSS framework, and no `@layer`.** See "Do not undo" below, which is the
   single most expensive thing on this page to get wrong. Styling is plain CSS
-  with tokens in `src/styles/global.css` (~2,650 lines).
+  with tokens in `src/styles/global.css`.
 
 ## Architecture
 
@@ -201,7 +216,7 @@ Dossier (light) and Sentinel Obsidian (dark).
   `--bg-*`, `--fg-*`, `--color-*`, `--border-*`, `--shadow-*`, `--text-*`,
   `--leading-*`, `--space-block`, `--radius-*`.
 - **Brass is the only accent.** `--color-brand` is the single warm anchor
-  (`#d4b15c` dark, `#8b6914` light). Do not introduce a second hue. Semantic
+  (`#d4b15c` dark, `#886713` light). Do not introduce a second hue. Semantic
   colours (`--color-success/danger/warning/info`) are for state only, never
   decoration.
 - **Terminal surfaces are dark in both themes.** `--tmx-screen` (`#0e1014`),
@@ -269,9 +284,11 @@ source of truth. The array is.
 
 ### 2. Base paths — one plugin, two blind spots
 
-`base` is **`/termux-tutorial-intermediate`** (the beginner course is
-`/termux-tutorial`; they are different repos on the same origin). Content links
-are authored root-relative (`/bridge/api-setup/`) and `rehypeBasePaths` in
+`base` is **`/termux-tutorial/intermediate`**. The hub owns `/termux-tutorial`
+and the sibling courses sit alongside this one at `/termux-tutorial/beginner`
+and `/termux-tutorial/advanced` — one repository, one Pages site, four
+projects. Content links are authored root-relative (`/bridge/api-setup/`) and
+`rehypeBasePaths` in
 `astro.config.mjs` prefixes `BASE` at build time. Never hardcode the base into
 content. The plugin only sees anchors the Markdown pipeline produced, so it
 misses:
@@ -286,9 +303,10 @@ misses:
 Both blind spots fail the same way: a 200 in dev, a 404 on GitHub Pages.
 
 `scripts/check-links.mjs` resolves BASE the same way the config does
-(`process.env.BASE ?? '/termux-tutorial-intermediate'`) rather than hardcoding
-it, after the ported copy said `/termux-tutorial` and reported all 323 correctly
-prefixed links as unprefixed.
+(`process.env.BASE ?? '/termux-tutorial/intermediate'`) rather than hardcoding
+it, after a ported copy carried the wrong literal and reported every correctly
+prefixed link as unprefixed. **Both files hold a copy of the base path; change
+one and change the other.**
 
 ### 3. The xterm SSR alias
 
@@ -483,8 +501,6 @@ and the `visualViewport` handler already own the geometry. It is deliberately
 
 ## Known issues — verified, unfixed
 
-
-
 ### `markdown.rehypePlugins` is deprecated
 
 Every `astro build` and every `astro check` prints:
@@ -536,9 +552,10 @@ migration — so fix that checker's BASE first) rather than as a drive-by.
   actually references (`termux_linux_elements.svg` is one: BootSplash inlines
   it).
 - `tsconfig.json` extends `astro/tsconfigs/strict`. `typescript` and
-  `@astrojs/check` **are** installed and `npm run check` is green (0 errors, 0
-  warnings, 0 hints over 19 files); CI runs it before the build, so a type error
-  does fail the pipeline. `astro build` on its own still does not typecheck —
+  `@astrojs/check` **are** installed and `npm run check` is green; CI runs it
+  before the build, so a type error does fail the pipeline. (The file count and
+  error tally are not quoted here on purpose — they are command output, they
+  drift, and three documents in this repo already disagreed about them.) `astro build` on its own still does not typecheck —
   run `npm run check` yourself.
 - `npm run build` first runs `scripts/check-curriculum.mjs`, which fails the
   build if the `sidebar` array, `LESSONS`, the `.mdx` files and the

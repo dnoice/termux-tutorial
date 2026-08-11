@@ -36,12 +36,12 @@ Progress and profile live in `localStorage` under the key
 **`tmx:intermediate:v1`**. The beginner course uses **`tmx:beginners:v1`**. The
 two keys must never be reconciled, because:
 
-- both courses are published as *paths on one origin* —
-  `dnoice.github.io/termux-tutorial` and
-  `dnoice.github.io/termux-tutorial-intermediate`;
+- all four projects are published as *paths under one origin and one base
+  directory* — `dnoice.github.io/termux-tutorial/` for the hub, then
+  `/beginner/`, `/intermediate/` and `/advanced/`;
 - `localStorage` is scoped to the **origin**, not the path.
 
-So a single shared key would make the two courses read and write the same
+So a single shared key would make every course read and write the same
 object. Finishing a lesson here would silently overwrite the beginner course's
 completed list with slugs it has never heard of, and the learner's profile name
 and avatar would ping-pong between the two sites. Nothing would error; progress
@@ -126,7 +126,15 @@ workspace that contains the sibling courses and the shared `global-docs/`.
 
 ```bash
 npm install
-npm run dev        # http://localhost:4321/termux-tutorial-intermediate
+npm run dev        # http://localhost:4321/termux-tutorial/intermediate/
+```
+
+Or, from the **monorepo root**, run all four projects behind one URL — the only
+configuration in which the series switcher and cross-course links resolve:
+
+```bash
+npm run install:all
+npm run dev        # http://localhost:4321/termux-tutorial/
 ```
 
 | Command | Action |
@@ -186,10 +194,11 @@ over the emitted HTML in `dist/`, and fails it when:
   failure of a raw `<a href>` in MDX or a link written in frontmatter, both of
   which `rehypeBasePaths` cannot reach.
 
-That script hardcodes `BASE` at the top to match `base` in `astro.config.mjs`.
-**If you change one, change the other** — and note that this repo's copy is
-currently wrong, which is the one thing standing between it and a green build.
-See [Known issues](CLAUDE.md#known-issues--verified-unfixed) in CLAUDE.md.
+That script resolves `BASE` as `process.env.BASE ?? '/termux-tutorial/intermediate'`,
+matching how `astro.config.mjs` resolves it, so `BASE=/preview npm run build`
+stays honest. Both files still hold a copy of that literal: **change one and
+change the other**, or the checker reports every correctly-prefixed link as
+unprefixed.
 
 A third guard runs inside the build itself:
 [`BootSplash.astro`](src/components/splash/BootSplash.astro) tags parts of an
@@ -234,18 +243,16 @@ shipping a lesson that is navigable but uncountable. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for the full recipe and
 [CLAUDE.md](CLAUDE.md) for the architecture and house rules.
 
-## Unfinished content
+## Reference pages
 
-Two pages are deliberate stubs, created so the sidebar entries, the links out of
-the progress dashboard and the build's link check all resolve:
+`src/content/docs/reference/cheatsheet.md` and `.../troubleshooting.md` are
+**written**, from the finished lessons — the cheatsheet ordered to match the
+curriculum and linking back to the lesson that teaches each command, the
+troubleshooting page ordered by how often a failure actually happens, opening
+with the `termux-*` hang that is this course's signature failure.
 
-- `src/content/docs/reference/cheatsheet.md`
-- `src/content/docs/reference/troubleshooting.md`
-
-Both are meant to be written **last**, from the finished lessons — the
-cheatsheet as one section per lesson in sidebar order, the troubleshooting page
-from the failures the lessons actually produce. Each file carries an HTML
-comment listing what belongs in it.
+They were stubs while the lessons were being written, and this section used to
+say so.
 
 ## Deployment
 
@@ -266,7 +273,7 @@ deployment can leave the site half-published.
 Enable Pages under **Settings → Pages → Build and deployment → GitHub Actions**.
 
 The site path is configured in `astro.config.mjs` via `site`
-(`https://dnoice.github.io`) and `base` (`/termux-tutorial-intermediate`),
+(`https://dnoice.github.io`) and `base` (`/termux-tutorial/intermediate`),
 either of which the `SITE` / `BASE` environment variables override for a fork or
 custom domain. Content links are authored root-relative
 (`/bridge/api-setup/`) and a `rehypeBasePaths` plugin prefixes `base` at build

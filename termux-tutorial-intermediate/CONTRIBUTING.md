@@ -60,11 +60,9 @@ node scripts/check-curriculum.mjs && astro build && node scripts/check-links.mjs
 Either one exits non-zero and takes the build with it. Read the failure — both
 print the exact slug or URL at fault — rather than working around the guard.
 
-> **Heads up:** the build currently fails in the link checker for a reason that
-> has nothing to do with your change. `scripts/check-links.mjs` still holds the
-> beginner course's base path. See the Known issues section of
-> [CLAUDE.md](CLAUDE.md) for the one-line fix. If you see 300-odd
-> "missing the base prefix" errors, that is this, not you.
+> **If the link checker fails, it is your change.** It passes on a clean tree.
+> This note used to warn that `scripts/check-links.mjs` held the wrong base path
+> and reported every correctly-prefixed link as unprefixed; that is fixed.
 
 ## Adding a lesson
 
@@ -132,9 +130,13 @@ any `#fragment` naming an `id` the target page does not have, and any
 root-relative internal URL that never picked up the `base` prefix. Run it alone
 with `npm run check:links` (it needs an existing `dist/`).
 
-**Linking to the sibling courses** — those are separate sites, so use absolute
-URLs, not root-relative ones. `where-next.mdx` keeps them in one place at the
-top of the file rather than scattered through the prose.
+**Linking to the sibling courses** — they are paths in the same deployed site,
+not separate sites, so build the URL from `BASE_URL` rather than hardcoding an
+absolute one. `where-next.mdx` shows the pattern: derive `SERIES_ROOT` from
+`base`, keep the URLs in one object at the top of the file, and let
+`scripts/check-assembled-links.mjs` verify them after assembly. Absolute
+`https://dnoice.github.io/...` links are invisible to every guard in the repo,
+which is how two of them rotted into 404s.
 
 ### Using the interactive components
 

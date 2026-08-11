@@ -44,9 +44,10 @@ Verified 2026-08-11:
 
 - **`npm run build` passes.** Curriculum guard green (9 lessons), 14 HTML pages
   built, link checker green — 0 broken links, 0 missing base prefixes.
-- **`npm run check` fails: 3 errors, 0 warnings, 0 hints over 20 files.** CI
-  runs it as a gate before the build, so the monorepo pipeline is red until they
-  are fixed. All three are one-line fixes in files that are not documentation:
+- **`npm run check` passes.** CI runs it as a gate before the build, so a type
+  error here reddens the pipeline for the whole monorepo, not just this course.
+  Three port-drift errors came across from course two and were fixed; CLAUDE.md
+  records what they were, because the next port will reproduce the pattern:
   1. `src/lib/progress.ts:152` — the `ProgressExport` interface still declares
      `kind: 'termux-intermediate-progress'` while `EXPORT_KIND` (line 159) is
      `'termux-advanced-progress'`. Two errors, ts(2322) and ts(2367), from one
@@ -114,8 +115,8 @@ Each is written out in CLAUDE.md; this is the index so you know to go look.
   own repository. The baseline for this course is
   `20d3884 Scaffold the advanced course: PRoot, X11, GPU, builds`. Commit a
   clean baseline before launching a multi-agent workflow.
-- Two gates must go green: `npm run check` (currently 3 errors — see above) and
-  `npm run build` (currently passing). When a guard fails, read the error and
+- Two gates must go green: `npm run check` and `npm run build` — both pass
+  today. When a guard fails, read the error and
   fix the drift; both print the exact slug or URL at fault.
 - Courses one and two are assumed knowledge, not material to repeat. `pkg`,
   `~/storage`, fish, sessions, the extra-keys row, scripts, `termux-api` and

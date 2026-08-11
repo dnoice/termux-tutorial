@@ -8,7 +8,7 @@
  * arrangement that has produced every drift bug in this repo.
  *
  * WHAT MAKES THIS ONE WORTH A GUARD is how it fails. A mismatched path does not
- * error: the socket is routed to the wrong project, Vite 7 rejects it on its
+ * error: the socket is routed to the wrong project, Vite rejects it on its
  * per-server token, and that project simply stops hot-reloading. Nothing
  * appears in the terminal. You get one line in a browser console, in one of
  * four projects, and the natural conclusion is "HMR is flaky" rather than "a

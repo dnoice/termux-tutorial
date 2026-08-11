@@ -36,7 +36,7 @@ export const SERIES_BASE = process.env.BASE ?? '/termux-tutorial';
  * `server.hmr.path`, default `"/"` — so out of the box every one of these four
  * dev servers tells the browser to open `ws://<host>:<port>/`. Four identical
  * URLs behind one proxy cannot be told apart, so every socket would land on
- * whichever project owns `/`, and Vite 7 stamps a per-server token on the
+ * whichever project owns `/`, and Vite stamps a per-server token on the
  * handshake, so the three that arrived at the wrong server would be rejected
  * rather than merely confused. The visible symptom is subtle and awful: the hub
  * hot-reloads, the three courses silently do not, and nothing reports an error

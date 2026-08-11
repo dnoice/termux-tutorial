@@ -204,7 +204,7 @@ const server = createServer((req, res) => {
  * IT CANNOT BE ROUTED BY THE PAGE PATH. Vite's HMR URL is built from
  * `server.hmr.path`, NOT from the page's base — so with Vite's default of `/`,
  * all four projects tell the browser to open `ws://<host>:<port>/`. Identical
- * URLs are unroutable, and Vite 7 adds a per-server `?token=`, so a socket that
+ * URLs are unroutable, and Vite adds a per-server `?token=`, so a socket that
  * reaches the wrong project is rejected rather than silently wrong. Each
  * project therefore declares a unique `hmr.path` (see hmrPathOf), and that path
  * is what identifies the owner here.

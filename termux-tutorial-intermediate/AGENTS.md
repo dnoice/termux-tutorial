@@ -85,7 +85,10 @@ Each is written out in CLAUDE.md; this is the index so you know to go look.
 
 - Run npm from the repo root (the directory holding `package.json`), never from
   the `termux-tutorials/` parent workspace.
-- **The repo is not under version control yet.** There is no undo. Be
+- **Git lives at the monorepo root**, one level up from this course, with a
+  baseline commit taken before any multi-agent workflow run. Standing rule:
+  commit a clean baseline BEFORE launching a workflow, so a run that goes
+  sideways is one `git checkout` from recoverable. Be
   correspondingly careful with deletes and bulk rewrites.
 - Two gates must stay green: `npm run check` (typecheck, currently 0/0/0 over 19
   files) and `npm run build`. When a guard fails, read the error and fix the

@@ -16,8 +16,8 @@ Pages site**.
 | :--- | :--- | :--- | :--- |
 | **Hub** | `hub/` | `/termux-tutorial/` | The front door + cross-course dashboard |
 | **Beginner** | `termux-tutorial-for-beginners/` | `/termux-tutorial/beginner/` | 11 lessons — audited, complete |
-| **Intermediate** | `termux-tutorial-intermediate/` | `/termux-tutorial/intermediate/` | 8 lessons — audited, fixes in progress |
-| **Advanced** | `termux-tutorial-advanced/` | `/termux-tutorial/advanced/` | Not started |
+| **Intermediate** | `termux-tutorial-intermediate/` | `/termux-tutorial/intermediate/` | 8 lessons — audited, complete |
+| **Advanced** | `termux-tutorial-advanced/` | `/termux-tutorial/advanced/` | 9 lessons — complete, technically reviewed |
 
 Shared documentation — audits, walkthroughs, curriculum strategy — lives in
 [`global-docs/`](global-docs/README.md). Each course has its own `README.md`,
@@ -39,7 +39,7 @@ assembles them:
 _site/                 <- the hub (the front door)
 _site/beginner/        <- course 1
 _site/intermediate/    <- course 2
-_site/advanced/        <- course 3, when it exists
+_site/advanced/        <- course 3
 ```
 
 The hub reads each course's `LESSONS` array **from disk at build time** for its
@@ -97,19 +97,24 @@ in any of the four projects still hot-reload. Ctrl-C stops all four.
 **Live reload needed one non-obvious thing.** Vite builds its HMR WebSocket URL
 from `server.hmr.path`, not from the page's base — and the default is `/`, so
 all four dev servers would tell the browser to open `ws://localhost:4321/`. Four
-identical URLs cannot be routed, and Vite 7 stamps a per-server token on the
+identical URLs cannot be routed, and Vite stamps a per-server token on the
 handshake, so the three that reached the wrong server would be *rejected*. The
 symptom is the nasty kind: the hub hot-reloads, the three courses silently stop,
 and nothing appears in any terminal. Each project therefore declares a unique
 `vite.server.hmr.path` (`/@hmr/<id>`), and `npm run check:hmr` — which also runs
 in CI — fails if a config and the manifest ever disagree.
 
-The four-project layout lives in **`scripts/projects.mjs`** and nowhere else.
-Adding a course is one entry there — the dev proxy, the assembler, the link
-checker and CI all read it. It used to be spelled out by hand in `deploy.yml`,
-in this README, and in each course's link checker, which is precisely the shape
-of every drift bug this repo has produced: a fact that must be edited in four
-places, where nothing fails if you edit three.
+The four-project layout is **declared** in [`scripts/projects.mjs`](scripts/projects.mjs).
+The dev proxy, the assembler, the cross-course link checker and the HMR guard
+all read it, so adding a course is one entry there *for those tools*.
+
+**Two places still hold the layout by hand and must be updated with it:**
+`.github/workflows/deploy.yml` (its cache-dependency paths and its per-project
+install/typecheck/build steps) and `hub/src/lib/courses.ts` (which enumerates
+the course ids it renders). Nothing fails if you update the manifest and forget
+those — which is exactly the drift shape this repo keeps producing, and why this
+paragraph no longer claims the manifest is the only copy. Making CI derive its
+matrix from `projects.mjs` is the obvious fix and has not been done.
 
 ### Working inside one course
 
@@ -146,17 +151,26 @@ discover from a failed deploy.
 
 ## Two things that will bite
 
-**Storage keys are deliberately not shared.** Every course is a path on one
-origin, and `localStorage` is scoped to the origin, not the path. Beginner uses
-`tmx:beginners:v1`, intermediate `tmx:intermediate:v1`. A well-meaning
+**Storage keys are deliberately not shared.** Every project is a path under one
+origin *and one base directory*, and `localStorage` is scoped to the origin, not
+the path. Beginner uses `tmx:beginners:v1`, intermediate `tmx:intermediate:v1`,
+advanced `tmx:advanced:v1`; the hub reads all three and writes the shared profile
+back into each. A well-meaning
 consolidation would make each course silently overwrite the other's progress and
 profile. `starlight-theme` is correctly shared — the rule is never share
 *progress*, not never share storage.
 
 **A course's link checker cannot see its siblings.** Cross-course links resolve
-only in the assembled site, so `scripts/check-links.mjs` carries an explicit
-`SIBLING_COURSES` allowlist. Add a course when it starts being assembled and not
-before: an entry for an undeployed course turns a real 404 into a silent pass.
+only in the assembled site, so each course's `scripts/check-links.mjs`
+recognises them and **defers** them: `COURSE_SEGMENTS` lists the assembled
+courses explicitly (so a typo in the segment is still caught) and
+`SIBLING_PREFIXES` is derived from it. Add a course when it starts being
+assembled and not before: an entry for an undeployed course turns a real 404
+into a silent pass.
+
+Deferred is not skipped. `scripts/check-assembled-links.mjs` resolves those
+links against the assembled tree — the only place all four projects exist at
+once — and it runs both in CI and from `npm run build` at this root.
 
 ## What this site knows about you
 

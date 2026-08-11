@@ -44,10 +44,17 @@ All three courses live in the same repository —
 Pages site, assembled by `.github/workflows/deploy.yml` at the repo root:
 
 ```text
-_site/                 <- beginner      (base /termux-tutorial)
-_site/intermediate/    <- intermediate  (base /termux-tutorial/intermediate)
-_site/advanced/        <- advanced, when it exists
+_site/                 <- the hub       (base /termux-tutorial)
+_site/beginner/        <- this course   (base /termux-tutorial/beginner)
+_site/intermediate/    <- course two    (base /termux-tutorial/intermediate)
+_site/advanced/        <- course three  (base /termux-tutorial/advanced)
 ```
+
+The hub owns the site root; this course sits at `/termux-tutorial/beginner`.
+The tree here used to put this course at the root and describe advanced as not
+yet existing — both true before the hub was built and before course three
+shipped. `scripts/projects.mjs` at the monorepo root declares the layout; prefer
+it over any prose, including this.
 
 Pages publishes one artifact per repository, which is why the courses cannot
 each deploy themselves. Each keeps its own `package.json`, guards and `base`;
@@ -56,9 +63,12 @@ they are independent projects that ship together.
 Two consequences worth holding on to:
 
 - **This course's link checker cannot see its siblings.** Cross-course links
-  resolve only after assembly, so `scripts/check-links.mjs` carries an explicit
-  `SIBLING_COURSES` allowlist. Add a course when it starts being assembled and
-  not before — an entry for an undeployed course turns a real 404 into a pass.
+  resolve only after assembly, so `scripts/check-links.mjs` recognises them and
+  **defers** them: `COURSE_SEGMENTS` lists the assembled courses explicitly (so a
+  typo in the segment is still caught), `SIBLING_PREFIXES` is derived from it.
+  Deferred is not skipped — `scripts/check-assembled-links.mjs` at the monorepo
+  root resolves them against the assembled tree. Add a course when it starts
+  being assembled and not before.
 - **The storage keys must stay distinct.** One origin, several paths, and
   `localStorage` is scoped to the origin. Sharing a key makes each course
   overwrite the other's progress and profile, silently.
@@ -111,7 +121,7 @@ src/components/
   overrides/ThemeSelect.astro   replaces Starlight's theme <select>
 src/lib/progress.ts     localStorage store + LESSONS (curriculum totals)
 src/lib/useProgress.ts  React hook over the store's pub/sub
-src/styles/global.css   the whole design system (~2,650 lines)
+src/styles/global.css   the whole design system
 src/styles/print.css    the paper edition; listed LAST in customCss so it wins
 public/fonts/           eight latin woff2 faces, written by `npm run fonts:sync`
 public/og-default.png   the 1200x630 social card (og-default.svg is its source)
@@ -132,7 +142,7 @@ Dossier (light) and Sentinel Obsidian (dark).
   `--bg-*`, `--fg-*`, `--color-*`, `--border-*`, `--shadow-*`, `--text-*`,
   `--leading-*`, `--space-block`, `--radius-*`.
 - **Brass is the only accent.** `--color-brand` is the single warm anchor
-  (`#d4b15c` dark, `#8b6914` light). Do not introduce a second hue. Semantic
+  (`#d4b15c` dark, `#886713` light). Do not introduce a second hue. Semantic
   colours (`--color-success/danger/warning/info`) are for state only, never
   decoration.
 - **Terminal surfaces are dark in both themes.** `--tmx-screen`,
@@ -288,9 +298,18 @@ all under `prefers-reduced-motion`, and **fails open** — the markup ships
 `hidden` and an inline pre-paint script reveals it, so no JS means no curtain.
 `.tmx-splash[hidden] { display: none }` in `global.css` is what keeps that last
 guarantee true, because the component's own `display: grid` would otherwise beat
-the UA sheet's `hidden`. The ~4.4 s teardown timer is derived from the CSS
-delays; change one and change the other. (The component's header comment still
-says "~3.8s" — the timer is the honest number.)
+the UA sheet's `hidden`.
+
+**Do not quote a total runtime for this splash.** The component derives it: one
+`T` object of phase durations produces BOTH the CSS custom properties and the
+teardown delay, so the "change one, change the other" hazard this section used
+to warn about no longer exists — that is the whole point of the rewrite. Read
+`T` and `teardownAt` in the component if you need the number.
+
+Note that the **intermediate and advanced copies are an older revision** of this
+component: they still hardcode `setTimeout(end, 4400)` alongside a header
+claiming ~3.8 s, which is the hand-synced version this one replaced. Porting
+this file forward would fix that; it is a code change, not a doc change.
 
 ### 7. The terminal is built for a phone, and that shows up in five places
 
@@ -337,8 +356,10 @@ the instructions above it. Two decisions inside that are not obvious:
   to the top of the viewport would let the instructions scroll away behind it,
   which is the failure being fixed.
 
-The sticky rule is gated to `(min-width: 72rem) and (min-height: 46rem) and
-(pointer: fine)` — phones keep the plain stacked flow, where the soft keyboard
+The sticky rule is gated to `(width >= 72rem) and (height >= 46rem) and
+(any-pointer: fine)`. **`any-pointer`, not `pointer`** — a laptop with a
+touchscreen reports a coarse primary pointer while still having a mouse, and
+`pointer: fine` would exclude it. Phones keep the plain stacked flow, where the soft keyboard
 and the `visualViewport` handler already own the geometry. It is deliberately
 *not* gated on `prefers-reduced-motion`: sticky is a position, not an animation.
 
@@ -446,9 +467,11 @@ migration) rather than as a drive-by.
   internal link that never got the `base` prefix. That is the guard for gotcha
   #2 — all of those are a 200 in dev and a 404 on Pages, so nothing else catches
   them. Run it alone with `npm run check:links` (it needs an existing `dist/`).
-- `scripts/check-links.mjs` hardcodes `BASE` at the top to match `base` in
-  `astro.config.mjs`. Change one and change the other, or the checker starts
-  reporting every correctly-prefixed link as unprefixed.
+- `scripts/check-links.mjs` resolves `BASE` as `process.env.BASE ?? '<literal>'`,
+  matching how `astro.config.mjs` resolves it, so `BASE=/preview npm run build`
+  stays honest. Both files still hold a copy of that literal: change one and
+  change the other, or the checker reports every correctly-prefixed link as
+  unprefixed.
 
 ## Astro reference
 

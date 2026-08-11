@@ -62,13 +62,12 @@ failure here reddens the whole pipeline.
 `tsconfig.json` extends `astro/tsconfigs/strict` and that is enforced:
 `typescript` and `@astrojs/check` are installed.
 
-> **Heads up:** `npm run check` currently reports **3 errors** for reasons that
-> have nothing to do with your change — two from a stale literal type in
-> `src/lib/progress.ts` and one from a dead `unbuilt` branch in
-> `src/components/overrides/SiteTitle.astro`. See
-> [Known issues](CLAUDE.md#known-issues--verified-unfixed) in CLAUDE.md for the
-> exact fix for each. If you see exactly those three, that is this, not you —
-> and fixing them is a welcome PR of its own.
+> **If `npm run check` fails, it is your change.** It passes on a clean tree.
+> This note used to warn about three pre-existing errors inherited from the
+> port off course two; they are fixed. CLAUDE.md still records what they were,
+> because the shape of them — a file copied from a sibling with the identity
+> edits applied to some lines and not others — is what the next port will
+> produce.
 
 `npm run build` runs two guard scripts around the build itself:
 

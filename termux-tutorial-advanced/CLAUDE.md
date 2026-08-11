@@ -78,12 +78,16 @@ that breaks it, and the damage is invisible until a learner loses a course.
 `v1` is a schema version, not a course counter — bump it only when the stored
 *shape* changes, never to distinguish a course.
 
-The same separation is *intended* for the export/import format. `EXPORT_KIND`
-is `termux-advanced-progress` (line 159) against the siblings'
-`termux-beginners-progress` / `termux-intermediate-progress`. **That separation
-is currently half-applied and it is a live typecheck failure** — see
-[Known issues](#known-issues--verified-unfixed) below before you touch that
-file.
+The same separation runs through the export/import format: `EXPORT_KIND` is
+`termux-advanced-progress`, against the siblings' `termux-beginners-progress`
+and `termux-intermediate-progress`.
+
+That constant arrived from course two half-updated, and the interface that had
+to match it did not — two hand-synced string literals, which a port is
+guaranteed to separate. It is fixed: `ProgressExport['kind']` now reads
+`typeof EXPORT_KIND`, so there is ONE string and the next port changes it once.
+No line number is quoted here, because the fix moved the declaration and the
+old pointer stopped landing.
 
 **One key is correctly shared and should stay that way:** `starlight-theme`.
 Light/dark is a preference about a site that visibly *is* one site; it should
@@ -263,9 +267,12 @@ way through is a lesson you have not learned. It is a trust bug, not a missing
 feature.
 
 `index.mdx` states this out loud in a section called **"No practice terminal in
-this course"**, and five lesson files (`why-proot`, `first-distro`,
-`living-in-it`, `xfce`, `building`) carry inline MDX comments recording that the
-omission is deliberate. Do not delete those comments, and do not add a terminal.
+this course"**, and six lesson files carry inline MDX comments recording that
+the omission is deliberate: `why-proot`, `first-distro`, `living-in-it`,
+`x11-server`, `xfce`, `building`. Note that five of them open with the literal
+string `No <TermuxTerminal>` and `x11-server` says the same thing in different
+words — so grepping for the marker finds five and under-counts. Do not delete
+those comments, and do not add a terminal.
 
 The ported components stay on disk because deleting them is a bigger, riskier
 diff than leaving them, and because a future lesson that *is* plain POSIX shell
@@ -441,8 +448,7 @@ Three things about that are load-bearing:
   `scripts/check-assembled-links.mjs` at the **monorepo root**, which walks the
   assembled tree where all four projects exist at once.
 
-This was an exact-match set of the four course *roots* until 2026-08-11, which
-allowed `/termux-tutorial/beginner/` and rejected
+This was an exact-match set of the four course *roots*, which allowed `/termux-tutorial/beginner/` and rejected
 `/termux-tutorial/beginner/start/why-termux/` — it permitted only the least
 useful cross-course link there is. **The cost was invisible and real:** the
 agent writing `container/why-proot` hit the rejection, concluded deep
@@ -474,8 +480,12 @@ into each course and **`const CURRENT = 'advanced'` is the only line that differ
 between copies.** Starlight's own `<Default>` still renders inside it, so the
 site name, the home link and the logo slot survive.
 
-It also carries a dead `c.unbuilt` branch that no `COURSES` entry declares. That
-is one of the three live typecheck errors — see Known issues.
+It used to carry a `c.unbuilt` ternary for courses that had not shipped yet.
+Course three shipping removed the last `unbuilt: true`, which left a branch that
+could never be taken and a property no entry declared — one typecheck error in
+each of the three copies of this file. The branch is gone from all three. If a
+fourth course is ever staged, restore it **together with** the flag on the
+entry rather than leaving a permanently-false test behind.
 
 ### 6. Progress is local, optional, and portable
 
@@ -629,9 +639,10 @@ migration) rather than as a drive-by.
   reference; treat them as staging, not as shipped assets.
 - `tsconfig.json` extends `astro/tsconfigs/strict`. `typescript` and
   `@astrojs/check` **are** installed, and CI runs `npm run check` as a gate
-  before the build — so the three errors above will fail the pipeline for the
-  whole monorepo, not just this course. `astro build` on its own does not
-  typecheck; run `npm run check` yourself.
+  before the build — so a type error here fails the pipeline for the **whole
+  monorepo**, not just this course. That is worth remembering before shipping a
+  half-finished port. `astro build` on its own does not typecheck; run
+  `npm run check` yourself.
 - `npm run build` first runs `scripts/check-curriculum.mjs`, which fails the
   build if the `sidebar` array, `LESSONS`, the `.mdx` files and the
   `<LessonComplete slug="…">` strings disagree. It also asserts the frontmatter

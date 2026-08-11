@@ -23,9 +23,10 @@
  *     _site/advanced/      course three
  *
  * WHAT THIS REPLACES. The deploy workflow used to check the hub's `index.html`
- * and nothing else — one file out of forty-five, and the one file least likely
- * to be wrong, since it is generated from a manifest. Every hand-authored link
- * in every lesson went unchecked. This walks the whole tree.
+ * and nothing else — a single file, and the one least likely to be wrong, since
+ * it is generated from a manifest. Every hand-authored link in every lesson went
+ * unchecked. This walks the whole tree and reports the totals it actually
+ * counted, so no figure here can go stale.
  *
  * Run it locally after assembling:  node scripts/check-assembled-links.mjs _site
  */

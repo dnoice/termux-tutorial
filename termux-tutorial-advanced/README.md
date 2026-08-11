@@ -242,8 +242,13 @@ Verified 2026-08-11.
 and `LESSONS` in agreement, 14 pages build, and the link checker finds 0 broken
 links and 0 missing base prefixes across all 14.
 
-**`npm run check` fails: 3 errors, 0 warnings, 0 hints over 20 files.** All three
-are leftovers of the port from course two, and all three are one-line fixes:
+**`npm run check` passes: 0 errors.** It did not when this course was first
+scaffolded — three port-drift errors came across from course two and are
+recorded, with their causes, in CLAUDE.md's Known issues. CI runs `npm run check`
+as a gate before the build, so a type error here reddens the pipeline for the
+whole monorepo.
+
+The three that were fixed, kept here because the next port will reproduce them:
 
 - `src/lib/progress.ts` — the `ProgressExport` interface still declares
   `kind: 'termux-intermediate-progress'` while `EXPORT_KIND` is

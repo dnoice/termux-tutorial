@@ -12,7 +12,7 @@
 	"author": "dnoice",
 	"license": "MIT",
 	"engines": {
-		"node": ">=20"
+		"node": ">=22.12.0"
 	},
 	"//": [
 		"THIS IS AN ORCHESTRATOR, NOT A WORKSPACE. It has no dependencies of its",
@@ -25,7 +25,13 @@
 		"",
 		"Every script reads the four-project topology from scripts/projects.mjs, so",
 		"adding a course is one edit there rather than four edits spread across",
-		"this file, deploy.yml, and the README."
+		"this file, deploy.yml, and the README.",
+		"",
+		"engines.node tracks what Astro 7 actually requires (its own package.json",
+		"declares >=22.12.0). It previously said >=20, which no project here can",
+		"satisfy: CI pins Node 22 so CI was fine, but this file is the only Node",
+		"statement a local contributor ever sees, and it permitted a version Astro",
+		"refuses. If Astro's floor moves, move this with it."
 	],
 	"scripts": {
 		"dev": "node scripts/check-hmr.mjs && node scripts/dev.mjs",

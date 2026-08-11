@@ -7,16 +7,28 @@
 #   _site/                   <- the hub    (base /termux-tutorial)
 #   _site/beginner/          <- course 1   (base /termux-tutorial/beginner)
 #   _site/intermediate/      <- course 2   (base /termux-tutorial/intermediate)
-#   _site/advanced/          <- course 3
+#   _site/advanced/          <- course 3   (base /termux-tutorial/advanced)
+#
+# That layout is DECLARED in scripts/projects.mjs, which assemble.mjs and the
+# link checker below both read. The tree above is a copy for readability, and
+# the per-project steps further down are a second copy: adding a course means
+# editing the manifest AND this file. Nothing enforces that pairing yet.
 #
 # The HUB is the site root: it is the front door, and the only page that can
 # see all three courses at once. Each course keeps its own package.json, its
 # own guards and its own base — they are independent projects that ship
 # together.
 #
-# NOTE: Pages from a PRIVATE repository requires GitHub Pro or higher. On the
-# free plan this workflow will build and then fail at the deploy step until the
-# repo is public.
+# TWO SETTINGS OUTSIDE THIS FILE MUST BE RIGHT, and both fail here rather than
+# where you would look for them:
+#
+#   1. Settings -> Pages -> Source must be "GitHub Actions". If Pages has never
+#      been enabled, `actions/configure-pages` fails inside the BUILD job with
+#      "Get Pages site failed" — before the deploy job starts at all, which is
+#      why a green build log can still end in a red run.
+#   2. Pages from a PRIVATE repository requires GitHub Pro or higher.
+#
+# These are independent. Fixing one does not clear the other.
 name: Deploy to GitHub Pages
 
 on:
@@ -49,8 +61,11 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          # Astro 7 requires ^20.19 || ^22.12 || >=24. Pinned, so a runner image
-          # bump cannot break the build with no change to this repo.
+          # Astro 7 declares engines.node >= 22.12.0 (checked against the
+          # installed astro package, not its docs). Pinned, so a runner image
+          # bump cannot break the build with no change to this repo. Keep this
+          # in step with `engines.node` in the root package.json, which is the
+          # only Node requirement a local contributor sees.
           node-version: 22
           cache: npm
           cache-dependency-path: |
@@ -140,10 +155,11 @@ jobs:
       # Cross-course links resolve ONLY in the assembled tree — no course's own
       # check-links.mjs can see a sibling, so each one defers them to this.
       #
-      # The previous check read _site/index.html and nothing else: one page out
-      # of forty-five, and the one least likely to be wrong, since the hub
-      # generates its links from a manifest. Every hand-authored cross-course
-      # link in every lesson went unchecked.
+      # The previous check read _site/index.html and nothing else — a single
+      # page, and the one least likely to be wrong, since the hub generates its
+      # links from a manifest. Every hand-authored cross-course link in every
+      # lesson went unchecked. This walks the whole tree and prints its own
+      # counts, so no total is quoted here.
       - name: Verify cross-course links
         run: node scripts/check-assembled-links.mjs _site
 

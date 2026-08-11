@@ -651,7 +651,7 @@ export default defineConfig({
 		 * Vite's default is `/`, which means every project in this repo would
 		 * tell the browser to open `ws://<host>:<port>/`. Four identical socket
 		 * URLs behind one proxy cannot be routed, so every connection would land
-		 * on whichever project owns `/` — and Vite 7 stamps a per-server token on
+		 * on whichever project owns `/` — and Vite stamps a per-server token on
 		 * the handshake, so the mis-routed ones are rejected outright rather than
 		 * merely confused. The symptom is nasty precisely because it is partial:
 		 * one project hot-reloads, the rest silently stop, with nothing in the
