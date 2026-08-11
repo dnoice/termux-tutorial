@@ -23,7 +23,26 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 	<div class="hub">
 		<header class="hub__top">
 			<a class="hub__mark" href={`${base}/`}>
-				<span>&gt;_</span>
+				{/*
+				 * The prompt mark, as geometry rather than type.
+				 *
+				 * It was `<span>&gt;_</span>` — two unrelated glyphs from a
+				 * proportional face, so the chevron and the underscore sat on
+				 * different baselines at different optical weights and the pair
+				 * read as disjointed beside a 700-weight wordmark. Text also gave
+				 * no way to size them relative to each other, or to animate.
+				 *
+				 * As an SVG the two shapes are drawn to one grid, scale with the
+				 * wordmark via `em`, take their colour from `currentColor`, and
+				 * the caret can blink the way a real one does.
+				 */}
+				<svg class="hub__mark-icon" viewBox="0 0 34 24" aria-hidden="true" focusable="false">
+					<path
+						class="hub__mark-chevron"
+						d="M3.4 4.2 L6.9 1.2 L18.4 12 L6.9 22.8 L3.4 19.8 L11.7 12 Z"
+					/>
+					<rect class="hub__mark-caret" x="20.5" y="18.4" width="11.5" height="3.4" rx="1.7" />
+				</svg>
 				Termux Tutorial
 			</a>
 			<button class="hub__theme" type="button" aria-live="polite" aria-label="Toggle theme">
@@ -41,6 +60,7 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 			</button>
 		</header>
 
+		<div class="hub__band hub__band--lead">
 		<section class="hub__hero">
 			<h1>Linux on the phone in your pocket</h1>
 			<p class="hub__lede">
@@ -50,12 +70,16 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 			</p>
 		</section>
 
-		<h2>Your progress</h2>
-		{/* client:only — progress is per-browser, so there is nothing meaningful to
-		    prerender, and a server-rendered 0% flipping to 45% on hydration is a
-		    worse first frame than a one-line skeleton. */}
-		<SeriesDashboard client:only="react" courses={COURSE_MANIFEST} base={base} />
+		<section class="hub__panel">
+			<h2>Your progress</h2>
+			{/* client:only — progress is per-browser, so there is nothing meaningful
+			    to prerender, and a server-rendered 0% flipping to 45% on hydration
+			    is a worse first frame than a one-line skeleton. */}
+			<SeriesDashboard client:only="react" courses={COURSE_MANIFEST} base={base} />
+		</section>
+		</div>
 
+		<section class="hub__section hub__section--courses">
 		<h2>Courses</h2>
 		<p class="hub__note">
 			Each assumes the one before it. Used a terminal before? Skim Beginner and
@@ -94,10 +118,12 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 				)
 			}
 		</div>
+		</section>
 
+		<div class="hub__band hub__band--tail">
 		{
 			REFERENCES.length > 0 && (
-				<>
+				<section class="hub__section">
 					<h2>Reference</h2>
 					<p class="hub__note">For when you want the flag you forgot, not a lesson.</p>
 					<ul class="hub__links">
@@ -107,7 +133,7 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 							</li>
 						))}
 					</ul>
-				</>
+				</section>
 			)
 		}
 
@@ -118,6 +144,7 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 			documented where it happens: booting the optional Debian sandbox fetches
 			it from Leaning Technologies, and only when you click.
 		</p>
+		</div>
 
 		<footer class="hub__foot">
 			<span>Built with Astro + Starlight. BSD 3-Clause.</span>

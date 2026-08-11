@@ -501,7 +501,7 @@ body::after {
 }
 
 /* Honour reduced-data / small screens: fixed cover is janky on mobile. */
-@media (max-width: 50rem) {
+@media (width < 50rem) {
 	body::before {
 		background-attachment: scroll;
 	}
@@ -932,7 +932,7 @@ h1#_top {
 	opacity: 1;
 }
 /* Touch has no hover, so rest state IS the only state there. */
-@media (pointer: coarse) {
+@media (any-pointer: coarse) {
 	.expressive-code .copy button {
 		opacity: 1;
 	}
@@ -979,7 +979,7 @@ h1#_top {
 	min-width: 100%;
 	max-width: 100%;
 }
-@media (min-width: 50rem) {
+@media (width >= 50rem) {
 	.sl-markdown-content table:not(:where(.not-content *)) {
 		display: table;
 		width: 100%;
@@ -1043,7 +1043,7 @@ h1#_top {
 /* Phone: the scrollport needs to say it scrolls. Two `local` covers painted
    over two `scroll` shadows — the covers travel with the content, so each
    shadow only shows while there is more table left on that side. */
-@media (max-width: 49.99rem) {
+@media (width < 50rem) {
 	.sl-markdown-content table:not(:where(.not-content *)) {
 		--_edge: color-mix(in srgb, var(--fg-default) 24%, transparent);
 		overflow-x: auto;
@@ -1439,7 +1439,7 @@ h1#_top {
 	letter-spacing: 0.04em;
 	color: var(--fg-muted);
 }
-@media (max-width: 30rem) {
+@media (width < 30rem) {
 	.tmx-terminal__os {
 		display: none;
 	}
@@ -1642,7 +1642,7 @@ html[data-splash] {
    another. Only engage where there is genuinely room: tall viewports, on
    pointer devices. Phones keep the plain stacked flow, where the soft keyboard
    and the visualViewport handler already own the geometry. */
-@media (min-width: 72rem) and (min-height: 46rem) and (pointer: fine) {
+@media (width >= 72rem) and (height >= 46rem) and (any-pointer: fine) {
 	.tmx-practice .tmx-terminal {
 		position: sticky;
 		bottom: 1rem;
@@ -2242,7 +2242,7 @@ html[data-splash] {
    sidebar rows *x32, checklist control 25x18 (a quarter of the minimum, sitting
    inside a row whose remaining area navigates away — so a miss cost the learner
    their place). */
-@media (pointer: coarse), (max-width: 50rem) {
+@media (any-pointer: coarse), (width < 50rem) {
 	.sidebar-content a,
 	.mobile-starlight-toc button,
 	.sl-markdown-content .action,
@@ -2303,7 +2303,7 @@ html[data-splash] {
    authored output, so taught commands broke mid-token. Two levers here: escape
    the prose gutter (full-bleed) and drop internal padding. The third lever —
    font size — is applied in TermuxTerminal.tsx, since xterm sizes from JS. */
-@media (max-width: 30rem) {
+@media (width < 30rem) {
 	.tmx-terminal,
 	.tmx-sandbox {
 		/* Full-bleed out of the prose column; every pixel is columns. */
@@ -2331,7 +2331,7 @@ html[data-splash] {
    768px is the awkward band: Starlight's sidebar docks at 1024px, so between
    those widths content took the full 720px = ~80 characters with
    `max-width: none`. */
-@media (min-width: 30rem) and (max-width: 63.9rem) {
+@media (30rem <= width < 64rem) {
 	.sl-markdown-content {
 		max-width: 68ch;
 		margin-inline: auto;
@@ -2484,7 +2484,7 @@ html[data-splash] {
 /* Below ~600px Starlight's own grid (min track 18rem + 1rem gap) can no longer
    fit two cards side by side, so there is no sibling rhythm left to match and
    half a phone row is not a card. Let it fill. */
-@media (max-width: 37.5rem) {
+@media (width < 37.5rem) {
 	.pagination-links a:only-child {
 		max-width: none;
 	}
@@ -2626,7 +2626,7 @@ a.tmx-btn--primary:hover {
    pages that actually lost it. The social icons come back with it, which is a
    bonus rather than a cost. Fits: 209px title + 32px search + the toggle is
    comfortably under 390px. */
-@media (max-width: 50rem) {
+@media (width < 50rem) {
 	html:not([data-has-sidebar]) .right-group {
 		display: flex;
 	}
@@ -2752,7 +2752,7 @@ a.tmx-series__link:hover {
 }
 /* Phones: the numerals carry the meaning, the words do not fit. The site
    title goes too — the switcher IS the identity at this width. */
-@media (max-width: 50rem) {
+@media (width < 50rem) {
 	.tmx-series__label,
 	.tmx-series__home-label,
 	.tmx-series__title {
@@ -2760,5 +2760,237 @@ a.tmx-series__link:hover {
 	}
 	.tmx-series {
 		gap: 0.5rem;
+	}
+}
+
+/* ================================================================== *
+ * CAPABILITY QUERIES — what the DEVICE and the PERSON can handle.
+ *
+ * The width queries above answer "how much room is there". These answer
+ * questions that have nothing to do with room, and that a width breakpoint
+ * silently gets wrong:
+ *
+ *   - Is the display forcing its own colours? (Windows High Contrast)
+ *   - Has the reader asked for more contrast, less motion, less data?
+ *   - Is there a pointer that can hover at all?
+ *   - Is the viewport short rather than narrow — a phone in landscape?
+ *
+ * BREAKPOINT SCALE, so a future rule picks an existing number rather than
+ * inventing a neighbouring one:
+ *
+ * WIDTH
+ *   30rem   (480px)  narrow phone — the terminal drops to 12px here
+ *   37.5rem (600px)  large phone — pagination stops sitting side by side
+ *   50rem   (800px)  STARLIGHT OWNS THIS ONE. Its sidebar, header right-group
+ *                    and mobile menu all switch here (11 rules in its own CSS).
+ *                    Never introduce a competing breakpoint within ~2rem of it.
+ *   64rem   (1024px) tablet landscape — reading measure caps; the hub goes
+ *                    two-up
+ *   72rem   (1152px) Starlight's wide breakpoint (5 rules). The sticky terminal
+ *                    and the right-hand table of contents both need this much.
+ *   90rem   (1440px) wide desktop — the hub fixes its course grid to 3 columns
+ *                    rather than letting auto-fit make them thin
+ *
+ * HEIGHT — because a dashboard and a sticky panel are bounded vertically, and
+ * a width query cannot see a short viewport at all. A phone in landscape is
+ * WIDE and 360px tall; treating it as a small desktop is how a layout ends up
+ * with nothing visible between two fixed elements.
+ *   34rem   (544px)  short — phone landscape, or a split-screen window. Drop
+ *                    the splash, floor the terminal, unstick the practice pane
+ *   40rem   (640px)  the hub's two-up gate. Deliberately BELOW 46rem: a 1024×768
+ *                    tablet in landscape has ~668px of viewport after browser
+ *                    chrome (41.75rem), and the whole point of the two-up
+ *                    layout is that tablets see the dashboard without scrolling
+ *   46rem   (736px)  enough height to make the sticky practice terminal a help
+ *                    rather than an obstruction
+ *   52rem   (832px)  tall desktop — the hub spends the surplus on air
+ *
+ * All width queries use RANGE SYNTAX (`width < 50rem`) rather than
+ * `max-width: 49.99rem`. The old form left a hairline band that matched
+ * nothing — invisible at integer widths, reachable via browser zoom,
+ * fractional DPI and Windows display scaling.
+ * ================================================================== */
+
+/* --- FORCED COLOURS (Windows High Contrast) -------------------------
+   The OS replaces every colour with its own palette and discards
+   background-image and box-shadow. Anything whose MEANING lived in a colour or
+   a shadow disappears silently — and this design says a great deal with brass,
+   with borders, and with a dark-locked terminal screen.
+
+   The rule: let the OS win everywhere EXCEPT where colour is the information
+   rather than the decoration. */
+@media (forced-colors: active) {
+	/* Decorative, and now actively harmful: the OS cannot tone it down, so it
+	   competes with text at full strength. */
+	body::before {
+		display: none;
+	}
+
+	/* Borders carry the structure here — cards, panels, tables, the terminal
+	   frame. In forced-colors a transparent or colour-mixed border resolves to
+	   nothing, so state them in system colours. */
+	.tmx-card,
+	.tmx-panel,
+	.tmx-terminal,
+	.tmx-sandbox,
+	.expressive-code .frame,
+	.sl-markdown-content table:not(:where(.not-content *)) {
+		border: 1px solid CanvasText;
+	}
+
+	/* The terminal is a device, not a document. Forcing its palette would make
+	   simulated shell output unreadable AS shell output — the colours are the
+	   semantics there (brass is a command, ember is an error). This is the one
+	   place worth opting out of the OS palette. */
+	.tmx-terminal__screen,
+	.tmx-sandbox__screen,
+	.xterm {
+		forced-color-adjust: none;
+	}
+
+	/* Focus has to survive, and a custom outline colour can resolve to
+	   invisible against a forced background. */
+	:focus-visible {
+		outline: 3px solid Highlight;
+		outline-offset: 2px;
+	}
+
+	/* Anything that signalled state with opacity alone needs a border or a
+	   colour name to carry it instead. */
+	.tmx-series__link[data-unbuilt],
+	.course--soon {
+		opacity: 1;
+		border: 1px dashed GrayText;
+		color: GrayText;
+	}
+}
+
+/* --- MORE CONTRAST --------------------------------------------------
+   A reader who asked the OS for more contrast is telling us the subtle borders
+   and the muted end of the ink ramp are not working for them. Strengthen the
+   structure; do not change the layout. */
+@media (prefers-contrast: more) {
+	:root {
+		/* Collapse the muted end of the ramp toward the body colour. A five-step
+		   ink ramp is a nicety; legibility is not. */
+		--fg-muted: var(--fg-secondary);
+		--border-subtle: var(--border-default);
+	}
+
+	.tmx-card,
+	.tmx-panel,
+	.tmx-terminal,
+	.tmx-sandbox {
+		border-width: 2px;
+	}
+
+	/* The background texture is the single largest contrast cost on the page. */
+	body::before {
+		opacity: 0.25;
+	}
+
+	/* Prose links should not rest on colour alone at this setting. */
+	.sl-markdown-content a:not(:where(.not-content *, .tmx-btn, .action)) {
+		text-decoration: underline;
+		text-underline-offset: 0.15em;
+	}
+}
+
+/* --- REDUCED DATA ---------------------------------------------------
+   This course spends two lessons warning about mobile data and then serves a
+   ~62 KB decorative SVG on every page. Save-Data is the reader saying they are
+   metered or roaming; the honest answer is to drop the ornament.
+
+   Chromium-only today, which is precisely the reason to write it rather than
+   skip it: one rule, correct wherever it is honoured. */
+@media (prefers-reduced-data: reduce) {
+	body::before {
+		background-image: none;
+	}
+
+	/* The boot splash is pure ornament and inlines its artwork into the HTML. */
+	.tmx-splash {
+		display: none;
+	}
+}
+
+/* --- REDUCED TRANSPARENCY -------------------------------------------
+   Several surfaces are `color-mix(… transparent)` sitting over the scatter
+   field, which is exactly the layered translucency this setting exists to
+   switch off. */
+@media (prefers-reduced-transparency: reduce) {
+	body::before {
+		opacity: 0.15;
+	}
+
+	.tmx-card,
+	.tmx-panel,
+	.tmx-terminal__keys {
+		background-color: var(--bg-raised);
+	}
+}
+
+/* --- NO HOVER -------------------------------------------------------
+   Distinct from `pointer: coarse`: a stylus is a fine pointer that cannot
+   hover, and a touchscreen laptop does both. Where a hover state is the ONLY
+   thing revealing an affordance, it has to be visible at rest instead. */
+@media (hover: none) {
+	/* Lift-on-hover reads as broken when it never fires; on touch the border is
+	   the affordance. */
+	.tmx-card--link:hover {
+		transform: none;
+	}
+
+	/* :active is the only feedback a touch device gets, so make it real. */
+	.tmx-btn:active,
+	.tmx-terminal__key:active {
+		transform: scale(0.97);
+	}
+}
+
+/* --- SHORT VIEWPORTS ------------------------------------------------
+   A phone in landscape is not a small desktop: roughly 360px tall, with a soft
+   keyboard waiting to take half of it. Width queries cannot see this at all —
+   a landscape phone is WIDE. */
+@media (height < 34rem) {
+	/* The splash would cover the entire usable area with no room left to see
+	   the result. It is decoration; a short screen has better uses. */
+	.tmx-splash {
+		display: none;
+	}
+
+	/* 45vh of a 360px viewport is 162px — about six rows. Give the screen a
+	   floor so it stays usable and let the page scroll instead. */
+	.tmx-terminal__screen {
+		min-block-size: 12rem;
+	}
+
+	/* The sticky practice terminal needs vertical room to be worth anything;
+	   below this it would pin over the very instructions it exists to keep
+	   visible. (Its own rule already requires height >= 46rem — this is the
+	   belt to that braces, in case that rule is ever relaxed.) */
+	.tmx-practice .tmx-terminal {
+		position: static;
+	}
+}
+
+/* --- COARSE POINTER -------------------------------------------------
+   `any-pointer: coarse` rather than `pointer: coarse` throughout: a laptop
+   with a touchscreen reports `pointer: fine` for its trackpad while a finger
+   is still a valid input. Tap targets should follow the COARSEST pointer
+   available, not the primary one. */
+@media (any-pointer: coarse) {
+	/* The 44px floor, in one place rather than remembered per component. */
+	.tmx-btn,
+	.tmx-terminal__key,
+	.tmx-theme-toggle,
+	.tmx-series__link,
+	.pagination-links a {
+		min-block-size: 44px;
+	}
+
+	.tmx-series__link {
+		display: inline-flex;
+		align-items: center;
 	}
 }

@@ -55,7 +55,42 @@ body::before {
 .hub {
 	max-inline-size: 74rem;
 	margin-inline: auto;
-	padding: clamp(1rem, 3vw, 1.75rem) clamp(1rem, 3vw, 2rem) 2.5rem;
+	padding: clamp(1rem, 3vw, 1.75rem) clamp(1rem, 3vw, 2rem) clamp(1.5rem, 3vh, 2.25rem);
+
+	/*
+	 * ONE SCREEN, NOT A SCROLL.
+	 *
+	 * A dashboard you have to scroll is a report. The page is a column that
+	 * fills the viewport, its bands are laid out two-up once there is width for
+	 * it, and the footer is pushed to the bottom by `margin-block-start: auto`
+	 * rather than by whatever content happens to end above it — which is also
+	 * what stops it riding the viewport edge.
+	 *
+	 * `dvh`, not `vh`: on mobile browsers `vh` is the tallest the viewport ever
+	 * gets, so a `100vh` column sits partly under the address bar until you
+	 * scroll. `dvh` tracks the viewport that is actually visible.
+	 *
+	 * Below the two-up breakpoint it simply flows and scrolls, which is correct
+	 * — a phone cannot show this much at once and pretending otherwise means
+	 * unreadable type.
+	 */
+	min-block-size: 100dvh;
+	display: flex;
+	flex-direction: column;
+	gap: clamp(0.75rem, 2.2vh, 1.5rem);
+}
+
+/* Sections stop carrying their own vertical margins; the column's `gap` owns
+   the rhythm now, so nothing double-spaces. */
+.hub__section,
+.hub__band {
+	margin: 0;
+}
+
+.hub__section--courses {
+	/* The one band allowed to absorb spare height on a tall screen, so the page
+	   fills without stretching the dashboard into emptiness. */
+	flex: 0 1 auto;
 }
 
 /* --- Masthead ------------------------------------------------------- */
@@ -69,8 +104,8 @@ body::before {
 
 .hub__mark {
 	display: inline-flex;
-	align-items: baseline;
-	gap: 0.5rem;
+	align-items: center;
+	gap: 0.45rem;
 	font-family: var(--font-ui);
 	font-weight: 700;
 	font-size: var(--text-lg);
@@ -79,10 +114,55 @@ body::before {
 	letter-spacing: -0.01em;
 }
 
-.hub__mark span {
-	font-family: var(--font-mono);
-	font-size: var(--text-sm);
-	letter-spacing: -0.05em;
+/* Sized in `em`, so the mark tracks the wordmark rather than needing its own
+   breakpoint. `currentColor` keeps it on brass without restating the token. */
+.hub__mark-icon {
+	inline-size: 1.15em;
+	block-size: 1.15em;
+	fill: currentColor;
+	flex: 0 0 auto;
+	/* The wordmark sits on its baseline; the icon is a box. Nudge it onto the
+	   same optical line rather than the geometric one. */
+	transform: translateY(0.06em);
+}
+
+/* The caret blinks the way a terminal caret does — slowly, and only while the
+   mark is not being interacted with, so it never competes with a hover state. */
+.hub__mark-caret {
+	animation: hub-caret 1.25s steps(1, end) infinite;
+	transform-origin: center;
+}
+
+@keyframes hub-caret {
+	0%,
+	55% {
+		opacity: 1;
+	}
+	56%,
+	100% {
+		opacity: 0.15;
+	}
+}
+
+.hub__mark:hover .hub__mark-chevron {
+	transform: translateX(0.08em);
+}
+
+.hub__mark-chevron {
+	transition: transform var(--dur-normal) var(--ease-out);
+}
+
+/* A blinking caret is exactly the kind of small repeating motion this setting
+   exists to stop. */
+@media (prefers-reduced-motion: reduce) {
+	.hub__mark-caret {
+		animation: none;
+		opacity: 1;
+	}
+
+	.hub__mark-chevron {
+		transition: none;
+	}
 }
 
 .hub__hero h1 {
@@ -105,7 +185,7 @@ body::before {
 
 /* --- Section headings ----------------------------------------------- */
 .hub h2 {
-	margin: 1.75rem 0 0.75rem;
+	margin: 0 0 0.6rem;
 	font-family: var(--font-ui);
 	font-weight: 600;
 	font-size: var(--text-2xs);
@@ -115,7 +195,7 @@ body::before {
 }
 
 .hub__note {
-	margin: -0.35rem 0 0.9rem;
+	margin: -0.3rem 0 0.75rem;
 	max-inline-size: 52rem;
 	color: var(--fg-muted);
 	font-size: var(--text-xs);
@@ -403,8 +483,8 @@ a.course:hover {
 
 /* --- Footer --------------------------------------------------------- */
 .hub__foot {
-	margin-block-start: 2rem;
-	padding-block-start: 1rem;
+	margin-block-start: auto;
+	padding-block-start: 1.1rem;
 	border-block-start: 1px solid var(--border-subtle);
 	font-family: var(--font-ui);
 	font-size: var(--text-xs);
@@ -476,4 +556,237 @@ a.course:hover {
 	font-size: var(--text-2xs);
 	line-height: var(--leading-normal);
 	color: var(--fg-muted);
+}
+
+/* --- Two-up bands ---------------------------------------------------
+   From tablet-landscape up there is room to stop stacking. The lead band puts
+   the dashboard beside the hero rather than below it, which is what turns the
+   page from a scroll into a screen: it removes the single tallest stack in the
+   layout.
+
+   Gated on HEIGHT as well as width. A short-but-wide viewport (a phone in
+   landscape, a split-screen window) has the width for two columns and nowhere
+   near the height for the whole page, so it keeps the honest scrolling stack
+   rather than being crushed into it. */
+@media (width >= 64rem) and (height >= 40rem) {
+	.hub__band--lead {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(21rem, 25rem);
+		gap: clamp(1rem, 2.5vw, 2rem);
+		align-items: center;
+	}
+
+	.hub__band--tail {
+		display: grid;
+		grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+		gap: clamp(1rem, 2.5vw, 2rem);
+		align-items: end;
+	}
+
+	/* The fine print sits beside the reference links rather than under them,
+	   and stops being a full-measure paragraph. */
+	.hub__fine {
+		margin: 0;
+	}
+
+	/* The hero has a column to itself now, so it can breathe again without
+	   costing the page its height. */
+	.hub__hero h1 {
+		font-size: clamp(1.75rem, 2.9vw, 2.5rem);
+	}
+
+	.hub__lede {
+		margin-block-end: 0;
+		font-size: var(--text-md);
+	}
+}
+
+/* Very wide: four course cards fit across, which shortens the page further. */
+@media (width >= 90rem) {
+	.hub__courses {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+/* Tall desktop: give the bands a little more air rather than leaving a gap at
+   the bottom of the column. */
+@media (width >= 64rem) and (height >= 52rem) {
+	.hub {
+		gap: clamp(1rem, 3vh, 2rem);
+	}
+}
+
+/* ================================================================== *
+ * CAPABILITY QUERIES — mirroring the courses, so the hub degrades the
+ * same way they do. A front door that behaves differently from the rooms
+ * behind it is worse than no front door.
+ *
+ * BREAKPOINTS USED HERE, all shared with the courses:
+ *   WIDTH   30rem narrow phone · 50rem Starlight's `md` · 64rem two-up bands
+ *           begin · 90rem wide desktop
+ *   HEIGHT  40rem two-up gate · 52rem tall desktop
+ *
+ * The 40rem height gate is the one worth understanding: it is deliberately
+ * below the courses' 46rem sticky-terminal gate, because a 1024×768 tablet in
+ * landscape leaves ~668px (41.75rem) after browser chrome — and a tablet
+ * seeing the whole dashboard without scrolling is the entire point of the
+ * two-up layout. Raise it and tablets fall back to the stack.
+ * ================================================================== */
+
+/* --- Forced colours (Windows High Contrast) ------------------------- */
+@media (forced-colors: active) {
+	body::before {
+		display: none;
+	}
+
+	.dash,
+	.course,
+	.hub__links a {
+		border: 1px solid CanvasText;
+	}
+
+	/* The percentage and the meters ARE the information; without a border the
+	   fill is invisible once the OS flattens the palette. */
+	.meter {
+		border: 1px solid CanvasText;
+	}
+
+	.meter__fill {
+		background: Highlight;
+	}
+
+	:focus-visible {
+		outline: 3px solid Highlight;
+		outline-offset: 2px;
+	}
+
+	/* Opacity alone stops communicating "not available". */
+	.course--soon {
+		opacity: 1;
+		border-style: dashed;
+		color: GrayText;
+	}
+}
+
+/* --- More contrast --------------------------------------------------- */
+@media (prefers-contrast: more) {
+	:root {
+		--fg-muted: var(--fg-secondary);
+		--border-subtle: var(--border-default);
+	}
+
+	.dash,
+	.course {
+		border-width: 2px;
+	}
+
+	body::before {
+		opacity: 0.25;
+	}
+}
+
+/* --- Reduced data ----------------------------------------------------
+   Same reasoning as the courses: the scatter field is ~62 KB of ornament, and
+   Save-Data means the reader is metered. */
+@media (prefers-reduced-data: reduce) {
+	body::before {
+		background-image: none;
+	}
+}
+
+/* --- Reduced transparency -------------------------------------------- */
+@media (prefers-reduced-transparency: reduce) {
+	body::before {
+		opacity: 0.15;
+	}
+
+	.dash,
+	.course {
+		background-color: var(--bg-raised);
+	}
+}
+
+/* --- No hover ---------------------------------------------------------
+   The card lift is the only hover affordance on this page; on touch it never
+   fires, so :active has to do the work instead. */
+@media (hover: none) {
+	a.course:hover {
+		transform: none;
+	}
+
+	a.course:active {
+		transform: scale(0.985);
+	}
+
+	.btn:active {
+		transform: scale(0.97);
+	}
+}
+
+/* --- Coarse pointer ---------------------------------------------------
+   `any-pointer`, not `pointer`: a touchscreen laptop reports a fine primary
+   pointer while a finger is still valid input. */
+@media (any-pointer: coarse) {
+	.btn,
+	.hub__theme,
+	.hub__links a {
+		min-block-size: 44px;
+	}
+
+	.hub__links a {
+		display: flex;
+		align-items: center;
+	}
+}
+
+/* --- Narrow phone -----------------------------------------------------
+   Below this the dashboard header wraps badly: the big percentage and the
+   name fight for the same line. */
+@media (width < 30rem) {
+	.dash__head {
+		gap: 0.6rem;
+	}
+
+	.dash__pct {
+		/* Stop it being pushed to a line of its own by margin-inline-start:auto
+		   when the name wraps. */
+		margin-inline-start: 0;
+		font-size: var(--text-xl);
+	}
+
+	.dash__actions .btn {
+		inline-size: 100%;
+		justify-content: center;
+	}
+
+	.hub__foot {
+		gap: 0.35rem;
+	}
+}
+
+/* --- Print ------------------------------------------------------------
+   Someone printing the hub wants the course list and their progress, not the
+   ornament or the controls. */
+@media print {
+	body::before,
+	.hub__theme,
+	.dash__actions {
+		display: none !important;
+	}
+
+	.hub {
+		min-block-size: 0;
+		max-inline-size: none;
+	}
+
+	.dash,
+	.course {
+		break-inside: avoid;
+		border: 1px solid #999;
+	}
+
+	.hub__band--lead,
+	.hub__band--tail {
+		display: block;
+	}
 }
