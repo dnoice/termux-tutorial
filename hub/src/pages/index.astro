@@ -9,14 +9,22 @@ const TITLE = 'Termux Tutorial — Linux on your Android phone';
 const DESCRIPTION =
 	'A three-part, hands-on Termux course with a live terminal in every lesson. Start at the beginning, or pick up where you left off.';
 
-/* Reference pages worth surfacing from the hub, so a returning learner who just
-   wants a command does not have to walk into a course to find one. Only listed
-   for courses that actually exist — `present` is derived from whether the
-   course's LESSONS array parsed, not from a hand-maintained flag. */
-const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
-	{ href: `${base}/${c.id}/reference/cheatsheet/`, label: `${c.name} cheatsheet` },
-	{ href: `${base}/${c.id}/reference/troubleshooting/`, label: `${c.name} troubleshooting` },
-]);
+/*
+ * Reference links belong ON the course they describe, not in a list of their
+ * own. As a separate section they were four near-identical bordered boxes —
+ * "Beginner cheatsheet", "Beginner troubleshooting", "Intermediate cheatsheet",
+ * "Intermediate troubleshooting" — where every word appeared twice and the
+ * course name did all the work. They also competed with the real course cards
+ * at a similar size and weight, so the eye read eight things of equal
+ * importance instead of three courses.
+ *
+ * Moved onto the cards, each label drops its prefix: the card already says
+ * which course it is.
+ */
+const REFS = [
+	{ slug: 'reference/cheatsheet', label: 'Cheatsheet' },
+	{ slug: 'reference/troubleshooting', label: 'Troubleshooting' },
+];
 ---
 
 <Layout title={TITLE} description={DESCRIPTION}>
@@ -90,20 +98,38 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 			{
 				COURSES.map((c) =>
 					c.present ? (
-						<a class="course" href={`${base}/${c.id}/`}>
+						/*
+						 * An <article>, not an <a>. The card now has more than one
+						 * destination, and an anchor cannot legally contain anchors.
+						 * The title link stretches over the whole card via a
+						 * ::after overlay, so the card is still one big target;
+						 * the reference links sit above that overlay on their own
+						 * z-index. Standard pattern, and it keeps the primary
+						 * action obvious while giving the secondary ones a home.
+						 */
+						<article class="course">
 							<span class="course__kicker">
 								<span class="course__num">{c.number}</span>
 								Course {c.number}
 							</span>
-							<h3 class="course__title">{c.name}</h3>
+							<h3 class="course__title">
+								<a class="course__link" href={`${base}/${c.id}/`}>
+									{c.name}
+								</a>
+							</h3>
 							<p class="course__body">{c.blurb}</p>
 							<span class="course__foot">
 								<span>{c.lessons.length} lessons</span>
 								<span class="course__cta">Open →</span>
 							</span>
-						</a>
+							<span class="course__refs">
+								{REFS.map((r) => (
+									<a href={`${base}/${c.id}/${r.slug}/`}>{r.label}</a>
+								))}
+							</span>
+						</article>
 					) : (
-						<div class="course course--soon">
+						<article class="course course--soon">
 							<span class="course__kicker">
 								<span class="course__num">{c.number}</span>
 								Course {c.number}
@@ -113,29 +139,12 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 							<span class="course__foot">
 								<span>Not written yet</span>
 							</span>
-						</div>
+						</article>
 					)
 				)
 			}
 		</div>
 		</section>
-
-		<div class="hub__band hub__band--tail">
-		{
-			REFERENCES.length > 0 && (
-				<section class="hub__section">
-					<h2>Reference</h2>
-					<p class="hub__note">For when you want the flag you forgot, not a lesson.</p>
-					<ul class="hub__links">
-						{REFERENCES.map((r) => (
-							<li>
-								<a href={r.href}>{r.label}</a>
-							</li>
-						))}
-					</ul>
-				</section>
-			)
-		}
 
 		<p class="hub__fine">
 			No account, no analytics, no backend — static files only. Your name,
@@ -144,7 +153,6 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 			documented where it happens: booting the optional Debian sandbox fetches
 			it from Leaning Technologies, and only when you click.
 		</p>
-		</div>
 
 		<footer class="hub__foot">
 			<span>Built with Astro + Starlight. BSD 3-Clause.</span>
