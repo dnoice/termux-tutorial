@@ -87,6 +87,32 @@ Adding a lesson means registering its slug in three places — `src/lib/progress
 the `sidebar` array in `astro.config.mjs`, and the `<LessonComplete slug="…">` in
 the lesson. `scripts/check-curriculum.mjs` fails the build if they disagree.
 
+## Previewing the whole series
+
+A dev server serves **one** project at **one** base. The series switcher and
+every cross-course link are absolute paths that only line up once all four
+projects sit in one tree — so those links 404 on a dev server while being
+perfectly correct in production. Verify them by assembling, the way Pages does:
+
+```bash
+# From this root, after `npm run build` in each of the four projects
+rm -rf _site && cp -r hub/dist _site
+for p in beginner:termux-tutorial-for-beginners \
+         intermediate:termux-tutorial-intermediate \
+         advanced:termux-tutorial-advanced; do
+  mkdir -p "_site/${p%%:*}" && cp -r "${p##*:}/dist/." "_site/${p%%:*}/"
+done
+
+node scripts/check-assembled-links.mjs _site   # the only check that sees across courses
+PORT=4400 node scripts/preview.mjs _site       # click the switcher for real
+```
+
+`check-assembled-links.mjs` is the guard that **cannot** live in a course. Each
+course's own `check-links.mjs` walks its own `dist/` and is blind to its
+siblings, so it defers cross-course links; this resolves them. It runs in
+`deploy.yml` too, but running it locally is the point — a broken cross-course
+link should not be something you discover from a failed deploy.
+
 ## Before deploying
 
 - [ ] **Settings → Pages → Source = GitHub Actions**, not "Deploy from a branch".

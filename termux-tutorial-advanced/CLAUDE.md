@@ -398,22 +398,38 @@ own `base`, so a naive checker reports them as "missing the base prefix", which
 is the opposite of true.
 
 `scripts/check-links.mjs` therefore derives the series root from BASE and
-allowlists four paths:
+**defers** cross-course links rather than resolving them:
 
 ```js
 const SERIES_ROOT = BASE.replace(/\/[^/]+$/, '') || '';   // /termux-tutorial
-const SIBLINGS = new Set(
-  ['/', '/beginner/', '/intermediate/', '/advanced/'].map((p) => `${SERIES_ROOT}${p}`)
-);
+const COURSE_SEGMENTS = ['beginner', 'intermediate', 'advanced'];
+const SIBLING_PREFIXES = COURSE_SEGMENTS
+  .filter((s) => s !== OWN_SEGMENT)
+  .map((s) => `${SERIES_ROOT}/${s}/`);
 ```
 
-Two things about that are load-bearing:
+Three things about that are load-bearing:
 
 - **The sibling test runs BEFORE the base-prefix test.** Ordering it the other
   way reports every sibling link as unprefixed.
-- **They are listed explicitly rather than pattern-matched**, so a typo in a
-  sibling link is still caught. Add a course when it starts being assembled and
-  not before — an entry for an undeployed course turns a real 404 into a pass.
+- **Course segments are listed explicitly rather than pattern-matched**, so a
+  typo in the segment (`/intermidiate/…`) is still caught. Add a course when it
+  starts being assembled and not before — an entry for an undeployed course
+  turns a real 404 into a pass.
+- **Deferred is not skipped.** These links are checked for real by
+  `scripts/check-assembled-links.mjs` at the **monorepo root**, which walks the
+  assembled tree where all four projects exist at once.
+
+This was an exact-match set of the four course *roots* until 2026-08-11, which
+allowed `/termux-tutorial/beginner/` and rejected
+`/termux-tutorial/beginner/start/why-termux/` — it permitted only the least
+useful cross-course link there is. **The cost was invisible and real:** the
+agent writing `container/why-proot` hit the rejection, concluded deep
+cross-course links were unsupported, and wrote around it by naming the sibling
+courses in prose instead of linking to them. When a guard cannot express the
+correct thing, authors route around the guard. If you find content that
+conspicuously refuses to link somewhere obvious, suspect a checker before you
+suspect the author.
 
 `where-next.mdx` builds those URLs from `SERIES_ROOT` (derived from `base`) and
 keeps them in one `SERIES` object at the top of the file rather than scattering
@@ -488,66 +504,41 @@ here, so `shellUser()` and its `subscribe()` are unused code paths.
 
 ## Known issues — verified, unfixed
 
-Verified by running the gates on 2026-08-11.
+Verified by running the gates on 2026-08-11, after the port-drift fixes landed.
 
 - `npm run build` — **passes.** Curriculum guard green (9 lessons), 14 pages
   built, link checker green (0 broken, 0 unprefixed over 14 pages).
-- `npm run check` — **fails: 3 errors, 0 warnings, 0 hints over 20 files.**
+- `npm run check` — **passes: 0 errors, 0 warnings, 0 hints over 20 files.**
+- `node scripts/check-assembled-links.mjs _site` from the monorepo root —
+  **passes:** 45 pages, 1,391 internal links, 142 crossing a course boundary,
+  0 broken.
 
-None of the three is in a file this doc set owns. All three are one-line fixes.
+### FIXED — the three port-drift errors this course shipped with
 
-### 1. `progress.ts` is half-ported: `ProgressExport.kind` still says intermediate
+Recorded because they are the *shape* of bug this monorepo produces, and the
+next course port will produce them again. All three came from the same cause:
+a file copied from course two, with the identity edits applied to some lines and
+not others. Nothing catches that except `astro check`, which is a CI gate — so
+they blocked the whole monorepo's pipeline, not just this course.
 
-```text
-src/lib/progress.ts:164:3 - error ts(2322): Type '"termux-advanced-progress"'
-  is not assignable to type '"termux-intermediate-progress"'.
-src/lib/progress.ts:204:6 - error ts(2367): This comparison appears to be
-  unintentional because the types '"termux-intermediate-progress" | undefined'
-  and '"termux-advanced-progress"' have no overlap.
-```
-
-`EXPORT_KIND` was correctly changed to `'termux-advanced-progress'` (line 159),
-but the `ProgressExport` interface still declares
-`kind: 'termux-intermediate-progress'` (line 152). **Fix:** change that literal
-type to `'termux-advanced-progress'`. Both errors go with it.
-
-There is a third, non-type defect in the same file that the compiler cannot
-see: line 209's rejection message reads *"That's a JSON file, but not a Termux:
-Intermediate progress file"*. The likeliest wrong file a learner picks is a
-sibling course's export, so the message has to name **this** course — it should
-read "Termux: Advanced".
-
-### 2. `SiteTitle.astro` has a dead `unbuilt` branch
-
-```text
-src/components/overrides/SiteTitle.astro:47:7 - error ts(2339): Property
-  'unbuilt' does not exist on type '{ id: string; label: string; short: string; }'.
-```
-
-The `COURSES` array once carried an `unbuilt` flag for courses that had not
-shipped; all three have, so no entry declares it and the ternary is permanently
-falsy. **Fix:** delete the `c.unbuilt ? (…) : (…)` ternary and keep the `<a>`
-branch. (Adding `unbuilt?: boolean` to the entries would also silence it, but it
-would preserve a branch nothing can reach.)
-
-### 3. `astro.config.mjs` still ships course-two identity strings
-
-Not a build failure — these render into every page's `<head>` and into search
-results, so they are a correctness bug with no error attached:
-
-- `DESCRIPTION` begins *"Course two of the Termux series…"* and describes
-  Termux:API, scripts and tunnels. It feeds Starlight's `description`, the
-  `og:description`, and both structured-data nodes.
-- `STRUCTURED_DATA` declares `name: 'Termux: Intermediate'` (twice),
-  `educationalLevel: 'Intermediate'`, a `teaches` list of seven course-two
-  skills, a `coursePrerequisites` naming only the beginner course, and
-  `courseWorkload: 'PT3H'`.
-- `og:image:alt` reads *"Termux: Intermediate — your phone, talking to its own
-  hardware."*
-
-The Starlight `title` (`'Termux: Advanced'`) and `tagline` are correct, which is
-what makes the rest easy to miss. Nothing validates the `teaches` list — the
-beginner course drifted on it twice.
+1. **`progress.ts` was half-ported.** `EXPORT_KIND` said
+   `'termux-advanced-progress'` while the `ProgressExport` interface still
+   declared `kind: 'termux-intermediate-progress'` — two hand-synced string
+   literals that a port is guaranteed to separate. The interface now reads
+   `kind: typeof EXPORT_KIND`, so there is one string and the next port changes
+   it once. The import-rejection message also named the wrong course, which is
+   the same drift in a place the compiler cannot see.
+2. **`SiteTitle.astro` had a dead `unbuilt` branch.** Shipping course three
+   removed the last `unbuilt: true`, leaving a permanently-false ternary against
+   a property no entry declared — one error in **each of the three copies** of
+   that file. Removed in all three.
+3. **`astro.config.mjs` shipped course two's identity.** `DESCRIPTION`,
+   `STRUCTURED_DATA` (`name` ×2, `educationalLevel`, a `teaches` list of seven
+   course-two skills, `coursePrerequisites`, `courseWorkload`) and
+   `og:image:alt` all still described Termux:API, scripts and tunnels. No error
+   attached — it simply rendered into every page's `<head>` and would have been
+   what search results showed. The `teaches` list now has nine entries matching
+   the nine lessons; nothing validates it, so it is still on you.
 
 ### 4. `SANDBOX_PATH` points at a page that does not exist
 
