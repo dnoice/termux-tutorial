@@ -43,23 +43,29 @@ const COURSES = [
 
 	<nav class="tmx-series__nav" aria-label="Courses in this series">
 		{
-			COURSES.map((c) =>
-				c.unbuilt ? (
-					<span class="tmx-series__link" data-unbuilt aria-disabled="true" title="Not written yet">
-						<span class="tmx-series__num">{c.short}</span>
-						<span class="tmx-series__label">{c.label}</span>
-					</span>
-				) : (
-					<a
-						class="tmx-series__link"
-						href={`${root}/${c.id}/`}
-						aria-current={c.id === CURRENT ? 'page' : undefined}
-					>
-						<span class="tmx-series__num">{c.short}</span>
-						<span class="tmx-series__label">{c.label}</span>
-					</a>
-				)
-			)
+			/*
+			 * All three courses ship, so every entry is a link.
+			 *
+			 * This was a ternary on `c.unbuilt`, rendering an aria-disabled
+			 * <span> for a course that had not been written yet. Course three
+			 * shipping removed the last `unbuilt: true`, which left a branch
+			 * that could never be taken AND a property no entry declared — one
+			 * typecheck error in each of the three copies of this file.
+			 *
+			 * If a fourth course is ever staged, restore the branch together
+			 * with the flag on the entry. A permanently-false test kept "just
+			 * in case" is how this became an error in the first place.
+			 */
+			COURSES.map((c) => (
+				<a
+					class="tmx-series__link"
+					href={`${root}/${c.id}/`}
+					aria-current={c.id === CURRENT ? 'page' : undefined}
+				>
+					<span class="tmx-series__num">{c.short}</span>
+					<span class="tmx-series__label">{c.label}</span>
+				</a>
+			))
 		}
 	</nav>
 

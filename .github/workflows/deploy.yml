@@ -140,28 +140,17 @@ jobs:
             test -f "_site/$must" || { echo "MISSING: _site/$must"; exit 1; }
           done
 
-          # The hub links into each course by path. Verify those targets exist
-          # in the ASSEMBLED tree — no individual course's own link check can
-          # see across the boundary, so this is the only place it can be caught.
-          node -e '
-            const { readFileSync, existsSync } = require("node:fs");
-            const html = readFileSync("_site/index.html", "utf8");
-            const base = "/termux-tutorial";
-            const links = [...html.matchAll(/href="([^"]+)"/g)]
-              .map((m) => m[1])
-              .filter((h) => h.startsWith(base + "/"));
-            const missing = [...new Set(links)].filter((h) => {
-              const rel = h.slice(base.length).replace(/^\//, "").replace(/\/$/, "");
-              if (!rel) return false;
-              return !existsSync("_site/" + rel) && !existsSync("_site/" + rel + "/index.html");
-            });
-            if (missing.length) {
-              console.error("Hub links with no target in the assembled site:");
-              for (const m of missing) console.error("  " + m);
-              process.exit(1);
-            }
-            console.log("Hub cross-links resolve: " + new Set(links).size + " checked, 0 broken.");
-          '
+          # Cross-course links resolve ONLY in the assembled tree — no course's
+          # own check-links.mjs can see a sibling, so they defer them here.
+          #
+          # This used to be an inline script that read _site/index.html and
+          # nothing else: one page out of forty-five, and the one least likely
+          # to be wrong, since the hub generates its links from a manifest.
+          # Every hand-authored cross-course link in every lesson went
+          # unchecked. The script walks the whole tree, and it lives in the repo
+          # so it can be run locally against a local assembly rather than only
+          # discovered to be failing here, after a push.
+          node scripts/check-assembled-links.mjs _site
 
       - name: Configure Pages
         if: github.event_name != 'pull_request'

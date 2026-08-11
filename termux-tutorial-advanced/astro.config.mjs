@@ -29,7 +29,7 @@ const SITE_URL = `${SITE.replace(/\/$/, '')}${BASE_PATH}`;
 const OG_IMAGE = `${SITE_URL}/og-default.png`;
 
 const DESCRIPTION =
-	'Course two of the Termux series. Wire Termux to your phone\'s hardware with Termux:API, turn commands into scripts that run themselves, and serve a site off your pocket to the public internet.';
+	'Course three of the Termux series. Run a real Debian userland under PRoot, bring up an X11 display server and a full XFCE desktop on your phone\'s own screen, hand 3D work to the GPU, and compile packages nobody has built for Android.';
 
 /**
  * The one page that needs cross-origin isolation: `automation/shell-scripts`
@@ -313,27 +313,32 @@ const STRUCTURED_DATA = {
 		{
 			'@type': 'Course',
 			'@id': `${SITE_URL}#course`,
-			name: 'Termux: Intermediate',
+			name: 'Termux: Advanced',
 			description: DESCRIPTION,
 			url: `${SITE_URL}/`,
 			inLanguage: 'en',
 			isAccessibleForFree: true,
-			educationalLevel: 'Intermediate',
+			educationalLevel: 'Advanced',
 			learningResourceType: 'Interactive tutorial',
 			// One entry per lesson in the sidebar below, in the same order. The
 			// beginner course drifted here twice — lessons were registered without
 			// this list being updated, so it advertised five skills while teaching
-			// seven. Nothing validates it, so it is on you.
+			// seven. Nothing validates it, so it is on you. This course arrived
+			// carrying course two's seven entries verbatim, which is the same
+			// drift by a different route: the list survived a port it did not
+			// describe.
 			teaches: [
-				'Installing the Termux:API package and its companion app with matching signatures',
-				'Reading battery, network, location and sensor data from the shell',
-				'Pushing Android notifications and dialogs from a script',
-				'Writing, permissioning and debugging POSIX shell scripts on Android',
-				'Scheduling background jobs with cron and termux-job-scheduler',
-				'Serving a local HTTP site from a phone with Python or Node',
-				'Exposing a local server to the internet through an outbound tunnel',
+				'Why a PRoot container beats rooting, and what syscall interception can and cannot fake',
+				'Installing a full Debian userland with proot-distro, and removing it again',
+				'Working inside a container with no init, no systemd and decorative file ownership',
+				'Bringing up an X11 display server on Android with Termux:X11',
+				'Running a full XFCE desktop on the phone\'s own screen',
+				'Bridging a desktop session across the container boundary',
+				'Handing 3D work to the phone GPU with virglrenderer and Mesa',
+				'Compiling packages for aarch64 on the device itself',
+				'Where to take a pocket Linux machine after the series ends',
 			],
-			coursePrerequisites: 'Termux for Beginners, or equivalent comfort with pkg, the filesystem and Android storage.',
+			coursePrerequisites: 'Termux for Beginners and Termux: Intermediate, or equivalent comfort with pkg, storage, sessions and shell scripting on Android.',
 			provider: {
 				'@type': 'Organization',
 				'@id': `${SITE_URL}#publisher`,
@@ -344,16 +349,16 @@ const STRUCTURED_DATA = {
 				'@type': 'CourseInstance',
 				courseMode: 'online',
 				// Self-paced, no schedule — Google requires one of workload or
-				// schedule for a valid CourseInstance. Longer than the beginner
-				// course's PT2H: seven lessons, and every one of them ends with
-				// something running on the learner's own device.
-				courseWorkload: 'PT3H',
+				// schedule for a valid CourseInstance. The longest in the series:
+				// nine lessons, and several of them wait on a multi-gigabyte
+				// download or an on-device compile that the learner cannot rush.
+				courseWorkload: 'PT5H',
 			},
 		},
 		{
 			'@type': 'WebSite',
 			'@id': `${SITE_URL}#website`,
-			name: 'Termux: Intermediate',
+			name: 'Termux: Advanced',
 			url: `${SITE_URL}/`,
 			description: DESCRIPTION,
 			inLanguage: 'en',
@@ -446,7 +451,7 @@ export default defineConfig({
 					tag: 'meta',
 					attrs: {
 						property: 'og:image:alt',
-						content: 'Termux: Intermediate — your phone, talking to its own hardware.',
+						content: 'Termux: Advanced — a real Linux desktop, running on your phone.',
 					},
 				},
 				{ tag: 'meta', attrs: { name: 'twitter:image', content: OG_IMAGE } },

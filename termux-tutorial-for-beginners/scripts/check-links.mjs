@@ -61,9 +61,38 @@ const toUrl = (p) => '/' + relative(DIST, p).split(sep).join('/');
  */
 /** The series root: this course's base minus its own last segment. */
 const SERIES_ROOT = BASE.replace(/\/[^/]+$/, '') || '';
-const SIBLINGS = new Set(
-	['/', '/beginner/', '/intermediate/', '/advanced/'].map((p) => `${SERIES_ROOT}${p}`)
+/** This course's own segment, e.g. `advanced`. */
+const OWN_SEGMENT = BASE.slice(SERIES_ROOT.length).replace(/\//g, '');
+/**
+ * Course segments that are assembled into the published site. Listed
+ * EXPLICITLY, so a typo in the course segment (`/intermidiate/…`) is still
+ * caught here rather than deferred and forgotten. Add a course when it starts
+ * being assembled and not before.
+ */
+const COURSE_SEGMENTS = ['beginner', 'intermediate', 'advanced'];
+/**
+ * WAS: an exact-match set of the four course ROOTS, which allowed
+ * `/termux-tutorial/beginner/` and rejected `/termux-tutorial/beginner/start/`
+ * — i.e. it permitted only the least useful cross-course link there is.
+ *
+ * The cost was real and invisible: the author of `container/why-proot` hit this,
+ * concluded deep cross-course links were unsupported, and wrote around it by
+ * naming the sibling courses in prose instead of linking to them. A guard that
+ * cannot express the correct thing teaches authors to avoid it.
+ *
+ * Deep links into a sibling are now allowed and DEFERRED — they are genuinely
+ * unresolvable from this course's dist/, and they are checked for real by
+ * `scripts/check-assembled-links.mjs` at the monorepo root, which walks the
+ * assembled tree where every course exists at once. Deferred is not skipped.
+ */
+const SIBLING_PREFIXES = COURSE_SEGMENTS.filter((s) => s !== OWN_SEGMENT).map(
+	(s) => `${SERIES_ROOT}/${s}/`
 );
+/** Hub pages, which live directly under the series root rather than a course. */
+const HUB_PAGES = new Set([`${SERIES_ROOT}/`, `${SERIES_ROOT}/profile/`]);
+const deferred = [];
+const isCrossCourse = (p) =>
+	HUB_PAGES.has(p) || SIBLING_PREFIXES.some((pre) => p.startsWith(pre));
 const broken = [];
 const unprefixed = [];
 
@@ -80,7 +109,11 @@ for (const file of pages) {
 		if (pathPart.startsWith('/')) {
 			// The hub and sibling courses live outside this course's base but
 			// inside the series — correct in production, absent from this dist/.
-			if (SIBLINGS.has(pathPart)) continue;
+			// Checked for real by scripts/check-assembled-links.mjs after assembly.
+			if (isCrossCourse(pathPart)) {
+				deferred.push(`${toUrl(file)}  ->  ${url}`);
+				continue;
+			}
 
 			if (pathPart !== BASE && !pathPart.startsWith(BASE + '/')) {
 				unprefixed.push(`${toUrl(file)}  ->  ${url}`);
@@ -107,4 +140,10 @@ const report = (label, list) => {
 console.log(`Scanned ${pages.length} built HTML pages.`);
 report('Internal links that resolve to no file in dist/', broken);
 report('Root-relative internal links missing the base prefix', unprefixed);
+if (deferred.length) {
+	console.log(
+		`
+→ Cross-course links deferred to the assembly check: ${new Set(deferred).size}`
+	);
+}
 process.exit(broken.length + unprefixed.length ? 1 : 0);

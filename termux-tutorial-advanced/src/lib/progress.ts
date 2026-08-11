@@ -146,17 +146,28 @@ export function stats(data: ProgressData = load()): ProgressStats {
  * opaque blob — this is an honour-system checklist, not an auth token.
  * ------------------------------------------------------------------ */
 
+/*
+ * DECLARED BEFORE THE INTERFACE, AND THE INTERFACE KEYS OFF IT.
+ *
+ * This constant and `ProgressExport['kind']` used to be two independent string
+ * literals that had to be kept equal by hand, and porting a course is exactly
+ * the moment they stop being equal: this file arrived from course two with
+ * EXPORT_KIND correctly updated and the interface still saying
+ * `termux-intermediate-progress`, which is two of the three typecheck errors
+ * the advanced course shipped with. `typeof EXPORT_KIND` makes that
+ * unrepresentable — there is now one string, and the next port changes it once.
+ */
+export const EXPORT_KIND = 'termux-advanced-progress' as const;
+
 /** Wire format for an exported progress file. */
 export interface ProgressExport {
 	/** Guards against importing an unrelated JSON file and wiping progress. */
-	kind: 'termux-intermediate-progress';
+	kind: typeof EXPORT_KIND;
 	version: 1;
 	exportedAt: string;
 	profile: Profile;
 	completed: string[];
 }
-
-export const EXPORT_KIND = 'termux-advanced-progress';
 
 /** Serialize current progress as pretty-printed JSON. */
 export function exportProgress(data: ProgressData = load()): string {
@@ -204,9 +215,10 @@ export function importProgress(json: string): ImportResult {
 	if (candidate.kind !== EXPORT_KIND) {
 		return {
 			ok: false,
-			// Names the course, because the likeliest wrong file by far is the
-			// BEGINNER course's export — same site, same button, different slugs.
-			error: "That's a JSON file, but not a Termux: Intermediate progress file.",
+			// Names THIS course, because the likeliest wrong file by far is a
+			// sibling course's export — same site, same button, different slugs.
+			// Course three has two siblings to be confused with, not one.
+			error: "That's a JSON file, but not a Termux: Advanced progress file.",
 		};
 	}
 	if (!Array.isArray(candidate.completed)) {
