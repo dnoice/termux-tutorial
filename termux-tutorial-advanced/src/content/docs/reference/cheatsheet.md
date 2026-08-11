@@ -17,10 +17,10 @@ two, what it costs.
 on your own device, against your own storage. Nothing here has been rehearsed on
 your behalf.
 
-**Several of these spend disk, battery and heat.** A Debian rootfs is
-**1.5–3 GB** before you install anything into it, and PRoot traces every system
-call, so everything inside runs slower and warmer. `df -h $PREFIX` before
-anything that downloads.
+**Several of these spend disk, battery and heat.** Plan for **1.5–3 GB** by the
+time Debian is set up the way you want it — a few hundred megabytes unpacked,
+gigabytes after `apt` — and PRoot traces every system call, so everything inside
+runs slower and warmer. `df -h $PREFIX` before anything that downloads.
 
 **On a phone keyboard:** Volume Down + a letter is Ctrl + that letter. Volume Up
 is a fixed list — `E`=Esc, `T`=Tab, `W`/`A`/`S`/`D`=arrows, `L`=`|`, `H`=`~`,
@@ -457,10 +457,12 @@ glxinfo | grep -i "renderer string"
 ```
 
 `virpipe` is the socket-based driver; plain `virgl` expects a real virtio-gpu
-device you do not have. If the socket is not visible inside, log out and bind it:
+device you do not have. The socket is only visible inside if you logged in with
+`--shared-tmp` — the same flag the desktop lessons use, for the same reason. If
+`/tmp/.virgl_test` is missing, log out and log back in with it:
 
 ```bash
-proot-distro login debian --bind $PREFIX/tmp:/tmp
+proot-distro login debian --shared-tmp
 ```
 
 Proving it with an A/B, since a plausible renderer string is not proof:

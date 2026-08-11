@@ -8,8 +8,16 @@ import { COURSES, COURSE_MANIFEST } from '../lib/courses.ts';
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 const TITLE = 'Termux Tutorial — Linux on your Android phone';
+/*
+ * This is the meta description — the sentence a search result shows — so an
+ * over-claim here is the first thing a stranger reads and the last thing anyone
+ * thinks to check. It claimed "a live terminal in every lesson"; only the
+ * beginner course is close to that, and the advanced course has none by design.
+ * Kept in step with HERO_PROMISE in lib/hero.ts, which makes the same promise
+ * to the same reader.
+ */
 const DESCRIPTION =
-	'A three-part, hands-on Termux course with a live terminal in every lesson. Start at the beginning, or pick up where you left off.';
+	'A three-part, hands-on Termux course. The first course puts a live terminal in nearly every lesson, so you can start before you install anything.';
 
 /*
  * Reference links belong ON the course they describe, not in a list of their

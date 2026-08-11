@@ -131,8 +131,11 @@ never fixed it. Go read the session's output.
 
 ## A black screen where the desktop should be
 
-Black is not one bug. It is about eight, and they look identical from the
-outside. This is the entry to bookmark.
+Black is not one bug, and the causes look identical from the outside. The
+desktop lesson walks **six** of them as a chain you test in order; this page
+catalogues those six plus the ones that turn up outside that chain, so it runs
+longer. Work the chain first — it is ordered so each test rules out everything
+above it — and come back here if it clears and the screen is still black.
 
 **Run the cheap test first.** From wherever you were about to start the
 desktop — inside the container if that is where the session lives:
@@ -202,9 +205,10 @@ which is the one place on earth every X client looks for its socket. It is a
 "remember this", and you cannot add it to a session that is already open. Exit
 and log in again.
 
-Whether a plain `proot-distro login` shares anything of `/tmp` by default
-depends on your proot-distro version, which is exactly why the answer is to
-**look** rather than to assume:
+A plain `proot-distro login` gives the container its own empty `/tmp`. That is
+the whole reason the flag exists — if the directory were shared anyway,
+`--shared-tmp` would do nothing. Confirm it rather than take anyone's word for
+it, this page included:
 
 ```bash
 ls -l /tmp/.X11-unix/

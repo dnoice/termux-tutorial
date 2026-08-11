@@ -18,7 +18,10 @@ hero:
   # also over-built: a passive clause, a cutesy metaphor, a filler beat, and a
   # three-preposition tail. This says what the thing is, what you get out of it,
   # and why you can start now, in two sentences that read aloud cleanly.
-  tagline: Android runs Linux underneath — Termux is the terminal it never shipped with. This course takes you from your first command to a phone that does real work. Every lesson has a live terminal, so you can start before you install anything.
+  # "nearly every lesson", not "every": the terminal is mounted on 8 of the 11
+  # lessons. The same page said "nearly" further down, so the file disagreed
+  # with itself 53 lines apart. Do not round it back up.
+  tagline: Android runs Linux underneath — Termux is the terminal it never shipped with. This course takes you from your first command to a phone that does real work. Nearly every lesson has a live terminal, so you can start before you install anything.
   actions:
     # Relative (no leading slash): frontmatter cannot use import.meta.env.BASE_URL,
     # and Starlight does not base-prefix hero action links. Relative resolves
@@ -68,8 +71,8 @@ four; this practice terminal just has it switched on from the start.
 <TermuxTerminal client:only="react" hint="Lost? Type 'help' — it lists everything this practice terminal knows." />
 
 :::tip[Before you start]
-**You need nothing at all to begin.** Every lesson has a terminal built in, so
-you can read and practise the entire course right here and install Termux later
+**You need nothing at all to begin.** Nearly every lesson has a terminal built
+in, so you can read and practise the course right here and install Termux later
 — that's the point of the thing above.
 
 **To follow along on your phone:** Android 7 or newer, about **200 MB** free,

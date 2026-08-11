@@ -49,8 +49,11 @@ sessions, scripts, and a shell you are comfortable in are all treated as known.
 :::caution[This is the course that can actually cost you something]
 Everything before this was reversible in seconds. Not here.
 
-**Disk.** A Debian rootfs is **1.5–3 GB** before you install anything into it.
-A desktop takes more. Check your free space before you start, not after.
+**Disk.** Plan the phone around **1.5–3 GB**, and start with about **4 GB
+free**. That is where a working setup ends up, not what you see on day one —
+unpacked, before you install anything, a base Debian is a few hundred megabytes;
+`apt` and its cache are what take you into gigabytes. Lesson two measures the
+real number on your own device.
 
 **Battery and heat.** PRoot traces every system call, so everything inside the
 container runs slower and warmer than the same command outside it. A long build

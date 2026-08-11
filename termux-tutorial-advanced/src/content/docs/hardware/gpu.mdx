@@ -250,16 +250,20 @@ forwarding.
    ls -l /tmp/.virgl_test
    ```
 
-   `proot-distro login` normally binds Termux's `$PREFIX/tmp` onto the
-   container's `/tmp`, which is why the two sides land on the same socket with
-   no extra work. Verify it rather than trust it — bindings differ between
-   proot-distro versions.
+   A plain `proot-distro login` does **not** share that directory. The
+   container gets its own empty `/tmp` — a different directory that happens to
+   have the same name — which is exactly why `--shared-tmp` exists and why the
+   desktop lessons made you prove the boundary with a file you could see from
+   both sides. If the flag were unnecessary, it would be a no-op.
 
-   If it is missing, log out and bind it explicitly:
+   So the socket is only visible from inside if you logged in with the flag:
 
    ```bash
-   proot-distro login debian --bind $PREFIX/tmp:/tmp
+   proot-distro login debian --shared-tmp
    ```
+
+   You cannot add it to a session that is already running — log out and back
+   in. The same flag, for the same reason, as the desktop half of the course.
 
 2. **Select the driver.**
 

@@ -225,13 +225,18 @@ export default function ProgressDashboard() {
 						<Icon name="trophy" size={22} className="tmx-dashboard__trophy" />
 						<h2 className="tmx-island__title">Course complete — all {s.total} lessons.</h2>
 					</div>
-					{/* Running copy, not chrome — so the body serif, not Inter. */}
+					{/* Running copy, not chrome — so the body serif, not Inter.
+
+					    COURSE-SPECIFIC. This described course two's curriculum until
+					    2026-08-11; see the matching note in LessonComplete.tsx. Rewrite
+					    both together, or a learner finishing this course is congratulated
+					    for a different one. */}
 					<p className="tmx-island__prose">
-						Your phone answers to a script now. You can read its battery, sensors and
-						clipboard from the shell, hand work back to Android as notifications and
-						toasts, write scripts that survive a reboot and Doze, and put a server on
-						the internet — then close the door behind you. That last part is the one
-						most people never learn.
+						Your phone runs a real distribution now. You can install a Debian rootfs
+						without root, live inside it, bring a desktop up on the device's own
+						screen, hand 3D work to the GPU where the hardware allows it, and compile
+						for aarch64 on the handset when nobody has packaged what you need. That
+						last part is the one most people never reach.
 					</p>
 					<div className="tmx-dashboard__actions">
 						<a href={`${BASE}/reference/cheatsheet/`} className="tmx-btn tmx-btn--primary tmx-tap">

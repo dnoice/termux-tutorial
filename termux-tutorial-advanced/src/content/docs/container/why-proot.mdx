@@ -202,9 +202,10 @@ phone:
 - **Heat.** Sustained work inside the container is sustained CPU with an
   overhead multiplier on top. A long build is a genuinely hot phone, and a hot
   phone throttles, which makes the build longer.
-- **Disk.** A base Debian rootfs is **1.5–3 GB** before you install a single
-  thing into it. That is not a PRoot cost — it is what a distribution weighs —
-  but it lands on the same storage as your photos.
+- **Disk.** Plan for **1.5–3 GB** by the time you have a working setup — a few
+  hundred megabytes unpacked, gigabytes once `apt` and its cache have been
+  through. That is not a PRoot cost — it is what a distribution weighs — but it
+  lands on the same storage as your photos.
 
 Plug the phone in before anything long. That is not a slogan; a build that dies
 at 3% battery leaves a half-written rootfs behind.

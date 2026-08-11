@@ -24,13 +24,23 @@ import LessonComplete from '../../components/profile/LessonComplete.tsx';
     plugin and must stay root-relative. */}
 export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-{/* The sibling courses are separate repos and separate GitHub Pages sites, so
-    these are external URLs and check-links.mjs skips them. Course one is
-    finished and deployed, so it links to the live site. Course three is still a
-    shell, so it links to the repository rather than to a page that would 404. */}
+{/* The three courses are one deployed site assembled by the repo-root workflow:
+    the hub at the series root, then /beginner/, /intermediate/, /advanced/.
+    Those paths sit OUTSIDE this course's own base, which is why they are built
+    from SERIES_ROOT rather than from `base` — check-links.mjs recognises them
+    as cross-course and defers them to scripts/check-assembled-links.mjs, which
+    resolves them against the assembled tree.
+
+    These were absolute github.io / github.com URLs, from when the courses were
+    separate repositories on separate Pages sites. Both had rotted: the
+    "advanced" one named a repository that does not exist (it is a directory in
+    this monorepo), and the "beginner" one pointed at the series root, which is
+    now the hub rather than course one. Deriving them means a base change moves
+    them and the link checker can actually see them. */}
+export const SERIES_ROOT = base.replace(/\/[^/]+$/, '');
 export const SERIES = {
-  beginner: 'https://dnoice.github.io/termux-tutorial/',
-  advanced: 'https://github.com/dnoice/termux-tutorial-advanced',
+  beginner: `${SERIES_ROOT}/beginner/`,
+  advanced: `${SERIES_ROOT}/advanced/`,
 };
 
 That's course two. You started it with a Linux box that happened to be running
@@ -164,7 +174,7 @@ before it.
       <span class="tmx-panel__kicker">Course 3 · Next</span>
       <h3 class="tmx-panel__title">Advanced</h3>
     </div>
-    <p class="tmx-panel__body">Full distributions under PRoot, a graphical desktop over X11, audio bridging, and building packages of your own — the parts that stop treating Termux as a shell and start treating it as a computer. <a href={SERIES.advanced}>Follow the repo</a> — it's in build.</p>
+    <p class="tmx-panel__body">A full Debian userland under PRoot, a desktop drawn on the phone's own screen with Termux:X11 and XFCE, 3D work handed to the GPU where the hardware allows it, and packages compiled on the handset — the parts that stop treating Termux as a shell and start treating it as a computer. <a href={SERIES.advanced}>Start course three</a>.</p>
   </div>
 </div>
 

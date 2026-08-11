@@ -85,10 +85,18 @@ export default function LessonComplete({ slug }: LessonCompleteProps) {
 						<div className="tmx-island__title">
 							That was the last one — all {s.total} lessons complete.
 						</div>
+						{/* COURSE-SPECIFIC COPY. This paragraph arrived from course two
+						    during the port and described Termux:API, schedulers and
+						    tunnels — none of which this course teaches — to someone who
+						    had just finished nine lessons on PRoot, X11 and the GPU. It
+						    is the last thing a learner reads, and nothing catches it:
+						    not the typechecker, not check-curriculum, not a test.
+						    If this file is ported again, this paragraph and the matching
+						    one in ProgressDashboard.tsx are the two that must be rewritten. */}
 						<p className="tmx-island__prose tmx-island__prose--sm">
-							Your phone answers to a script now — its sensors and clipboard readable,
-							Android notifications writable, jobs that outlive a reboot, and a server
-							you can expose and then shut properly.{' '}
+							There is a Debian userland on your phone now — a desktop you can draw on
+							its screen, the GPU reachable where the hardware allows it, and a
+							toolchain that builds what nobody packaged for you.{' '}
 							{/* .not-content excludes this from Starlight's prose link
 							    styling, so it would otherwise render as a default
 							    browser-blue underline — a second hue. */}

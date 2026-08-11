@@ -50,8 +50,22 @@ export interface HeroVariant {
  * with it. The rotating headlines above sell capability; this is the line that
  * says who is invited.
  */
+/*
+ * ONE CLAUSE WAS NARROWED, 2026-08-11, AND THE REST IS UNTOUCHED AUTHOR COPY.
+ *
+ * It said "Every lesson includes a live terminal". Measured: the beginner course
+ * mounts a terminal on 8 of its 11 lessons, the intermediate course mounts one
+ * on its Welcome page and NO lesson, and the advanced course has none at all —
+ * deliberately, and it says so in prose on six of its own pages.
+ *
+ * The promise is aimed at someone deciding whether to start, and where they
+ * start is course one, so the claim is now scoped to course one rather than
+ * dropped. That keeps the reassurance the line exists to give ("you can begin
+ * before you install anything") without the series over-claiming on behalf of
+ * two courses that answer the question differently.
+ */
 export const HERO_PROMISE =
-	'New to Linux, or just new to Termux? Start here. Three courses guide you through installing and setting up Termux, learning the command line, and eventually writing scripts of your own. Every lesson includes a live terminal, so you can learn by doing from the very start.';
+	'New to Linux, or just new to Termux? Start here. Three courses guide you through installing and setting up Termux, learning the command line, and eventually writing scripts of your own. The first course puts a live terminal in nearly every lesson, so you can learn by doing before you install anything.';
 
 /*
  * Variant 0 is the fallback that ships in the HTML, so it has to work for
