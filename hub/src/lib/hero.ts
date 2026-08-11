@@ -26,9 +26,17 @@ export interface HeroVariant {
 	copy: string;
 }
 
-/** Never rotates. The one line that has to answer "so what is this?". */
+/*
+ * Never rotates. The one line that has to answer "so what is this?".
+ *
+ * It ended "Nothing to install to start", which had two `to` phrases colliding
+ * and no object: install WHAT, and start WHAT? The reader had to guess between
+ * the courses, the terminal and Termux itself. Naming Termux removes the guess,
+ * and "to start" now clearly attaches to beginning the course rather than to
+ * the install.
+ */
 export const HERO_PROMISE =
-	'Three hands-on courses. A live terminal in every lesson. Nothing to install to start.';
+	'Three hands-on courses. A live terminal in every lesson. You don’t need Termux installed to start.';
 
 /*
  * Variant 0 is the fallback that ships in the HTML, so it has to work for
@@ -81,11 +89,19 @@ export const HERO_VARIANTS: HeroVariant[] = [
 			'and automate repeatable tasks with tools designed for exactly that.',
 	},
 	{
-		title: 'Meet Android from the command line',
+		/*
+		 * Was "Meet Android from the command line", which inverted its subject:
+		 * the reader already uses Android daily and does not need to meet it —
+		 * the command line is the thing being introduced. Stating it as a claim
+		 * about Android instead keeps the surprise and points the introduction
+		 * the right way round.
+		 */
+		title: 'Android has a Linux side',
 		copy:
-			'Termux brings a Linux command-line environment to Android and opens the door ' +
-			'to a huge toolbox of familiar utilities. Learn how small commands combine ' +
-			'into fast, flexible, and surprisingly powerful workflows.',
+			'Underneath the home screen is the same kernel that runs most of the ' +
+			'internet, and the same toolbox that comes with it. Termux is the door to ' +
+			'that side of your phone — and to the utilities that make small commands ' +
+			'add up to fast, flexible work.',
 	},
 	{
 		title: 'The terminal changes the scale',
