@@ -1,0 +1,341 @@
+<title>Documentation Audit — Termux Tutorial monorepo</title>
+<style>
+  /* Fire Watch Design Tokens v6 — the repo's own system, applied to its own audit.
+     Light = Parchment Dossier, dark = Sentinel Obsidian. Brass is the single accent.
+     Light brass is #886713, the AA-corrected value — deliberately NOT the #8b6914
+     this audit found still quoted in six source files. */
+  :root {
+    --bg:        #f5f0e8;
+    --surface:   #faf7f2;
+    --surface-2: #efe8dc;
+    --ink:       #2a2620;
+    --ink-soft:  #4a453c;
+    --muted:     #6f6a5e;
+    --rule:      #ddd3c2;
+    --brass:     #886713;
+    --brass-dim: #b99a4a;
+    --crit:      #9c3328;
+    --warn:      #8a6516;
+    --ok:        #4a6741;
+    --shadow: 0 1px 2px rgba(42,38,32,.06), 0 4px 14px rgba(42,38,32,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:        #14161b;
+      --surface:   #1a1d23;
+      --surface-2: #22262e;
+      --ink:       #e8dfcc;
+      --ink-soft:  #c9c0ad;
+      --muted:     #8e8676;
+      --rule:      #33383f;
+      --brass:     #d4b15c;
+      --brass-dim: #8a7433;
+      --crit:      #e08074;
+      --warn:      #d4b15c;
+      --ok:        #8fbf84;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:        #14161b;
+    --surface:   #1a1d23;
+    --surface-2: #22262e;
+    --ink:       #e8dfcc;
+    --ink-soft:  #c9c0ad;
+    --muted:     #8e8676;
+    --rule:      #33383f;
+    --brass:     #d4b15c;
+    --brass-dim: #8a7433;
+    --crit:      #e08074;
+    --warn:      #d4b15c;
+    --ok:        #8fbf84;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+  }
+
+  /* Font stacks mirror the repo's own --font-* fallback chains verbatim. */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Source Serif 4 Variable", Charter, "Bitstream Charter", Georgia, serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  .wrap { max-width: 62rem; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+
+  h1, h2, h3 { font-family: "Crimson Pro Variable", Georgia, Cambria, serif; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.1; letter-spacing: -.015em; font-weight: 600; }
+  h2 {
+    font-size: 1.6rem; font-weight: 600; margin: 3.5rem 0 0;
+    padding-bottom: .5rem; border-bottom: 2px solid var(--brass);
+  }
+  h3 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+  p { margin: 0; }
+  a { color: var(--brass); }
+
+  .eyebrow {
+    font-family: Inter, system-ui, sans-serif;
+    font-size: .7rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  code, .mono {
+    font-family: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .86em;
+  }
+  code { background: var(--surface-2); padding: .1em .35em; border-radius: 3px; color: var(--ink); }
+
+  header.head { display: flex; flex-direction: column; gap: .75rem; padding-bottom: 2rem; border-bottom: 1px solid var(--rule); }
+  .sub { color: var(--ink-soft); font-size: 1.05rem; max-width: 60ch; }
+
+  section { display: flex; flex-direction: column; gap: 1rem; }
+  .stack { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem; }
+  .prose { max-width: 68ch; color: var(--ink-soft); }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 2rem; }
+  .metric { background: var(--surface); padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: .2rem; }
+  .metric .n { font-family: "Crimson Pro Variable", Georgia, serif; font-size: 2.1rem; line-height: 1; font-variant-numeric: tabular-nums; color: var(--brass); }
+  .metric .l { font-family: Inter, system-ui, sans-serif; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+  /* Finding cards with a severity stripe */
+  .card { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--rule); padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: .55rem; box-shadow: var(--shadow); }
+  .card.p1 { border-left-color: var(--crit); }
+  .card.p2 { border-left-color: var(--warn); }
+  .card.ok { border-left-color: var(--ok); }
+  .card.mine { border-left-color: var(--brass); }
+  .card .top { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+  .card .where { font-family: Inter, system-ui, sans-serif; font-size: .74rem; color: var(--muted); }
+
+  .pill { font-family: Inter, system-ui, sans-serif; font-size: .65rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: .18em .5em; border-radius: 2px; white-space: nowrap; }
+  .pill.crit { background: var(--crit); color: var(--bg); }
+  .pill.warn { background: var(--warn); color: var(--bg); }
+  .pill.ok   { background: var(--ok);   color: var(--bg); }
+  .pill.mine { background: var(--brass); color: var(--bg); }
+  .pill.ghost { border: 1px solid var(--rule); color: var(--muted); }
+
+  .verdict { font-size: .92rem; color: var(--ink-soft); }
+  .verdict b { color: var(--ink); }
+
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  .scroll { overflow-x: auto; }
+  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-family: Inter, system-ui, sans-serif; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+
+  ul.tight { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: .4rem; color: var(--ink-soft); }
+
+  .callout { background: var(--surface-2); border: 1px solid var(--rule); border-left: 4px solid var(--brass); padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: .5rem; }
+  .callout .eyebrow { color: var(--brass); }
+
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: .85rem; }
+  :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+
+<header class="head">
+  <p class="eyebrow">Documentation audit &middot; 2026-08-11</p>
+  <h1>Every comment is a claim until the code agrees</h1>
+  <p class="sub">Fourteen read-only inspectors across the Termux Tutorial monorepo, partitioned by file family rather than by course. Two lanes: inline source documentation (primary) and markdown (secondary).</p>
+</header>
+
+<div class="metrics">
+  <div class="metric"><span class="n">414</span><span class="l">Findings</span></div>
+  <div class="metric"><span class="n">82</span><span class="l">P1 &middot; contradicts code</span></div>
+  <div class="metric"><span class="n">47</span><span class="l">P2 &middot; dangerous</span></div>
+  <div class="metric"><span class="n">106</span><span class="l">Cross-file conflicts</span></div>
+  <div class="metric"><span class="n">7</span><span class="l">Unverified</span></div>
+</div>
+
+<section>
+<h2>Phase 0 — the state everything was measured against</h2>
+<div class="stack">
+  <div class="card ok">
+    <div class="top"><span class="pill ok">Confirmed</span><h3>The pipeline is green; only the Pages setting is missing</h3></div>
+    <p class="verdict">CI run <code>31543379168</code> passed <b>every step</b> through <code>Verify cross-course links</code> — including the three new orchestration scripts — and failed only at <code>Configure Pages</code>: <em>"Get Pages site failed&hellip; verify that the repository has Pages enabled."</em> That is a repo setting, not a code defect. It matters here because several documents claim the site is deployed. <b>It has never served a page.</b></p>
+  </div>
+  <div class="card ok">
+    <div class="top"><span class="pill ok">Baseline</span><h3>Clean rollback point</h3></div>
+    <p class="verdict">Working tree clean at <code>1d18ee2</code>, in sync with <code>origin/main</code>, before any auditor ran.</p>
+  </div>
+</div>
+</section>
+
+<section>
+<h2>The one cause behind most of it</h2>
+<p class="prose" style="margin-top:1rem">Nearly every stale comment traces to a single mechanism: <b>code was copied, and the prose came with it.</b> The triplication is partial and inconsistent, which is exactly what makes it dangerous — a maintainer reading one copy cannot tell intentional divergence from drift.</p>
+<div class="scroll" style="margin-top:.5rem">
+<table>
+  <thead><tr><th>File family</th><th>State across the three courses</th><th class="num">Lines</th></tr></thead>
+  <tbody>
+    <tr><td><code>TermuxTerminal.tsx</code></td><td>Byte-identical &times;3 — but <b>advanced never renders it</b></td><td class="num">823</td></tr>
+    <tr><td><code>global.css</code>, <code>shell.ts</code></td><td>intermediate == advanced; beginner has diverged</td><td class="num">2999 / 1392</td></tr>
+    <tr><td><code>progress.ts</code>, <code>astro.config.mjs</code></td><td>All three differ</td><td class="num">~290 / ~750</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="prose">This is why the audit was partitioned by file family. Three per-course agents would each have met the same <code>WAS/NOW</code> narrative in isolation and produced three conflicting rewrites.</p>
+</section>
+
+<section>
+<h2>Reconciliations — where sources disagreed and I adjudicated</h2>
+<p class="prose" style="margin-top:1rem">Auditors were forbidden from resolving cross-file contradictions. These are the calls I made, with the evidence that decided them.</p>
+
+<div class="stack">
+
+  <div class="card p1">
+    <div class="top"><span class="pill crit">P1</span><span class="pill ghost">Two auditors disagreed</span><h3>The <code>#8b6914</code> trap — and why a find-and-replace would break the build's colours</h3></div>
+    <p class="where">hub/src/styles/_tokens.css:193 &middot; global.css:235 &middot; astro.config.mjs:195 &middot; Avatar.tsx:23</p>
+    <p class="verdict">One auditor reported the hex <em>"does not occur anywhere in the repository"</em>; another reported all three configs quote it. <b>Both were wrong, and the truth is a remediation hazard neither caught.</b></p>
+    <p class="verdict"><code>#8b6914</code> is <b>live and correct</b> as <code>--color-warning</code>. It is <b>also</b> quoted in six places as if it were <code>--color-brand</code>, which is <code>#886713</code> — the value stepped down to clear AA. A naive replace of <code>8b6914 &rarr; 886713</code> silently changes the warning colour across all four projects.</p>
+    <p class="verdict"><b>Disposition:</b> fix only the occurrences that <em>describe brand</em>, by hand, each verified in context.</p>
+  </div>
+
+  <div class="card p1">
+    <div class="top"><span class="pill crit">P1</span><span class="pill mine">My own</span><h3>&ldquo;The layout lives in <code>projects.mjs</code> and nowhere else&rdquo; is false</h3></div>
+    <p class="where">README.md:107 &middot; package.json:26-28</p>
+    <p class="verdict">I wrote that yesterday. <code>deploy.yml</code> still hardcodes the topology in <b>17 places</b> — the header tree, four <code>cache-dependency-path</code> entries, and twelve <code>working-directory</code> fields. <code>hub/src/lib/courses.ts</code> hardcodes the three course ids again with no import.</p>
+    <p class="verdict"><b>Disposition:</b> the claim is aspirational; either narrow the wording to what is true, or make it true. Not both files quietly saying different things.</p>
+  </div>
+
+  <div class="card p1">
+    <div class="top"><span class="pill crit">P1</span><span class="pill mine">My own</span><h3>&ldquo;Vite 7&rdquo; in eight places; installed is Vite 8</h3></div>
+    <p class="where">projects.mjs:41 &middot; dev.mjs:207 &middot; check-hmr.mjs:11 &middot; README:100 &middot; four astro.config.mjs</p>
+    <p class="verdict">Verified installed: <b>Vite 8.2.1</b> (hub, intermediate, advanced), <b>8.1.5</b> (beginner). The per-server-token behaviour the comments describe is real; the version attached to it is not. Fixing three and missing five would be worse than leaving it.</p>
+  </div>
+
+  <div class="card p2">
+    <div class="top"><span class="pill warn">P2</span><span class="pill mine">My own</span><h3>Node engines: the only local signal is wrong</h3></div>
+    <p class="where">package.json:14 &middot; deploy.yml:52</p>
+    <p class="verdict">Root declares <code>&gt;=20</code>. Installed Astro 7.2.1 declares <code>&gt;=22.12.0</code>. <code>deploy.yml</code> states a third range. CI pins Node 22 so CI is fine — <b>a contributor on Node 20 is not</b>, and root <code>package.json</code> is the only Node statement they will find.</p>
+  </div>
+
+  <div class="card p1">
+    <div class="top"><span class="pill crit">P1</span><h3>Topology: a two-course, separate-repo world survives in ~12 documents</h3></div>
+    <p class="where">beginner + intermediate CLAUDE.md, READMEs, CONTRIBUTING, where-next.mdx</p>
+    <p class="verdict">Multiple docs still say beginner is the site root, that the base is <code>/termux-tutorial-intermediate</code>, and that the courses are <em>"different repos on the same origin."</em> Authority — <code>projects.mjs</code>, <code>deploy.yml</code>, every <code>astro.config.mjs</code>, and the assembled tree — says the hub owns the root and the courses nest beneath it.</p>
+    <p class="verdict"><b>This is load-bearing:</b> intermediate's CLAUDE.md is the rationale document for the <code>localStorage</code> key invariant, and its stale version <em>understates the danger</em>. The courses now share a base <b>directory</b>, not merely an origin.</p>
+  </div>
+
+  <div class="card p2">
+    <div class="top"><span class="pill warn">P2</span><span class="pill ghost">Needs device confirmation</span><h3><code>--shared-tmp</code>: two lessons teach opposite mechanics</h3></div>
+    <p class="where">hardware/gpu.mdx:252 vs desktop/across-the-boundary.mdx:100 vs troubleshooting.md:205</p>
+    <p class="verdict"><code>gpu.mdx</code> says <code>proot-distro login</code> binds <code>$PREFIX/tmp</code> onto the container's <code>/tmp</code> by default; <code>across-the-boundary.mdx</code> says categorically that it does not, which is the stated reason the flag exists. Troubleshooting hedges between them.</p>
+    <p class="verdict"><b>My call:</b> <code>across-the-boundary</code> is correct — a default bind would make <code>--shared-tmp</code> a no-op, and that lesson proves the boundary with a touch-a-file test rather than asserting it. <b>Marked for on-device confirmation before publishing</b>, since it is a claim about third-party behaviour.</p>
+  </div>
+
+  <div class="card p2">
+    <div class="top"><span class="pill warn">P2</span><h3>Rootfs size: seven assertions against one measurement</h3></div>
+    <p class="verdict">Eight files state <b>1.5–3 GB before anything is installed</b>. <code>first-distro.mdx</code> disputes it by name: unpacked-before-anything is <em>a few hundred megabytes</em>, and 1.5–3 GB is the after-a-working-setup figure. The lesson that actually measures it on-device outranks the seven that repeat it.</p>
+  </div>
+
+  <div class="card p2">
+    <div class="top"><span class="pill warn">P2</span><h3>BootSplash: the doc describes a component that no longer exists</h3></div>
+    <p class="verdict">Beginner's <code>BootSplash.astro</code> was rebuilt to <b>derive</b> its teardown (5,750 ms) and explicitly removed the change-one-change-the-other hazard. Its CLAUDE.md still describes the old hand-synced version at ~4.4 s and quotes a "~3.8s" header the file no longer has. Meanwhile <b>intermediate and advanced still ship the older revision</b> — hardcoded <code>setTimeout(end, 4400)</code>, header saying ~3.8 s. The doc is accurately describing the <em>siblings</em>, filed under the wrong course.</p>
+  </div>
+
+  <div class="card p2">
+    <div class="top"><span class="pill warn">P2</span><span class="pill ghost">Your call</span><h3>Licence: MIT or BSD 3-Clause?</h3></div>
+    <p class="verdict">Root <code>LICENSE</code> is BSD 3-Clause. Root <code>package.json</code> says MIT. All three course <code>LICENSE</code> files and manifests say MIT. Both hub footers say BSD 3-Clause. <b>I will not guess at licensing</b> — this needs your decision.</p>
+  </div>
+
+</div>
+</section>
+
+<section>
+<h2>Learner-visible defects found while reading</h2>
+<p class="prose" style="margin-top:1rem">Out of scope for a documentation audit — reported, not fixed, per the guardrails. Listed first because they are the only findings a <em>reader of the site</em> would ever encounter.</p>
+<div class="stack">
+  <div class="card p1">
+    <div class="top"><span class="pill crit">P1</span><h3>The Advanced course congratulates you for finishing Intermediate</h3></div>
+    <p class="where">termux-tutorial-advanced/src/components/profile/LessonComplete.tsx:89 &middot; ProgressDashboard.tsx:230</p>
+    <p class="verdict">Verified directly. Advanced ships course two's completion copy: <em>"Your phone answers to a script now — its sensors and clipboard readable, Android notifications writable, jobs that outlive a reboot&hellip;"</em> Advanced teaches PRoot, X11, XFCE, the GPU and on-device builds. <b>None of that.</b></p>
+    <p class="verdict">These are the two paragraphs a learner reads at the exact moment they finish a nine-lesson course. Same half-applied-port class as the three bugs already fixed — and nothing catches it: no typecheck error, no guard, no test.</p>
+  </div>
+  <div class="card p1">
+    <div class="top"><span class="pill crit">P1</span><h3>Intermediate's exit page links to a repository that does not exist</h3></div>
+    <p class="where">intermediate/src/content/docs/where-next.mdx:32-33</p>
+    <p class="verdict">Points at <code>github.com/dnoice/termux-tutorial-advanced</code> — a <em>directory</em> inside the monorepo, not a repo. Its "back to the beginner course" link targets the series root, which is now the hub. Both hardcoded absolute URLs that no guard can check.</p>
+  </div>
+  <div class="card p2">
+    <div class="top"><span class="pill warn">P2</span><h3>Three finished courses still described as unfinished</h3></div>
+    <p class="verdict">Root <code>README.md</code> lists Advanced as <em>"Not started"</em> and <em>"when it exists"</em>; <code>global-docs/README.md</code> says it <em>"does not exist yet"</em>; beginner's <code>where-next.mdx</code> calls Intermediate and Advanced <em>"in build"</em> and advertises an <b>audio bridging</b> lesson Advanced does not have, while omitting the GPU lesson it does.</p>
+  </div>
+  <div class="card p2">
+    <div class="top"><span class="pill warn">P2</span><h3>&ldquo;A live terminal in every lesson&rdquo; — the site's own meta description</h3></div>
+    <p class="verdict">Asserted in <code>hero.ts</code>, <code>hub/src/pages/index.astro</code>, and beginner's <code>index.mdx</code>. Reality: 9 of 11 beginner lessons, <b>1</b> intermediate lesson, and <b>zero</b> in Advanced — where five lesson files state in prose that there is no terminal anywhere in the course.</p>
+  </div>
+</div>
+</section>
+
+<section>
+<h2>Where a comment should have been a guard</h2>
+<p class="prose" style="margin-top:1rem">The audit surfaced <b>15 AUTOMATE candidates</b> — invariants currently held by prose alone, each with a silent failure mode. Flagged, not implemented. The strongest:</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Invariant held by a comment</th><th>What breaks, silently</th></tr></thead>
+  <tbody>
+    <tr><td>The hub text-parses each course's <code>progress.ts</code> for <code>LESSONS</code> and <code>KEY</code></td><td>A key mismatch falls back to a hardcoded literal instead of failing — the hub silently reads the wrong course's progress</td></tr>
+    <tr><td><code>SANDBOX_PATH</code> must name a real lesson</td><td>Advanced violates it now. Boot button stuck on "needs a refresh", green build</td></tr>
+    <tr><td>Screen tokens must be byte-identical in light and dark blocks</td><td>Guaranteed by a 12-line comment pasted <b>eight times</b></td></tr>
+    <tr><td>The xterm palette mirrors CSS tokens and both Expressive Code themes</td><td>A four-way sync kept by prose. The stale brass hex proves it already failed</td></tr>
+    <tr><td><code>teaches[]</code> must have one entry per lesson</td><td>Intermediate is 7 vs 8; beginner has <b>never</b> satisfied it at 8 vs 11</td></tr>
+    <tr><td><code>print.css</code> must be last in <code>customCss</code></td><td>Only visible in print preview, which nothing exercises</td></tr>
+    <tr><td>Advanced must contain no practice terminal</td><td>Asserted on six learner-facing pages, enforced nowhere</td></tr>
+    <tr><td>Every <code>TOUCH_KEYS</code> entry has a handler</td><td><b>ESC is already inert</b> — the comment asserting this invariant is false today</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="callout">
+  <p class="eyebrow">The model to copy</p>
+  <p class="verdict"><code>hub/src/lib/courses.ts:88</code> throws at build time when a course parses to zero lessons, rather than shipping a hub that denies a finished course exists. One auditor called it <em>"the best example in the repo of a comment's invariant being enforced instead of remembered."</em> That is the target shape for the list above.</p>
+</div>
+</section>
+
+<section>
+<h2>Dispositions</h2>
+<div class="scroll" style="margin-top:1rem">
+<table>
+  <thead><tr><th>Disposition</th><th class="num">Count</th><th>Reading</th></tr></thead>
+  <tbody>
+    <tr><td><b>REWRITE</b></td><td class="num">269</td><td>Information worth keeping, expressed badly or stale in detail</td></tr>
+    <tr><td><b>KEEP</b></td><td class="num">90</td><td>Explicitly do not touch — as valuable as knowing what to change</td></tr>
+    <tr><td><b>MOVE</b></td><td class="num">26</td><td>Archaeology that belongs in a history document, not a source file</td></tr>
+    <tr><td><b>AUTOMATE</b></td><td class="num">15</td><td>Should be a build assertion, not a warning label</td></tr>
+    <tr><td><b>DELETE</b></td><td class="num">14</td><td>Narrates obvious code or refers to code that no longer exists</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="prose">Only 14 outright deletions against 90 explicit keeps. The rubric held: auditors preserved reasoning and corrected it rather than culling comment volume.</p>
+</section>
+
+<section>
+<h2>Decisions I need from you before remediation</h2>
+<div class="stack">
+  <div class="card mine">
+    <div class="top"><span class="pill mine">1</span><h3>Licence — MIT or BSD 3-Clause?</h3></div>
+    <p class="verdict">Four files say one thing, three say the other. Not mine to pick.</p>
+  </div>
+  <div class="card mine">
+    <div class="top"><span class="pill mine">2</span><h3>Do the out-of-scope code defects get fixed in this pass?</h3></div>
+    <p class="verdict">The Advanced completion copy is learner-visible and one edit. The guardrails say a documentation audit does not silently become behavioural remediation — so I will fix it only if you widen the scope, and otherwise leave it listed.</p>
+  </div>
+  <div class="card mine">
+    <div class="top"><span class="pill mine">3</span><h3>Where does the archaeology go?</h3></div>
+    <p class="verdict">26 MOVE findings need a destination. My proposal: <code>global-docs/decisions/</code> — one file per durable decision, with the war stories that justify them. The alternative is deleting them and trusting git.</p>
+  </div>
+  <div class="card mine">
+    <div class="top"><span class="pill mine">4</span><h3>Dead ported code in Advanced — keep or delete?</h3></div>
+    <p class="verdict"><code>shell.ts</code> (1,392 lines), <code>TermuxTerminal.tsx</code>, <code>LiveSandbox.tsx</code>, <code>PracticeSection.astro</code>, <code>BootSplash.astro</code> and a 29 KB SVG ship in Advanced with nothing importing them. <b>Fixing comments in files nothing renders may be the wrong remediation.</b> Deleting is a code change; I need your call.</p>
+  </div>
+</div>
+</section>
+
+<footer>
+  <p>14 regions &middot; 0 agent failures &middot; 580 tool calls &middot; read-only. Findings carry file, line, evidence and disposition; 7 returned <span class="mono">UNVERIFIED</span> rather than guessing.</p>
+</footer>
+
+</div>
