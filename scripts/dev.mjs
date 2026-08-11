@@ -2,19 +2,16 @@
 /**
  * dev.mjs — ONE command, ONE port, ONE URL, for the whole series.
  *
- * THE PROBLEM THIS SOLVES. Four Astro projects meant four `npm run dev`s on
- * four ports, and the one thing the series is built around — walking from the
- * hub into a course and back via the switcher — could not be done on any of
- * them. Those links are absolute (`/termux-tutorial/advanced/…`) and resolve
- * only when all four projects sit under one origin, which happened exactly
- * once: inside the deploy workflow, in CI, after a push. So the primary
- * navigation of the site was the single least-testable thing about it, and
- * "does the switcher work" was a question answered by reading code.
+ * A reverse proxy on one port, routing by the SAME path prefixes GitHub Pages
+ * uses. Each child dev server already serves at its own `base`, so paths pass
+ * through untouched — no rewriting, and the URL in your address bar is
+ * character-for-character the production URL. That matters because the series
+ * switcher and every cross-course link are absolute paths into sibling projects
+ * that do not exist in any single project's dev tree, so this is the only local
+ * configuration in which they resolve at all.
  *
- * HOW. A reverse proxy on one port, routing by the SAME path prefixes GitHub
- * Pages uses. Each child dev server already serves at its own `base`, so paths
- * pass through untouched — no rewriting, no `basePath` trickery, and the URL in
- * your address bar locally is character-for-character the production URL.
+ * Why it is built this way, and the four failures that shaped it:
+ * global-docs/decisions/2026-08-11-single-entry-point.md
  *
  *     localhost:4321/termux-tutorial/            -> hub          (:4331)
  *     localhost:4321/termux-tutorial/beginner/   -> beginner     (:4332)
@@ -91,19 +88,18 @@ function waitForPort(port, timeoutMs) {
 /**
  * Start one project's dev server.
  *
- * TWO MODES, AND WE MUST SURVIVE BOTH. Astro 7 runs `astro dev` in the
- * foreground normally, but daemonizes it when it detects a non-TTY or an AI
- * agent environment. In background mode the spawned child EXITS immediately
- * while the server keeps running — so liveness cannot be tracked by the child
- * process. That is why readiness is decided by polling the PORT, and why
- * shutdown asks Astro to stop rather than killing a pid we hold: only one of
- * those works in both modes.
+ * TWO MODES, AND BOTH MUST WORK. Astro runs `astro dev` in the foreground
+ * normally and daemonizes it under a non-TTY or an AI-agent environment. In
+ * background mode the spawned child EXITS while the server keeps running, so:
  *
- * NO `--ignore-lock`. It looks right — a stale lock from a previous session
- * should not block a start — but Astro rejects it outright in background mode,
- * because the lock file is how `astro dev stop` finds the server it started.
- * The flag made every project fail to launch with an error we had piped away.
- * Stale locks are cleared by the `astro dev stop` sweep before startup instead.
+ *   - readiness is decided by polling the PORT, never by watching the child;
+ *   - shutdown asks Astro to stop rather than killing a pid we hold.
+ *
+ * Those are the only two forms that work in both modes.
+ *
+ * NO `--ignore-lock` — Astro rejects it in background mode, because the lock
+ * file is how `astro dev stop` finds its own server. Stale locks are cleared by
+ * the sweep before startup instead.
  */
 function startProject(project) {
 	const child = spawn(
@@ -112,17 +108,11 @@ function startProject(project) {
 		{ cwd: project.dir, stdio: ['ignore', 'pipe', 'pipe'] }
 	);
 	/*
-	 * BUFFER EVERYTHING, PRINT ON FAILURE.
-	 *
-	 * This started as a filter that showed only lines matching /error|failed/,
-	 * to keep four servers' banners from burying the proxy's own URL. It threw
-	 * away the message that mattered: Astro was refusing `--ignore-lock` in
-	 * background mode and exiting, and all four projects failed silently while
-	 * the supervisor reported a 90-second timeout. A timeout is what you see
-	 * when you discard the reason.
-	 *
-	 * Quiet on success, complete on failure — a filter cannot know in advance
-	 * which line will turn out to be the one you needed.
+	 * BUFFER EVERYTHING, PRINT ON FAILURE — quiet on success, complete on
+	 * failure. Do not reduce this to a /error|failed/ filter: a filter cannot
+	 * know in advance which line will turn out to be the one you needed, and
+	 * the last one discarded the message that explained why all four projects
+	 * refused to start, leaving only a 90-second timeout.
 	 */
 	const log = [];
 	const keep = (buf) => {
@@ -240,16 +230,12 @@ server.on('upgrade', (req, socket, head) => {
 /**
  * Claim the public port BEFORE starting anything.
  *
- * THIS ORDERING IS THE WHOLE POINT, and getting it wrong caused a genuinely
- * confusing failure. Previously the four dev servers were started first and the
- * proxy bound last, so a second `npm run dev` would start four servers, fail to
- * bind, and then run its shutdown — which stops dev servers by asking Astro to,
- * and Astro finds them by lock file, not by who spawned them. So the second
- * supervisor's cleanup killed the FIRST supervisor's servers, and a healthy
- * session started 502ing because of a command that had already exited.
- *
- * Binding first means a port conflict is discovered while we still own nothing,
- * and the failure costs the running session precisely nothing.
+ * INVARIANT: nothing is spawned, and no teardown handler is registered, until
+ * this resolves. Teardown stops dev servers by asking Astro, and Astro finds
+ * them by lock file rather than by who spawned them — so a supervisor that
+ * starts servers and THEN fails to bind will, on its way out, kill the servers
+ * belonging to the session already running on that port. Binding first means a
+ * port conflict costs the running session nothing.
  */
 function claimPort() {
 	return new Promise((resolve, reject) => {

@@ -20,7 +20,7 @@ export default function Avatar({ name, emoji, size = 40, ring = true }: AvatarPr
 			// family, ink and the emoji-case background moved to .tmx-avatar in
 			// global.css — including the old hardcoded #201509, which duplicated
 			// --fg-on-emphasis wrongly: it does not flip on parchment, where brass
-			// darkens to #8b6914 and near-black initials landed at ~3.5:1.
+			// darkens to #886713 and near-black initials landed at ~3.5:1.
 			style={{
 				width: size,
 				height: size,

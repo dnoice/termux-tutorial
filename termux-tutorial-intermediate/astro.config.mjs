@@ -12,9 +12,10 @@ const BASE = process.env.BASE ?? '/termux-tutorial/intermediate';
 
 /*
  * All three courses live in ONE repository — https://github.com/dnoice/termux-tutorial
- * — and deploy as ONE GitHub Pages site. The beginner course is the site root
- * (`/termux-tutorial`), this one is nested at `/termux-tutorial/intermediate`,
- * and advanced will be `/termux-tutorial/advanced`.
+ * — and deploy as ONE GitHub Pages site. The HUB is the site root
+ * (`/termux-tutorial`); the three courses nest beneath it at
+ * `/termux-tutorial/{beginner,intermediate,advanced}`. The layout is declared
+ * once in `scripts/projects.mjs` at the monorepo root.
  *
  * That is why REPO_URL is a constant here rather than derived from BASE: the
  * repo name and the base path are no longer the same string.
@@ -192,7 +193,7 @@ const fontPreloads = FONT_FACES.filter((face) => face.preload).map((face) => ({
  * Contrast is measured against the plate Starlight actually paints —
  * --sl-color-gray-6 (#141820) in dark, --sl-color-gray-7 (#efe9de) in light —
  * and every value clears AA. Note the light brass is --color-brand-emphasis
- * (#6f5310, 5.95:1) and NOT --color-brand (#8b6914), which measures 4.21:1 on
+ * (#6f5310, 5.95:1) and NOT --color-brand (#886713), which measures 4.35:1 on
  * that plate: under AA for the single most-read token in the whole course.
  * ====================================================================== */
 
@@ -320,10 +321,17 @@ const STRUCTURED_DATA = {
 			isAccessibleForFree: true,
 			educationalLevel: 'Intermediate',
 			learningResourceType: 'Interactive tutorial',
-			// One entry per lesson in the sidebar below, in the same order. The
-			// beginner course drifted here twice — lessons were registered without
-			// this list being updated, so it advertised five skills while teaching
-			// seven. Nothing validates it, so it is on you.
+			// WHAT THIS LIST IS: a summary of the skills the course advertises to
+			// search engines, NOT a per-lesson index. It has been described as
+			// "one entry per lesson" and has never satisfied that reading —
+			// beginner currently lists 8 against 11 lessons, intermediate 7
+			// against 8 — so the rule is stated here as what it actually is:
+			// the list must COVER the curriculum, in sidebar order, with no
+			// entry describing something the course does not teach.
+			//
+			// Nothing validates it. check-curriculum.mjs already reads both this
+			// file and LESSONS, so asserting coverage is a few lines away; it has
+			// not been done. Until it is, adding a lesson means editing this too.
 			teaches: [
 				'Installing the Termux:API package and its companion app with matching signatures',
 				'Reading battery, network, location and sensor data from the shell',

@@ -2,18 +2,13 @@
 /**
  * preview.mjs — serve the ASSEMBLED site the way GitHub Pages will.
  *
- * WHY A SERVER OF OUR OWN. The four `astro dev` servers each serve one project
- * at one base, on its own port. That is fine for editing a lesson and useless
- * for the thing this series is actually built around: walking from the hub into
- * a course, using the series switcher, and coming back. Those links are
- * `/termux-tutorial/advanced/…` — absolute, and correct only when all four
- * projects sit in ONE tree under ONE origin. A dev server serves exactly one of
- * them, so every cross-course link 404s locally while being perfectly correct
- * in production. That gap is why cross-course navigation kept being verified by
- * reasoning rather than by clicking it.
+ * Mounts `_site/` at `/termux-tutorial`, which is what Pages does, so the links
+ * in the built HTML are the links being served — no rewriting. Use this to
+ * check the BUILT artifact; use `npm run dev` to edit.
  *
- * This mounts `_site/` at `/termux-tutorial`, which is what Pages does, so the
- * links in the built HTML are the links being served. No rewriting.
+ * A single `astro dev` server cannot answer cross-course links: they are
+ * absolute paths into sibling projects that are not in its tree. That is why
+ * this exists and why `dev.mjs` proxies rather than picking one project.
  *
  *   node scripts/preview.mjs            # assumes _site/ is already assembled
  *   PORT=4321 node scripts/preview.mjs

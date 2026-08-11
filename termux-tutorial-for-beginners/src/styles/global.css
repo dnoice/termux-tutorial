@@ -825,7 +825,7 @@ h1#_top {
 }
 /* --tmx-sheen is tuned for each theme's PAGE surface, which is right for the
    ghost button but wrong for the primary one: the primary fill is brass in both
-   themes, and on parchment that brass is DARK (#8b6914 -> #6f5310), so the
+   themes, and on parchment that brass is DARK (#886713 -> #6f5310), so the
    parchment sheen (dark ink) would vanish on exactly the button people click
    most. Primary always sweeps with the on-brand variant instead. Custom
    properties inherit into pseudo-elements, so setting it on the button reaches
@@ -1239,7 +1239,7 @@ h1#_top {
 	text-transform: uppercase;
 	/* CONTRAST HEADROOM, not a pass mark. This was --color-brand, which on the
 	   panel's effective light surface (--bg-surface at 60% over the canvas =
-	   rgb(248,244,238)) measured #8b6914 -> 4.64:1 — 0.14 above the 4.5:1
+	   rgb(248,244,238)) measures #886713 -> 4.80:1 — 0.30 above the 4.5:1
 	   requirement, on the smallest text on the site, in all-caps, at 0.14em
 	   tracking. That combination thins the strokes further, so it reads lighter
 	   than the number claims, and ANY future lightening of the panel surface or
@@ -1899,7 +1899,7 @@ html[data-splash] {
 	font-size: var(--text-xs);
 	font-weight: var(--weight-semibold);
 	/* Was the hardcoded #201509, which duplicated --fg-on-emphasis WRONGLY:
-	   it does not flip on parchment, where brass darkens to #8b6914. */
+	   it does not flip on parchment, where brass darkens to #886713. */
 	color: var(--fg-on-emphasis);
 	cursor: pointer;
 }

@@ -11,10 +11,9 @@
  *     _site/intermediate/   <- course two
  *     _site/advanced/       <- course three
  *
- * WAS: eight lines of shell inline in `deploy.yml`, with the topology spelled
- * out by hand. It existed only inside CI, so the one arrangement in which
- * cross-course links resolve was also the one nobody could produce locally.
- * The layout now comes from `projects.mjs`, and this runs anywhere.
+ * The layout comes from `projects.mjs`, and this runs anywhere — which is the
+ * point: assembly used to exist only inside CI, so the one arrangement in which
+ * cross-course links resolve was the one nobody could reproduce before pushing.
  *
  *     node scripts/assemble.mjs
  *     node scripts/assemble.mjs --build     # build each project first

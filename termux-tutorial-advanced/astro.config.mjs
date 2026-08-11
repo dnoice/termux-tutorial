@@ -12,9 +12,10 @@ const BASE = process.env.BASE ?? '/termux-tutorial/advanced';
 
 /*
  * All three courses live in ONE repository — https://github.com/dnoice/termux-tutorial
- * — and deploy as ONE GitHub Pages site. The beginner course is the site root
- * (`/termux-tutorial`), this one is nested at `/termux-tutorial/intermediate`,
- * and advanced will be `/termux-tutorial/advanced`.
+ * — and deploy as ONE GitHub Pages site. The HUB is the site root
+ * (`/termux-tutorial`); the three courses nest beneath it at
+ * `/termux-tutorial/{beginner,intermediate,advanced}`. The layout is declared
+ * once in `scripts/projects.mjs` at the monorepo root.
  *
  * That is why REPO_URL is a constant here rather than derived from BASE: the
  * repo name and the base path are no longer the same string.
@@ -32,18 +33,25 @@ const DESCRIPTION =
 	'Course three of the Termux series. Run a real Debian userland under PRoot, bring up an X11 display server and a full XFCE desktop on your phone\'s own screen, hand 3D work to the GPU, and compile packages nobody has built for Android.';
 
 /**
- * The one page that needs cross-origin isolation: `automation/shell-scripts`
- * hosts LiveSandbox (CheerpX/WebVM), the only SharedArrayBuffer consumer.
+ * INERT IN THIS COURSE, AND POINTING AT A PAGE THAT DOES NOT EXIST HERE.
  *
- * The beginner course parked the sandbox on its packages lesson. It moves here
- * because WebVM is x86 Debian, not Android: it cannot run a single `termux-*`
- * command, so it is worthless on the API lessons and genuinely useful on the
- * one lesson that is plain POSIX shell — write a script, chmod it, run it,
- * break it, with no risk to a real device.
+ * `SANDBOX_PATH` names the one page needing cross-origin isolation for
+ * `SharedArrayBuffer`, which only `LiveSandbox` (CheerpX/WebVM) needs. It came
+ * across from course two still naming course two's slug —
+ * `automation/shell-scripts` — and this course has no `automation/` directory
+ * at all. Its content tree is `container/`, `desktop/`, `hardware/`,
+ * `reference/`, plus index/progress/where-next.
  *
- * IF THAT LESSON EVER MOVES, MOVE THIS TOO — nothing validates it, and the
- * failure is silent: the Boot button simply never leaves its "needs a refresh"
- * state, because the service worker was never registered for that path.
+ * Nothing breaks today: no page in this course imports `LiveSandbox`, so the
+ * injected loader's path test simply never matches and
+ * `public/coi-serviceworker.js` is never registered. It is dead weight with a
+ * landmine attached — add a sandbox to this course without fixing this constant
+ * and you get a Boot button permanently stuck on "needs a refresh", with a
+ * green build and nothing in the console.
+ *
+ * Fix it by pointing at the real page at the moment a sandbox is added, or
+ * delete the constant and the loader together. Nothing validates it;
+ * `check-curriculum.mjs` already enumerates the slugs and could.
  */
 const SANDBOX_PATH = `${BASE_PATH}/automation/shell-scripts/`;
 const COI_SW_URL = `${BASE_PATH}/coi-serviceworker.js`;
@@ -192,7 +200,7 @@ const fontPreloads = FONT_FACES.filter((face) => face.preload).map((face) => ({
  * Contrast is measured against the plate Starlight actually paints —
  * --sl-color-gray-6 (#141820) in dark, --sl-color-gray-7 (#efe9de) in light —
  * and every value clears AA. Note the light brass is --color-brand-emphasis
- * (#6f5310, 5.95:1) and NOT --color-brand (#8b6914), which measures 4.21:1 on
+ * (#6f5310, 5.95:1) and NOT --color-brand (#886713), which measures 4.35:1 on
  * that plate: under AA for the single most-read token in the whole course.
  * ====================================================================== */
 

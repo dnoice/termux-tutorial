@@ -5,15 +5,16 @@
  * WHY THIS FILE EXISTS AT THE MONOREPO ROOT.
  *
  * Every project here ships its own `scripts/check-links.mjs`, and each one is
- * blind in the same way: it walks its OWN `dist/` and cannot see a sibling.
- * A link from the advanced course to a beginner lesson is correct in production
- * and unresolvable at course-build time, so the per-course checkers can only
- * wave it through. That left cross-course links completely unverified — and the
- * cost was not hypothetical. The agent writing `container/why-proot` found that
- * a deep link into a sibling course would FAIL its course's checker, so it
- * wrote around the problem: sibling courses are named in prose and never
- * linked. A guard that cannot express "correct" pushes authors away from the
- * correct thing.
+ * blind in the same way: it walks its OWN `dist/` and cannot see a sibling. A
+ * link from the advanced course to a beginner lesson is correct in production
+ * and unresolvable at course-build time, so the per-course checkers DEFER it —
+ * and this resolves it. Deferred is not skipped.
+ *
+ * Worth knowing before you weaken either half: when the per-course checkers
+ * REJECTED deep sibling links instead of deferring them, an author concluded
+ * cross-course linking was unsupported and wrote around it, naming sibling
+ * courses in prose rather than linking them. A guard that cannot express the
+ * correct thing teaches people to avoid it.
  *
  * The only tree in which a cross-course link is checkable is the assembled one:
  *
@@ -22,11 +23,8 @@
  *     _site/intermediate/  course two
  *     _site/advanced/      course three
  *
- * WHAT THIS REPLACES. The deploy workflow used to check the hub's `index.html`
- * and nothing else — a single file, and the one least likely to be wrong, since
- * it is generated from a manifest. Every hand-authored link in every lesson went
- * unchecked. This walks the whole tree and reports the totals it actually
- * counted, so no figure here can go stale.
+ * It walks the whole tree and reports the totals it counted, so no figure in
+ * this file can go stale.
  *
  * Run it locally after assembling:  node scripts/check-assembled-links.mjs _site
  */

@@ -1,4 +1,29 @@
 /*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * NOT RENDERED IN THIS COURSE. Read this before trusting anything below.
+ *
+ * Termux: Advanced mounts no practice terminal, no live sandbox and no boot
+ * splash — deliberately, and its landing page says so to the learner in a
+ * section called "No practice terminal in this course". The simulator cannot
+ * install a rootfs, open an X11 socket or reach a GPU, so a terminal that
+ * answered `proot-distro login debian` would be lying about the one thing this
+ * course teaches.
+ *
+ * This file was ported from course two and kept, because deleting it is a
+ * bigger and riskier diff than leaving it and because a future lesson that IS
+ * plain POSIX shell could legitimately want it back.
+ *
+ * CONSEQUENCE FOR EVERY COMMENT BELOW: they describe behaviour as it occurs in
+ * courses one and two. Here, none of it executes — nothing imports this module,
+ * so it is not in any bundle. Do not "fix" a lesson to match a claim made in
+ * this file, and do not treat these comments as evidence about this course.
+ *
+ * If you ever mount it here: teach shell.ts this course's commands first
+ * (including their failure modes), and fix SANDBOX_PATH in astro.config.mjs,
+ * which still names a course-two slug.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+/*
  * LiveSandbox — a real, x86 Linux VM in the browser via CheerpX / WebVM.
  *
  * Unlike TermuxTerminal (a scripted simulation), this boots an unmodified
