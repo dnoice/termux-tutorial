@@ -1,0 +1,240 @@
+/*
+ * Print stylesheet — the paper edition of the course.
+ *
+ * WHY THIS EXISTS (it is not polish): this is a phone tutorial, and the phone
+ * cannot show the browser and Termux at the same time. Reading the cheatsheet
+ * on paper — or PDF-ing it onto a second device — is the only way to follow the
+ * lessons while typing them. Before this file `global.css` had no `@media
+ * print` block at all, so printing emitted the fixed Scatter Field background,
+ * the frosted header, the sidebar and the theme control, and clipped every code
+ * block at the right margin.
+ *
+ * Loaded AFTER global.css from `customCss` in astro.config.mjs, so these rules
+ * win on equal specificity without `!important` except where an inline style or
+ * a Starlight rule has to be beaten.
+ *
+ * Kept in its own file rather than appended to global.css: print rules are read
+ * and edited as a unit, and this way the ~1,200-line design system is not
+ * carrying a second rendering target inside it.
+ */
+
+@media print {
+	/* ------------------------------------------------------------------ *
+	 * PRINT INK
+	 *
+	 * The only place in this project where literal colours are correct:
+	 * a token DEFINITION for the paper medium. Both screen themes are wrong
+	 * on paper — Sentinel Obsidian floods the page with toner, and even
+	 * Parchment's #f5f0e8 canvas prints as a grey wash on an inkjet. Print
+	 * gets white paper and near-black ink, and every downstream rule that
+	 * consumes a background or foreground token follows automatically.
+	 * ------------------------------------------------------------------ */
+	:root,
+	:root[data-theme='dark'],
+	:root[data-theme='light'] {
+		color-scheme: light;
+
+		--bg-canvas: #ffffff;
+		--bg-surface: #ffffff;
+		--bg-surface-alt: #ffffff;
+		--bg-elevated: #ffffff;
+		--bg-hover: transparent;
+		--bg-active: transparent;
+
+		--fg-default: #000000;
+		--fg-body: #1a1a1a;
+		--fg-secondary: #1a1a1a;
+		--fg-muted: #444444;
+		--fg-subtle: #595959;
+		--fg-on-emphasis: #ffffff;
+
+		--border-default: #999999;
+		--border-muted: #bbbbbb;
+		--border-subtle: #dddddd;
+
+		/* Brass is a mid-tone gold; on white paper it measures ~2.4:1 and is
+		   unreadable. Print pushes the accent to near-black and keeps the
+		   distinction as weight, not hue. */
+		--color-brand: #4a3a10;
+		--color-brand-emphasis: #2b2108;
+		--color-brand-muted: transparent;
+		--color-link: #000000;
+
+		/* Shadows are ink with no meaning on paper. */
+		--shadow-sm: none;
+		--shadow-md: none;
+		--shadow-lg: none;
+		--shadow-xl: none;
+
+		/* The obsidian terminal screen inverts to a bordered white panel; see
+		   the .tmx-terminal rule below for why. */
+		--tmx-screen: #ffffff;
+		--tmx-screen-muted: #444444;
+		--tmx-screen-brand: #2b2108;
+		--tmx-bg-image: none;
+		--tmx-bg-opacity: 0;
+	}
+
+	@page {
+		margin: 16mm 14mm;
+	}
+
+	html,
+	body {
+		background: #ffffff;
+		color: #000000;
+	}
+
+	/* The Scatter Field is a fixed, blended pseudo-element: it would print on
+	   every single page. */
+	body::before,
+	body::after {
+		display: none !important;
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * CHROME — everything that is navigation, not content.
+	 * ------------------------------------------------------------------ */
+	header.header,
+	.sidebar-pane,
+	.right-sidebar,
+	.right-sidebar-container,
+	.pagination-links,
+	.sl-nav,
+	starlight-theme-select,
+	starlight-menu-button,
+	site-search,
+	.tmx-profile-badge,
+	/* The badge now sits in a slot with a 98px min-height (a CLS fix — see
+	   .tmx-profile-slot in global.css). Hiding only the badge would leave the
+	   empty slot reserving 98px of blank paper. */
+	.tmx-profile-slot,
+	/* A "mark this lesson complete" checkbox writes to localStorage. On paper
+	   it is a control that cannot be operated, next to a claim it cannot make. */
+	.tmx-lesson-complete,
+	.tmx-no-print {
+		display: none !important;
+	}
+
+	/* Starlight lays the page out with a grid that reserves the sidebar
+	   columns; with the sidebars gone the content must reclaim the width. */
+	.main-frame,
+	.main-pane,
+	.content-panel,
+	.sl-container {
+		padding: 0 !important;
+		margin: 0 !important;
+		max-width: none !important;
+		width: auto !important;
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * INTERACTIVE ISLANDS
+	 *
+	 * Both terminals are xterm canvases: they print as a black rectangle, or
+	 * as nothing at all, and neither is worth a page. They are replaced by a
+	 * one-line note so the reader knows something was there.
+	 * ------------------------------------------------------------------ */
+	/* Hide the CONTENTS, not the wrapper — a `display: none` element renders no
+	   ::after either, and the note below is the whole point. */
+	.tmx-terminal > *,
+	.tmx-sandbox > * {
+		display: none !important;
+	}
+
+	.tmx-terminal,
+	.tmx-sandbox {
+		height: auto !important;
+		min-height: 0 !important;
+		background: transparent !important;
+		border: 0 !important;
+		box-shadow: none !important;
+		padding: 0 !important;
+	}
+
+	.tmx-terminal::after,
+	.tmx-sandbox::after {
+		content: 'Interactive terminal — available in the online version.';
+		display: block;
+		font-family: var(--font-detail);
+		font-size: var(--text-xs);
+		font-style: italic;
+		color: var(--fg-muted);
+		border: 1px dashed var(--border-default);
+		border-radius: var(--radius-md);
+		padding: 0.75rem 1rem;
+	}
+
+	/* Copy buttons, the pointer spotlight overlay, and decorative sheens. */
+	.expressive-code .copy,
+	.tmx-btn::before,
+	:is(a.card, .tmx-card--link)::before,
+	:is(a.card, .tmx-card--link)::after {
+		display: none !important;
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * CONTENT — the part that has to survive.
+	 * ------------------------------------------------------------------ */
+
+	/* Code blocks clipped at the right margin were the single worst print
+	   defect: a wrapped command is readable, a truncated one is wrong. */
+	.expressive-code pre,
+	.expressive-code code,
+	pre,
+	code {
+		white-space: pre-wrap !important;
+		word-break: break-word;
+		overflow: visible !important;
+		background: transparent !important;
+		color: #000000 !important;
+		border: 1px solid var(--border-muted);
+	}
+
+	.expressive-code,
+	.expressive-code pre,
+	figure,
+	table,
+	blockquote,
+	.starlight-aside,
+	.tmx-card {
+		break-inside: avoid;
+		page-break-inside: avoid;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4 {
+		break-after: avoid;
+		page-break-after: avoid;
+	}
+
+	/* A printed link is a dead end unless the URL comes with it. Internal
+	   anchors and in-page jumps are skipped — their href is noise on paper. */
+	.sl-markdown-content a[href^='http']::after {
+		content: ' (' attr(href) ')';
+		font-family: var(--font-mono);
+		font-size: 0.85em;
+		word-break: break-all;
+		color: var(--fg-muted);
+	}
+
+	/* Cards and panels lose their fill and keep only their rule, so a grid of
+	   cards still reads as grouped content without printing eight grey boxes. */
+	.sl-markdown-content .card,
+	.tmx-card,
+	.tmx-panel {
+		background: transparent !important;
+		border: 1px solid var(--border-muted) !important;
+		box-shadow: none !important;
+	}
+
+	/* Nothing animates on paper. */
+	*,
+	*::before,
+	*::after {
+		animation: none !important;
+		transition: none !important;
+	}
+}

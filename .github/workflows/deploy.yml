@@ -7,7 +7,7 @@
 #   _site/                   <- the hub    (base /termux-tutorial)
 #   _site/beginner/          <- course 1   (base /termux-tutorial/beginner)
 #   _site/intermediate/      <- course 2   (base /termux-tutorial/intermediate)
-#   _site/advanced/          <- course 3   (not built yet)
+#   _site/advanced/          <- course 3
 #
 # The HUB is the site root: it is the front door, and the only page that can
 # see all three courses at once. Each course keeps its own package.json, its
@@ -57,6 +57,7 @@ jobs:
             hub/package-lock.json
             termux-tutorial-for-beginners/package-lock.json
             termux-tutorial-intermediate/package-lock.json
+            termux-tutorial-advanced/package-lock.json
 
       # --------------------------------------------------------------------- hub
       - name: Install — hub
@@ -103,6 +104,19 @@ jobs:
         working-directory: termux-tutorial-intermediate
         run: npm run build
 
+      # -------------------------------------------------------------- advanced
+      - name: Install — advanced
+        working-directory: termux-tutorial-advanced
+        run: npm ci
+
+      - name: Typecheck — advanced
+        working-directory: termux-tutorial-advanced
+        run: npm run check
+
+      - name: Build — advanced
+        working-directory: termux-tutorial-advanced
+        run: npm run build
+
       # ---------------------------------------------------------------- assemble
       - name: Assemble the site
         run: |
@@ -111,7 +125,7 @@ jobs:
           # The hub is the root of the published site.
           cp -r hub/dist _site
           # Each course nests under it, at the path its own `base` expects.
-          for course in beginner:termux-tutorial-for-beginners                         intermediate:termux-tutorial-intermediate; do
+          for course in beginner:termux-tutorial-for-beginners                         intermediate:termux-tutorial-intermediate                         advanced:termux-tutorial-advanced; do
             seg="${course%%:*}"; dir="${course##*:}"
             mkdir -p "_site/$seg"
             cp -r "$dir/dist/." "_site/$seg/"
@@ -122,7 +136,7 @@ jobs:
           # Fail loudly rather than deploying half a site. Each of these is a
           # page a visitor can reach from the hub's own markup, so a missing one
           # is a broken link on the front door.
-          for must in index.html beginner/index.html intermediate/index.html; do
+          for must in index.html beginner/index.html intermediate/index.html advanced/index.html; do
             test -f "_site/$must" || { echo "MISSING: _site/$must"; exit 1; }
           done
 

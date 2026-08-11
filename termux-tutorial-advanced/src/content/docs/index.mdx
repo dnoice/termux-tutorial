@@ -1,0 +1,116 @@
+---
+# Quoted because the value contains ": " — an unquoted `title: Termux:
+# Advanced` is a YAML mapping-in-mapping, not a string, and the build fails on
+# a type error that never mentions the colon.
+#
+# The site title is also "Termux: Advanced", so a matching page title renders
+# as "Termux: Advanced | Termux: Advanced" — the duplicate SERP entry the
+# beginner audit flagged. Starlight's mergeHead dedupes on tag === 'title' with
+# the later source winning, so this frontmatter `head` replaces the default.
+title: 'Termux: Advanced'
+head:
+  - tag: title
+    content: 'Linux Desktop on Android | Termux: Advanced'
+description: Course three of the Termux series. Run a real Debian container with PRoot, put a full XFCE desktop on your phone's screen, hand 3D work to the GPU, and build packages that nobody has packaged yet.
+template: splash
+hero:
+  tagline: A whole distribution, a real desktop, and the GPU — on a phone, with no root and no unlocked bootloader. This is the part people assume is impossible.
+  actions:
+    # Relative (no leading slash): frontmatter cannot use import.meta.env.BASE_URL,
+    # and Starlight does not base-prefix hero action links. Relative resolves
+    # against this splash page's own URL, which IS the base root — so it stays
+    # correct if `base` ever changes.
+    - text: Start course three
+      link: container/why-proot/
+      icon: right-arrow
+      variant: primary
+# Lesson one is Root Without Rooting — never the progress dashboard.
+next:
+  link: container/why-proot/
+  label: Root Without Rooting
+
+---
+
+import { Icon } from 'astro-icon/components';
+
+export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+export const SERIES_ROOT = base.replace(/\/[^/]+$/, '');
+
+<p class="tmx-lede">
+  Course two pointed the shell at the phone. This one goes underneath it: a
+  real Linux distribution running in user space, a desktop drawn on the
+  Android screen, and — where the hardware allows — 3D work handed to the same
+  GPU that renders your home screen.
+</p>
+
+This course assumes both earlier ones, or equivalent scars. `pkg`, storage,
+sessions, scripts, and a shell you are comfortable in are all treated as known.
+
+:::caution[This is the course that can actually cost you something]
+Everything before this was reversible in seconds. Not here.
+
+**Disk.** A Debian rootfs is **1.5–3 GB** before you install anything into it.
+A desktop takes more. Check your free space before you start, not after.
+
+**Battery and heat.** PRoot traces every system call, so everything inside the
+container runs slower and warmer than the same command outside it. A long build
+on a phone is a genuinely hot phone.
+
+**Time.** The desktop lessons have more moving parts than anything in the
+series, and a black screen has about six possible causes. Budget accordingly.
+
+None of it needs root, an unlocked bootloader, or a custom ROM. All of it is
+undoable — `proot-distro remove` takes the container back off the disk.
+:::
+
+<div class="tmx-rule"><Icon name="fa6-solid:layer-group" aria-hidden="true" focusable="false" /></div>
+
+## What you'll walk away with
+
+<div class="tmx-grid">
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:box-open" aria-hidden="true" focusable="false" /></span>
+    <h3 class="tmx-card__title">A real distribution, not an emulator</h3>
+    <p class="tmx-card__body">Debian in user space via PRoot — <code>apt</code>, real paths, real permissions — and a clear picture of what syscall interception can and cannot fake.</p>
+  </div>
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:display" aria-hidden="true" focusable="false" /></span>
+    <h3 class="tmx-card__title">A desktop on the screen in your hand</h3>
+    <p class="tmx-card__body">Termux:X11 and XFCE, brought up one layer at a time so a black screen is diagnosable rather than mysterious.</p>
+  </div>
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:microchip" aria-hidden="true" focusable="false" /></span>
+    <h3 class="tmx-card__title">The GPU, where your phone allows it</h3>
+    <p class="tmx-card__body">Bridging OpenGL out of the container with virglrenderer — the most device-dependent thing in the series, and treated as such.</p>
+  </div>
+  <div class="tmx-card">
+    <span class="tmx-chip"><Icon name="fa6-solid:hammer" aria-hidden="true" focusable="false" /></span>
+    <h3 class="tmx-card__title">Builds of your own</h3>
+    <p class="tmx-card__body">Compiling for aarch64 on the device, so "it isn't in the repo" stops being the end of the conversation.</p>
+  </div>
+</div>
+
+<div class="tmx-rule"><Icon name="fa6-solid:terminal" aria-hidden="true" focusable="false" /></div>
+
+## No practice terminal in this course
+
+The earlier courses put a simulator on nearly every page. This one does not, and
+the reason is worth stating plainly rather than hiding.
+
+The practice terminal is a hand-written interpreter over an in-memory
+filesystem. It cannot install a Debian rootfs, it cannot open an X11 socket, and
+it cannot talk to a GPU. A terminal that answered `proot-distro login debian`
+with anything at all would be lying about the one thing this course is
+teaching — and a lesson you can fake your way through is a lesson you have not
+learned.
+
+So this course needs your actual device. Every command here is one you run for
+real, and every failure is one you will actually have to read.
+
+<div class="tmx-cta">
+  <p class="tmx-cta__text">Start where the constraint is —</p>
+  <a class="tmx-btn tmx-btn--primary" href={`${base}/container/why-proot/`}>
+    <span>Root without rooting</span>
+    <Icon name="fa6-solid:arrow-right" width="14" height="14" aria-hidden="true" focusable="false" />
+  </a>
+</div>

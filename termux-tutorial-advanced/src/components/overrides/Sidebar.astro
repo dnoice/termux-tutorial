@@ -1,0 +1,18 @@
+---
+/*
+ * Sidebar override — renders the local ProfileBadge above Starlight's default
+ * sidebar navigation, so the avatar + progress bar appear on every page.
+ */
+import Default from '@astrojs/starlight/components/Sidebar.astro';
+import ProfileBadge from '../profile/ProfileBadge.tsx';
+---
+
+{/*
+	The badge is `client:only`, so the server emits an EMPTY <astro-island> and
+	the whole nav below it jumped down by the badge's full height the moment
+	React hydrated — a layout shift on every page load, on the element the eye
+	is already tracking. Reserving the box up front costs nothing and removes
+	the shift; see .tmx-profile-slot in global.css for the height derivation.
+*/}
+<div class="tmx-profile-slot"><ProfileBadge client:only="react" /></div>
+<Default><slot /></Default>
