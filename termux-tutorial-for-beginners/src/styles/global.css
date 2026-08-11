@@ -197,7 +197,7 @@
 	--tmx-screen-brand: #d4b15c;
 
 	/* Scatter Field, dark ink — shows at full over the obsidian. */
-	--tmx-bg-image: url('../assets/linux_scatter_field_v1.svg');
+	--tmx-bg-image: url('../assets/linux_scatter_field_v3.svg');
 	/* Was 1. At full strength the field's monospace fragments read as CONTENT
 	   rather than texture — `drwxr-xr-x 2 user user 4096 …` landing on a prose
 	   baseline is the noise the deleted scrim was compensating for. Dimming the
@@ -287,7 +287,7 @@
 	--tmx-screen-brand: #d4b15c;
 
 	/* Scatter Field, sepia ink on parchment — the light-theme twin. */
-	--tmx-bg-image: url('../assets/linux_scatter_field_light.svg');
+	--tmx-bg-image: url('../assets/linux_scatter_field_v3_light.svg');
 	--tmx-bg-opacity: 0.8;
 }
 
@@ -1490,6 +1490,13 @@ h1#_top {
  *
  * Everything animates opacity / transform / clip-path only, so the sequence is
  * composited and never triggers layout while the real page paints beneath it.
+ *
+ * TIMING LIVES IN THE COMPONENT, NOT HERE. BootSplash.astro derives the whole
+ * schedule from one constants object and passes it in as --t-* custom
+ * properties, because the teardown timer has to agree with these animations and
+ * a hand-copied number in two files will not stay agreed. The fallbacks below
+ * are the same values, so the stylesheet still reads sensibly on its own — but
+ * the component is the source of truth. Retune there.
  * ================================================================== */
 .tmx-splash {
 	position: fixed;
@@ -1523,7 +1530,7 @@ h1#_top {
 /* The exit. Lifts very slightly as it goes, so it reads as a curtain rising
    rather than a layer being switched off. */
 .tmx-splash[data-leaving] {
-	animation: tmx-splash-out 500ms var(--ease-in-out) forwards;
+	animation: tmx-splash-out var(--t-fade, 550ms) var(--ease-in-out) forwards;
 }
 @keyframes tmx-splash-out {
 	to {
@@ -1550,7 +1557,7 @@ html[data-splash] {
 
 /* 1. THE WINDOW — arrives first, everything else is staged around it. */
 .tmx-splash__window {
-	animation: tmx-splash-window 700ms var(--ease-out) both;
+	animation: tmx-splash-window var(--t-window, 800ms) var(--ease-out) both;
 	transform-box: fill-box;
 	transform-origin: center;
 }
@@ -1565,8 +1572,8 @@ html[data-splash] {
       as output arriving rather than as text fading up. 150ms apart, starting
       once the frame has settled. */
 .tmx-splash__line {
-	animation: tmx-splash-type 300ms steps(24, end) both;
-	animation-delay: calc(650ms + var(--i, 0) * 165ms);
+	animation: tmx-splash-type var(--t-line, 300ms) steps(24, end) both;
+	animation-delay: calc(var(--t-lines-start, 1000ms) + var(--i, 0) * var(--t-line-step, 150ms));
 }
 @keyframes tmx-splash-type {
 	from { clip-path: inset(0 100% 0 0); }
@@ -1580,8 +1587,8 @@ html[data-splash] {
       could follow them individually, which defeats the point of having eight
       distinct, individually-designed chips. */
 .tmx-splash__chip {
-	animation: tmx-splash-chip 650ms var(--ease-out) both;
-	animation-delay: calc(1500ms + var(--i, 0) * 190ms);
+	animation: tmx-splash-chip var(--t-chip, 560ms) var(--ease-out) both;
+	animation-delay: calc(var(--t-chips-start, 2700ms) + var(--i, 0) * var(--t-chip-step, 170ms));
 	transform-box: fill-box;
 	transform-origin: center;
 }
@@ -1595,8 +1602,8 @@ html[data-splash] {
 /* 4. THE WORDMARK — tracks out as it fades in, landing on the letter-spacing
       the artwork already specifies. Waits for the last chip to land. */
 .tmx-splash__wordmark {
-	animation: tmx-splash-word 750ms var(--ease-out) both;
-	animation-delay: 3550ms;
+	animation: tmx-splash-word var(--t-word, 700ms) var(--ease-out) both;
+	animation-delay: var(--t-word-start, 4650ms);
 }
 @keyframes tmx-splash-word {
 	from {

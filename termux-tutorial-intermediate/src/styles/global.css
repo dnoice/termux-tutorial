@@ -197,7 +197,7 @@
 	--tmx-screen-brand: #d4b15c;
 
 	/* Scatter Field, dark ink — shows at full over the obsidian. */
-	--tmx-bg-image: url('../assets/linux_scatter_field_v1.svg');
+	--tmx-bg-image: url('../assets/linux_scatter_field_v3.svg');
 	/* Was 1. At full strength the field's monospace fragments read as CONTENT
 	   rather than texture — `drwxr-xr-x 2 user user 4096 …` landing on a prose
 	   baseline is the noise the deleted scrim was compensating for. Dimming the
@@ -287,7 +287,7 @@
 	--tmx-screen-brand: #d4b15c;
 
 	/* Scatter Field, sepia ink on parchment — the light-theme twin. */
-	--tmx-bg-image: url('../assets/linux_scatter_field_light.svg');
+	--tmx-bg-image: url('../assets/linux_scatter_field_v3_light.svg');
 	--tmx-bg-opacity: 0.8;
 }
 

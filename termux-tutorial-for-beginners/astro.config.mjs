@@ -8,7 +8,7 @@ import icon from 'astro-icon';
 // GitHub Pages project site: https://<user>.github.io/<repo>
 // Override with the SITE / BASE env vars for a custom domain or fork.
 const SITE = process.env.SITE ?? 'https://dnoice.github.io';
-const BASE = process.env.BASE ?? '/termux-tutorial';
+const BASE = process.env.BASE ?? '/termux-tutorial/beginner';
 
 /** BASE with any trailing slash removed — the form every URL below builds on. */
 const BASE_PATH = BASE.replace(/\/$/, '');

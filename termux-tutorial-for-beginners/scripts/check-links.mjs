@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(root, 'dist');
 // Must match `base` in astro.config.mjs.
-const BASE = '/termux-tutorial';
+const BASE = (process.env.BASE ?? '/termux-tutorial/beginner').replace(/\/$/, '');
 
 const files = [];
 (function walk(dir) {
@@ -38,19 +38,32 @@ const toUrl = (p) => '/' + relative(DIST, p).split(sep).join('/');
 /*
  * Paths that exist in the PUBLISHED site but not in this course's own dist/.
  *
- * All three courses live in one repo and deploy as one Pages site: the beginner
- * course is the root and the others are assembled underneath it by
- * .github/workflows/deploy.yml. So a link from here to a sibling course is
- * correct and resolvable in production, while being genuinely absent from the
- * tree this script can see.
+ * All courses live in one repo and deploy as ONE Pages site, assembled by
+ * .github/workflows/deploy.yml:
+ *
+ *     /termux-tutorial/               the hub
+ *     /termux-tutorial/beginner/      this kind of course
+ *     /termux-tutorial/intermediate/
+ *     /termux-tutorial/advanced/
+ *
+ * So a link to the hub or a sibling course is correct and resolvable in
+ * production while being genuinely absent from the tree this script can see —
+ * AND it sits outside this course's own `base`, which is why the check has to
+ * happen BEFORE the base-prefix test rather than after it. Ordering it the
+ * other way reported every sibling link as "missing the base prefix", which is
+ * the opposite of true: they are correctly prefixed for the SERIES, not for
+ * this course.
  *
  * Listed explicitly rather than pattern-matched, so a typo in a sibling link is
- * still caught — the whole point of the guard. Add a course here when it starts
- * being assembled into the site, and not before: an entry for a course that is
+ * still caught — the whole point of the guard. Add a course when it starts
+ * being assembled into the site and not before: an entry for a course that is
  * not deployed yet turns a real 404 into a silent pass.
  */
-const SIBLING_COURSES = new Set(['/intermediate/', '/advanced/']);
-
+/** The series root: this course's base minus its own last segment. */
+const SERIES_ROOT = BASE.replace(/\/[^/]+$/, '') || '';
+const SIBLINGS = new Set(
+	['/', '/beginner/', '/intermediate/', '/advanced/'].map((p) => `${SERIES_ROOT}${p}`)
+);
 const broken = [];
 const unprefixed = [];
 
@@ -65,6 +78,10 @@ for (const file of pages) {
 
 		let abs;
 		if (pathPart.startsWith('/')) {
+			// The hub and sibling courses live outside this course's base but
+			// inside the series — correct in production, absent from this dist/.
+			if (SIBLINGS.has(pathPart)) continue;
+
 			if (pathPart !== BASE && !pathPart.startsWith(BASE + '/')) {
 				unprefixed.push(`${toUrl(file)}  ->  ${url}`);
 				continue;
@@ -73,9 +90,6 @@ for (const file of pages) {
 		} else {
 			abs = posix.resolve(pageDir === '/' ? '/' : pageDir, pathPart);
 		}
-
-		// A sibling course is deployed alongside this one, not inside it.
-		if (SIBLING_COURSES.has(abs)) continue;
 
 		const target = [join(DIST, abs), join(DIST, abs, 'index.html')].find(
 			(c) => existsSync(c) && statSync(c).isFile()

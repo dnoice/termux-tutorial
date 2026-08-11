@@ -1,6 +1,9 @@
 ---
 /*
- * BootSplash — a ~3.8s sequenced boot animation over the landing page.
+ * BootSplash — a sequenced boot animation over the landing page.
+ *
+ * Total runtime is DERIVED, not stated here — see THE SCHEDULE below. Any
+ * number written into this comment would be the first thing to go stale.
  *
  * THE RULES THIS OBEYS, because a splash screen is a tax on everyone who did
  * not ask for it and the difference between "sophisticated" and "infuriating"
@@ -102,9 +105,75 @@ svg = must(
 	'<svg class="tmx-splash__art" aria-hidden="true" focusable="false"',
 	'tag svg root'
 );
+
+/* ====================================================================== *
+ * THE SCHEDULE — one source of truth for the CSS and the teardown timer.
+ *
+ * The first cut felt rushed, and the cause was structural rather than any one
+ * duration being too short:
+ *
+ *   1. THE PHASES OVERLAPPED. Lines began at 650ms while the window was still
+ *      arriving (it landed at 700ms), and chips began at 1500ms while lines
+ *      were still typing until 2270ms — 770ms of two separate things moving at
+ *      once. Simultaneous motion reads as busy; sequential motion reads as
+ *      deliberate.
+ *   2. THE CADENCE WAS INCONSISTENT — 165ms between lines against 190ms
+ *      between chips. Close enough to read as a mistake rather than a choice.
+ *   3. THERE WAS NO HOLD. The curtain lifted 100ms after the wordmark landed,
+ *      so the assembled composition was never actually on screen. Biggest of
+ *      the three, because it means the payoff frame did not exist.
+ *
+ * Now each phase has the stage to itself, phases are separated by a BEAT of
+ * stillness, one cadence runs throughout, and the whole thing HOLDS before it
+ * lifts.
+ *
+ * Every number below is derived rather than hand-computed, and this object
+ * emits BOTH the CSS custom properties and the teardown delay — so the
+ * "change one, change the other" hazard the previous version carried is gone.
+ * ====================================================================== */
+const T = {
+	window: 800,   // the frame arrives
+	beat: 200,     // stillness between phases — the thing that was missing
+	line: 300,     // one output line reveals
+	lineStep: 150, // cadence between lines
+	chip: 560,     // one chip settles into place
+	chipStep: 170, // cadence between chips
+	word: 700,     // the wordmark tracks in
+	hold: 400,     // everything still, so the finished composition is SEEN
+	fade: 550,     // the curtain
+};
+
+const linesStart = T.window + T.beat;
+const linesEnd = linesStart + (line - 1) * T.lineStep + T.line;
+const chipsStart = linesEnd + T.beat;
+const chipsEnd = chipsStart + (CHIPS.length - 1) * T.chipStep + T.chip;
+const wordStart = chipsEnd + T.beat;
+/** The moment nothing is moving any more — when the curtain may lift. */
+const teardownAt = wordStart + T.word + T.hold;
+
+const scheduleVars = [
+	`--t-window:${T.window}ms`,
+	`--t-line:${T.line}ms`,
+	`--t-line-step:${T.lineStep}ms`,
+	`--t-lines-start:${linesStart}ms`,
+	`--t-chip:${T.chip}ms`,
+	`--t-chip-step:${T.chipStep}ms`,
+	`--t-chips-start:${chipsStart}ms`,
+	`--t-word:${T.word}ms`,
+	`--t-word-start:${wordStart}ms`,
+	`--t-fade:${T.fade}ms`,
+].join(';');
 ---
 
-<div class="tmx-splash" data-tmx-splash hidden aria-hidden="true" set:html={svg} />
+<div
+	class="tmx-splash"
+	data-tmx-splash
+	data-teardown={String(teardownAt)}
+	style={scheduleVars}
+	hidden
+	aria-hidden="true"
+	set:html={svg}
+/>
 
 <script is:inline>
 	/*
@@ -155,13 +224,13 @@ svg = must(
 		};
 
 		/*
-		 * The full sequence, and every way to cut it short. 4400ms is derived,
-		 * not picked: the last chip starts at 1500 + 7×190 = 2830ms and runs
-		 * 650ms, the wordmark then takes 3550→4300ms, so this is the first
-		 * moment nothing is still moving. Change a delay in the CSS and this
-		 * number has to move with it.
+		 * The full sequence, and every way to cut it short. The delay is read
+		 * from data-teardown, which the component derived from the same
+		 * constants the CSS animations use — so this timer cannot drift out of
+		 * step with the animation it is waiting on.
 		 */
-		const timer = setTimeout(end, 4400);
+		const teardown = Number(el.getAttribute('data-teardown')) || 5800;
+		const timer = setTimeout(end, teardown);
 		const skip = () => {
 			clearTimeout(timer);
 			end();

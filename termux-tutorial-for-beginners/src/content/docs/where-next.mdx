@@ -30,9 +30,15 @@ export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     This replaces two github.com links, one of which carried a misspelled repo
     name that three separate audits flagged and nobody could resolve — because
     the answer was that the sibling repos should not exist. */}
+{/* The series root is this course's base minus its own segment:
+    /termux-tutorial/beginner -> /termux-tutorial. Derived rather than
+    hardcoded, so the whole series can move with one change to `base`. */}
+export const SERIES_ROOT = base.replace(/\/[^/]+$/, '');
+
 export const SERIES = {
-  intermediate: `${base}/intermediate/`,
-  advanced: `${base}/advanced/`,
+  hub: `${SERIES_ROOT}/`,
+  intermediate: `${SERIES_ROOT}/intermediate/`,
+  advanced: `${SERIES_ROOT}/advanced/`,
 };
 
 That's the whole beginner course. A few hours ago Termux was a black screen with
