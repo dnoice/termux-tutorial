@@ -106,7 +106,7 @@ export default function SeriesDashboard({ courses, base }: Props) {
 					<p className="dash__name">{profile.name}</p>
 					<p className="dash__sub">
 						{untouched
-							? 'No progress saved in this browser yet'
+							? 'No progress saved yet'
 							: `${done} of ${total} lessons complete`}
 					</p>
 				</span>

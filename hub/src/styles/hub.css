@@ -390,11 +390,26 @@ body::before {
 	border-radius: var(--radius-lg);
 }
 
+/*
+ * A three-column grid, not a wrapping flex row.
+ *
+ * As flex-wrap with `margin-inline-start: auto` on the percentage, ANY
+ * sub-line long enough to fill the row pushed the percentage onto a line of
+ * its own — where the auto margin then stranded it on the right with the whole
+ * width empty beside it. It was width-dependent and therefore a matter of
+ * time: it appeared the moment the dashboard column narrowed from 25rem to
+ * 23rem.
+ *
+ * Explicit tracks remove the possibility rather than tuning around it. The
+ * middle column is `minmax(0, 1fr)`, so a long sub-line wraps INSIDE its own
+ * cell instead of pushing its siblings around; the avatar and the percentage
+ * are `auto` and always keep their line.
+ */
 .dash__head {
-	display: flex;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
 	align-items: center;
-	gap: 1rem;
-	flex-wrap: wrap;
+	gap: 0.9rem;
 	margin-block-end: 0.9rem;
 }
 
@@ -431,7 +446,9 @@ body::before {
 }
 
 .dash__pct {
-	margin-inline-start: auto;
+	/* No auto margin: the grid's third track already pins it to the end, and an
+	   auto margin is what stranded it when it wrapped. */
+	justify-self: end;
 	font-family: var(--font-display);
 	font-size: var(--text-2xl);
 	font-weight: 700;
@@ -753,9 +770,6 @@ body::before {
 	}
 
 	.dash__pct {
-		/* Stop it being pushed to a line of its own by margin-inline-start:auto
-		   when the name wraps. */
-		margin-inline-start: 0;
 		font-size: var(--text-xl);
 	}
 
