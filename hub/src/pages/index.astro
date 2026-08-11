@@ -45,23 +45,21 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 			<h1>Linux on the phone in your pocket</h1>
 			<p class="hub__lede">
 				Android runs Linux underneath — Termux is the terminal it never shipped
-				with. Three courses take you from your first command to a phone that
-				talks to its own hardware and serves work to the internet. Every lesson
-				has a live terminal, so you can start before you install anything.
+				with. Three courses, a live terminal in every lesson, nothing to install
+				to start.
 			</p>
 		</section>
 
-		<h2>Where you are</h2>
+		<h2>Your progress</h2>
 		{/* client:only — progress is per-browser, so there is nothing meaningful to
 		    prerender, and a server-rendered 0% flipping to 45% on hydration is a
 		    worse first frame than a one-line skeleton. */}
 		<SeriesDashboard client:only="react" courses={COURSE_MANIFEST} base={base} />
 
-		<h2>The three courses</h2>
+		<h2>Courses</h2>
 		<p class="hub__note">
-			Each one assumes the one before it. If you have used a terminal before,
-			skim the beginner course and start at Intermediate — nothing is re-taught
-			later.
+			Each assumes the one before it. Used a terminal before? Skim Beginner and
+			start at Intermediate — nothing is re-taught later.
 		</p>
 
 		<div class="hub__courses">
@@ -100,10 +98,8 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 		{
 			REFERENCES.length > 0 && (
 				<>
-					<h2>Straight to a command</h2>
-					<p class="hub__note">
-						For when you do not want a lesson, you want the flag you forgot.
-					</p>
+					<h2>Reference</h2>
+					<p class="hub__note">For when you want the flag you forgot, not a lesson.</p>
 					<ul class="hub__links">
 						{REFERENCES.map((r) => (
 							<li>
@@ -115,14 +111,12 @@ const REFERENCES = COURSES.filter((c) => c.present).flatMap((c) => [
 			)
 		}
 
-		<h2>What this site knows about you</h2>
-		<p class="hub__note">
-			Nothing. There is no account, no analytics and no backend — the whole
-			thing is static files. Your name, avatar and progress live in this
-			browser's local storage and are never sent anywhere, which is also why
-			the dashboard above is empty on a new device. The one exception is
-			documented on the lesson that carries it: booting the optional Debian
-			sandbox fetches it from Leaning Technologies, and only when you click.
+		<p class="hub__fine">
+			No account, no analytics, no backend — static files only. Your name,
+			avatar and progress live in this browser and are never sent anywhere,
+			which is why the dashboard is empty on a new device. One exception,
+			documented where it happens: booting the optional Debian sandbox fetches
+			it from Leaning Technologies, and only when you click.
 		</p>
 
 		<footer class="hub__foot">
