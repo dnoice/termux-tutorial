@@ -571,19 +571,26 @@ body::before {
 }
 
 /* --- Two-up bands ---------------------------------------------------
-   From tablet-landscape up there is room to stop stacking. The lead band puts
-   the dashboard beside the hero rather than below it, which is what turns the
-   page from a scroll into a screen: it removes the single tallest stack in the
-   layout.
+   The lead band puts the dashboard beside the hero rather than below it, which
+   is what turns the page from a scroll into a screen: it removes the single
+   tallest stack in the layout.
+
+   THE GATE IS 48rem, NOT 64rem. It was 64rem — tablet landscape — which was a
+   guess dressed up as a breakpoint. Measured instead: the dashboard column
+   needs about 19rem before its meters and the percentage start colliding, and
+   the hero needs roughly 20rem to keep a readable measure. With the gap that is
+   ~44rem of content, which a 48rem viewport clears comfortably. Gating at 64rem
+   left a 16rem band — every tablet in portrait, and every half-width desktop
+   window — stacking for no reason while 300px of the row sat empty.
 
    Gated on HEIGHT as well as width. A short-but-wide viewport (a phone in
    landscape, a split-screen window) has the width for two columns and nowhere
    near the height for the whole page, so it keeps the honest scrolling stack
    rather than being crushed into it. */
-@media (width >= 64rem) and (height >= 40rem) {
+@media (width >= 48rem) and (height >= 40rem) {
 	.hub__band--lead {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(21rem, 25rem);
+		grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
 		gap: clamp(1rem, 2.5vw, 2rem);
 		align-items: center;
 	}
@@ -822,7 +829,12 @@ body::before {
 .prof {
 	display: grid;
 	gap: 1rem;
-	grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+	/* 17rem, not 19rem. At 19rem the grid demanded 2x304px + gap = 624px of
+	   content before it would show a second column, so a 638px viewport — which
+	   has 600px available — fell back to a single column with 300px of the row
+	   unused. The cards work at 272px; the name row wraps below that instead of
+	   crushing its input. */
+	grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
 	align-items: start;
 }
 
@@ -883,7 +895,18 @@ body::before {
 
 .prof__row {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 0.5rem;
+}
+
+/* Below this the input and the Save button cannot share a line without the
+   input becoming too short to read a name in. Wrapping is better than
+   shrinking: the field keeps its full width and the button takes the next row. */
+@media (width < 26rem) {
+	.prof__row .btn {
+		inline-size: 100%;
+		justify-content: center;
+	}
 }
 
 .prof__name input {

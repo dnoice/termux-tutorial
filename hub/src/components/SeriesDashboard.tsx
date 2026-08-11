@@ -1,4 +1,12 @@
 import { useEffect, useState } from 'react';
+import {
+	DEFAULT_PROFILE,
+	initials,
+	readProfile,
+	stats,
+	type CourseRef,
+	type CourseStats,
+} from '../lib/store.ts';
 
 /*
  * The cross-course dashboard.
@@ -13,78 +21,36 @@ import { useEffect, useState } from 'react';
  * It renders on the client only. Progress is per-browser, so there is nothing
  * meaningful to prerender — and a server-rendered "0%" that flips to "45%" on
  * hydration would be a worse first frame than a brief skeleton.
+ *
+ * READING AND WRITING LIVE IN store.ts, not here. This component used to carry
+ * its own copies of readCourse/readProfile, and they had already drifted: the
+ * local one coerced an empty emoji to a penguin, so a learner who chose "use my
+ * initials" on the profile page got a penguin on the hub. Two implementations
+ * of the same rule is how that happens, every time.
  */
 
-export interface CourseManifest {
-	id: string;
-	number: number;
-	name: string;
-	storageKey: string;
-	present: boolean;
-	total: number;
-	lessons: string[];
-}
+/*
+ * The manifest the page hands over. Structurally identical to store.ts's
+ * CourseRef, which is the type actually used below — this alias exists only so
+ * the prop reads as "what the page passes" at the call site.
+ */
+export type CourseManifest = CourseRef;
 
 interface Props {
 	courses: CourseManifest[];
-	/** Series root, e.g. `/termux-tutorial`. Used to build course links. */
+	/** Series root, e.g. `/termux-tutorial`. Used to build every link out. */
 	base: string;
-}
-
-interface Stored {
-	profile?: { name?: string; emoji?: string };
-	completed?: string[];
-}
-
-interface CourseState {
-	done: number;
-	total: number;
-	/** First lesson not yet completed — where "continue" should land. */
-	next: string | null;
-}
-
-function readCourse(c: CourseManifest): CourseState {
-	if (!c.present) return { done: 0, total: 0, next: null };
-	let data: Stored = {};
-	try {
-		data = JSON.parse(localStorage.getItem(c.storageKey) ?? '{}') as Stored;
-	} catch {
-		// Storage blocked, or somebody hand-edited the value. Either way the
-		// dashboard is a convenience: degrade to zero rather than throwing and
-		// taking the whole page with it.
-		data = {};
-	}
-	const completed = new Set(Array.isArray(data.completed) ? data.completed : []);
-	// Count only slugs this course actually has, so a renamed lesson left in
-	// storage can never push a course above 100%.
-	const done = c.lessons.filter((s) => completed.has(s)).length;
-	const next = c.lessons.find((s) => !completed.has(s)) ?? null;
-	return { done, total: c.total, next };
-}
-
-/** The profile is per-course, but a learner is one person: take the first real name. */
-function readProfile(courses: CourseManifest[]): { name: string; emoji: string } {
-	for (const c of courses) {
-		try {
-			const d = JSON.parse(localStorage.getItem(c.storageKey) ?? '{}') as Stored;
-			const name = d.profile?.name?.trim();
-			if (name && name !== 'Guest') return { name, emoji: d.profile?.emoji || '🐧' };
-		} catch {
-			/* keep looking */
-		}
-	}
-	return { name: 'Guest', emoji: '🐧' };
 }
 
 export default function SeriesDashboard({ courses, base }: Props) {
 	const [ready, setReady] = useState(false);
-	const [states, setStates] = useState<Record<string, CourseState>>({});
-	const [profile, setProfile] = useState({ name: 'Guest', emoji: '🐧' });
+	const [states, setStates] = useState<Record<string, CourseStats>>({});
+	const [profile, setProfile] = useState(DEFAULT_PROFILE);
 
 	useEffect(() => {
 		const read = () => {
-			const next: Record<string, CourseState> = {};
-			for (const c of courses) next[c.id] = readCourse(c);
+			const next: Record<string, CourseStats> = {};
+			for (const c of courses) next[c.id] = stats(c);
 			setStates(next);
 			setProfile(readProfile(courses));
 			setReady(true);
@@ -119,9 +85,23 @@ export default function SeriesDashboard({ courses, base }: Props) {
 	return (
 		<div className="dash">
 			<div className="dash__head">
-				<span className="dash__avatar" aria-hidden="true">
-					{profile.emoji}
-				</span>
+				{/*
+				 * A link, not a decoration. It was aria-hidden — correct while it was
+				 * purely ornamental beside the name, and an outright violation the
+				 * moment it became focusable: Tab would land on something no screen
+				 * reader could announce. The label carries the destination and the
+				 * glyph inside stays hidden, so the name is read once, not twice.
+				 *
+				 * Empty emoji means "use my initials", which is a real choice on the
+				 * profile page — not a missing value to be defaulted away.
+				 */}
+				<a
+					className="dash__avatar"
+					href={`${base}/profile/`}
+					aria-label={`${profile.name} — open your profile`}
+				>
+					<span aria-hidden="true">{profile.emoji || initials(profile.name)}</span>
+				</a>
 				<span className="dash__who">
 					<p className="dash__name">{profile.name}</p>
 					<p className="dash__sub">
