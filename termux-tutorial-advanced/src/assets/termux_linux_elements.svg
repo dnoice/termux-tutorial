@@ -1,47 +1,67 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--
 ✒ Metadata
-    - Title: Termux Constellation (digiSpace Edition - v1.0)
+    - Title: Termux Constellation (digiSpace Edition - v1.1)
     - File Name: termux_linux_elements.svg
     - Relative Path: assets/svg/termux_linux_elements.svg
     - Artifact Type: other
-    - Version: 1.0.0
-    - Date: 2026-07-19
-    - Update: Sunday, July 19, 2026
+    - Version: 1.1.0
+    - Date: 2026-08-11
+    - Update: Tuesday, August 11, 2026
     - Author: Dennis 'dendogg' Smaltz
-    - A.I. Acknowledgement: Anthropic - Claude Fable 5
+    - A.I. Acknowledgement: Anthropic - Claude Fable 5 (v1.0.0), Claude Opus 5 (v1.1.0)
     - Signature: ︻デ═─── ✦ ✦ ✦ | Aim Twice, Shoot Once!
+
+✒ Changelog:
+    - 1.1.0 (2026-08-11) [Anthropic - Claude Opus 5] — Metadata brought current
+      with the finalized artwork: the node roster in the header and <desc> now
+      names the eight chips actually present (Linux/Tux, Ubuntu, Dotfiles,
+      Android, SQLite, Git, Bash Shell, Shell Script) instead of the earlier
+      draft roster; added the RDF/Dublin Core block and its rdf/cc/dc namespace
+      declarations. No drawn element was altered - the geometry is
+      byte-identical to 1.0.0.
+    - 1.0.0 (2026-07-19) [Anthropic - Claude Fable 5] — Initial composition.
 
 ✒ Description:
     A dark-theme SVG composition of the portable Linux stack: a Termux-style
-    terminal at center, orbited by eight chip-node icons (database, cloud,
-    penguin, gear, droid, git branch, code, package) wired together with
-    circuit-style connectors. Use it as a hero graphic, README banner, or
-    decorative panel for Termux/Android/Linux themed projects.
+    terminal at center, orbited by eight chip-node icons wired to the shell
+    with circuit-style connectors. Use it as a hero graphic, README banner, or
+    decorative panel for Termux/Android/Linux themed projects. It is also the
+    artwork embedded by src/splash/termux-boot-splash.html, which animates it
+    by element id.
 
 ✒ Key Features:
-    - Central Termux-style terminal window with realistic session lines and a blinking cursor
-    - Eight satellite chip nodes on an elliptical orbit, each with a hand-drawn stroke icon
-    - Circuit-style dashed connectors with glow-dot terminals linking every node to the shell
-    - Android-green / cyan / amber accent palette on a deep charcoal dot-grid field
-    - All geometry hand-placed on a 1280x832 viewBox with verified non-overlapping layout
-    - Pure vector, zero raster assets, zero external dependencies - fully self-contained
-    - System-font stacks (monospace + sans) so it renders cleanly without webfonts
-    - Editable structure: palette in defs, each icon in its own labeled group
+    - Central Termux-style terminal window with a realistic session transcript
+      and a blinking SMIL cursor
+    - Eight satellite chip nodes on an elliptical orbit: Linux (Tux), Ubuntu,
+      Dotfiles, Android, SQLite, Git, Bash Shell, Shell Script
+    - Circuit-style dashed connectors linking every node position to the shell
+    - Android-green / cyan / amber accent palette on a deep charcoal dot-grid
+      field
+    - All geometry hand-placed on a 1280x832 viewBox with verified
+      non-overlapping layout
+    - Pure vector, zero raster assets, zero external dependencies - fully
+      self-contained
+    - System-font stacks (monospace + sans) so it renders cleanly without
+      webfonts
+    - Editable structure: palette in defs, each icon in its own named group,
+      stable ids that downstream animation binds to
 
 ✒ Usage Instructions:
-    Drop the file anywhere an <img>, CSS background, or inline <svg> is
+    Drop the file anywhere an <img>, CSS background, or inline SVG is
     accepted. Scales losslessly to any size; the 1280x832 viewBox keeps a
-    ~1.54:1 banner ratio. To recolor, edit the gradient stops and the
-    accent values (#3ddc84 green, #22d3ee cyan, #fbbf24 amber) in defs.
+    ~1.54:1 banner ratio. To recolor, edit the gradient stops and the accent
+    values (#3ddc84 green, #22d3ee cyan, #fbbf24 amber) in defs. Before
+    renaming or removing an element id, check the NODES and LINES tables in
+    termux-boot-splash.html - that file binds to these ids by name.
 
 ✒ Examples:
     - GitHub README hero:        ![stack](assets/svg/termux_linux_elements.svg)
     - HTML inline:               <img src="termux_linux_elements.svg" width="960">
     - CSS backdrop:              background: url('termux_linux_elements.svg') center/cover;
-    - Inkscape remix:            open directly - every icon is a named <g>
+    - Inkscape remix:            open directly - every icon is a named group
     - PNG export:                cairosvg termux_linux_elements.svg -o banner.png -W 2560
-    - Dark-mode docs panel:      embed as-is; the background is baked in
+    - Boot splash:               embedded verbatim by termux-boot-splash.html
 
 ✒ Other Important Information:
     - Dependencies: none (self-contained SVG 1.1 + SMIL cursor blink)
@@ -50,6 +70,11 @@
       static cursor where unsupported
     - Limitations: text uses system font stacks, so exact glyph metrics vary
       slightly between renderers
+    - Stacking note: the glow-dot group and the baked "LINUX / TERMUX /
+      ANDROID" caption precede the opaque background rect in document order
+      and therefore do not paint. That is the finalized state of the file and
+      is left as authored; downstream consumers should not rely on them
+      being visible.
 - - - - - - - - -
 -->
 
@@ -67,7 +92,10 @@
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg"><sodipodi:namedview
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"><sodipodi:namedview
      id="namedview72"
      pagecolor="#ffffff"
      bordercolor="#000000"
@@ -76,9 +104,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="0.9759504"
-     inkscape:cx="912.95623"
-     inkscape:cy="526.15379"
+     inkscape:zoom="0.82407327"
+     inkscape:cx="561.2365"
+     inkscape:cy="416.22512"
      inkscape:window-width="2560"
      inkscape:window-height="1406"
      inkscape:window-x="-11"
@@ -86,7 +114,7 @@
      inkscape:window-maximized="1"
      inkscape:current-layer="svg72" /><title
      id="tle-title">Termux Constellation - Linux, Termux, Android</title><desc
-     id="tle-desc">A Termux terminal window surrounded by eight Linux-themed chip icons: database, cloud, penguin, gear, droid, git branch, code, and package.</desc><defs
+     id="tle-desc">A Termux terminal window surrounded by eight Linux-themed chip icons: Linux (Tux), Ubuntu, dotfiles, Android, SQLite, Git, Bash shell, and shell script.</desc><defs
      id="defs8"><radialGradient
        id="bgGlow"
        cx="50%"
@@ -172,7 +200,8 @@
        y1="-0.80000001"
        x2="-0.80000001"
        y2="92.8"
-       gradientUnits="userSpaceOnUse" /><linearGradient
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(594,70)" /><linearGradient
        inkscape:collect="always"
        xlink:href="#panel"
        id="linearGradient166"
@@ -180,7 +209,8 @@
        y1="-0.80000001"
        x2="-0.80000001"
        y2="92.8"
-       gradientUnits="userSpaceOnUse" /><linearGradient
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(594,670)" /><linearGradient
        inkscape:collect="always"
        xlink:href="#panel"
        id="linearGradient167"
@@ -188,7 +218,8 @@
        y1="-0.80000001"
        x2="-0.80000001"
        y2="92.8"
-       gradientUnits="userSpaceOnUse" /><linearGradient
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(154,370)" /><linearGradient
        inkscape:collect="always"
        xlink:href="#panel"
        id="linearGradient168"
@@ -196,7 +227,8 @@
        y1="-0.80000001"
        x2="-0.80000001"
        y2="92.8"
-       gradientUnits="userSpaceOnUse" /><linearGradient
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(1034,370)" /><linearGradient
        inkscape:collect="always"
        xlink:href="#panel"
        id="linearGradient169"
@@ -204,7 +236,8 @@
        y1="-0.80000001"
        x2="-0.80000001"
        y2="92.8"
-       gradientUnits="userSpaceOnUse" /><linearGradient
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(283,158)" /><linearGradient
        inkscape:collect="always"
        xlink:href="#panel"
        id="linearGradient170"
@@ -212,7 +245,8 @@
        y1="-0.80000001"
        x2="-0.80000001"
        y2="92.8"
-       gradientUnits="userSpaceOnUse" /><linearGradient
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(283,582)" /><linearGradient
        inkscape:collect="always"
        xlink:href="#panel"
        id="linearGradient171"
@@ -220,60 +254,8 @@
        y1="-0.80000001"
        x2="-0.80000001"
        y2="92.8"
-       gradientUnits="userSpaceOnUse" /></defs><!-- ======================= field ======================= --><rect
-     width="1280"
-     height="832"
-     fill="url(#bgGlow)"
-     id="rect8" /><rect
-     width="1280"
-     height="832"
-     fill="url(#dots)"
-     id="rect9" /><!-- ==================== connectors ===================== --><!-- ===================== terminal ====================== --><!-- =================== chip template =================== --><!-- each chip: 92x92 rounded node, icon strokes, label --><!-- penguin - top (594,70) --><!-- code - bottom (594,670) --><!-- droid - left (154,370) --><!-- database - right (1034,370) --><!-- cloud - NE (905,158) --><!-- gear - NW (283,158) --><!-- git branch - SW (283,582) --><!-- package - SE (905,582) --><!-- ====================== caption ====================== --><text
-     x="1252"
-     y="818"
-     text-anchor="end"
-     font-size="11"
-     fill="#2e3d4e"
-     font-family="ui-monospace, monospace"
-     id="text72">︻デ═─── ✦ ✦ ✦</text><g
-     fill="none"
-     stroke="#16202d"
-     stroke-width="1.4"
-     id="g10"><ellipse
-       cx="640"
-       cy="416"
-       rx="440"
-       ry="300"
-       id="ellipse9" /><ellipse
-       cx="640"
-       cy="416"
-       rx="520"
-       ry="356"
-       stroke-dasharray="1, 10"
-       stroke-linecap="round"
-       id="ellipse10" /></g><g
-     stroke="#2a3b4d"
-     stroke-width="1.6"
-     stroke-dasharray="2, 7"
-     stroke-linecap="round"
-     fill="none"
-     id="g17"><path
-       d="M 640,246 V 176"
-       id="path10" /><!-- to penguin (top) --><path
-       d="m 640,586 v 70"
-       id="path11" /><!-- to code (bottom) --><path
-       d="M 400,416 H 260"
-       id="path12" /><!-- to droid (left) --><path
-       d="m 880,416 h 140"
-       id="path13" /><!-- to database (right) --><path
-       d="m 872,254 46,-40"
-       id="path14" /><!-- to cloud (NE) --><path
-       d="M 408,254 362,214"
-       id="path15" /><!-- to gear (NW) --><path
-       d="m 408,578 -46,40"
-       id="path16" /><!-- to git (SW) --><path
-       d="m 872,578 46,40"
-       id="path17" /><!-- to package (SE) --></g><g
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(905,582)" /></defs><!-- ======================= field ======================= --><!-- ==================== connectors ===================== --><!-- ===================== terminal ====================== --><!-- =================== chip template =================== --><!-- each chip: 92x92 rounded node, icon strokes, label --><!-- penguin - top (594,70) --><!-- code - bottom (594,670) --><!-- droid - left (154,370) --><!-- database - right (1034,370) --><!-- cloud - NE (905,158) --><!-- gear - NW (283,158) --><!-- git branch - SW (283,582) --><!-- package - SE (905,582) --><!-- ====================== caption ====================== --><g
      fill="#3ddc84"
      filter="url(#softGlow)"
      id="g24"><circle
@@ -308,521 +290,413 @@
        cx="918"
        cy="618"
        r="3"
-       id="circle24" /></g><g
-     id="terminal"><rect
-       x="400"
-       y="246"
-       width="480"
-       height="340"
-       rx="14"
-       fill="url(#panel)"
-       stroke="#243447"
-       stroke-width="1.6"
-       id="rect24"
-       style="fill:url(#linearGradient164)" /><path
-       d="m 400,260 a 14,14 0 0 1 14,-14 h 452 a 14,14 0 0 1 14,14 v 22 H 400 Z"
-       fill="url(#titlebar)"
-       id="path24"
-       style="fill:url(#titlebar)" /><line
-       x1="400"
-       y1="282"
-       x2="880"
-       y2="282"
-       stroke="#243447"
-       stroke-width="1.2"
-       id="line24" /><text x="424" y="269" font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace" font-size="13px" font-weight="700" letter-spacing="-0.5" fill="#d4b15c" id="text-mark">&gt;_</text>
-    <text
-       x="640"
-       y="269"
-       text-anchor="middle"
-       font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace"
-       font-size="12px"
-       fill="#8aa0b6"
-       id="text27">termux@localhost: ~</text><g
-       font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace"
-       font-size="14px"
-       id="g36"><text
-         x="424"
-         y="314"
-         id="text28"><tspan
-           fill="#3ddc84"
-           id="tspan27">~ $</tspan><tspan
-           fill="#dbe7f3"
-           dx="8"
-           id="tspan28">pkg update &amp;&amp; pkg upgrade -y</tspan></text><text
-         x="424"
-         y="340"
-         fill="#8aa0b6"
-         id="text29">Get:1 stable/main aarch64 Packages [147 kB]</text><text
-         x="424"
-         y="366"
-         fill="#8aa0b6"
-         id="text30">All packages are up to date.</text><text
-         x="424"
-         y="392"
-         id="text31"><tspan
-           fill="#3ddc84"
-           id="tspan30">~ $</tspan><tspan
-           fill="#dbe7f3"
-           dx="8"
-           id="tspan31">pip install rich</tspan></text><text
-         x="424"
-         y="418"
-         fill="#8aa0b6"
-         id="text32">Successfully installed rich-14.0.0</text><text
-         x="424"
-         y="444"
-         id="text33"><tspan
-           fill="#3ddc84"
-           id="tspan32">~ $</tspan><tspan
-           fill="#dbe7f3"
-           dx="8"
-           id="tspan33">ssh dendogg@digispace</tspan></text><text
-         x="424"
-         y="470"
-         id="text35"><tspan
-           fill="#22d3ee"
-           id="tspan34">[forge]</tspan><tspan
-           fill="#8aa0b6"
-           dx="8"
-           id="tspan35">connection established</tspan></text><text
-         x="424"
-         y="500"
-         id="text36"><tspan
-           fill="#3ddc84"
-           id="tspan36">~ $</tspan></text><rect
-         x="462"
-         y="488"
-         width="9"
-         height="15"
-         fill="#3ddc84"
-         id="rect36"><animate
-           attributeName="opacity"
-           values="1;1;0;0"
-           dur="1.1s"
-           repeatCount="indefinite" /></rect></g><!-- android status strip --><g
-       stroke="#2a3b4d"
-       stroke-width="1.2"
-       id="g37"><line
-         x1="424"
-         y1="552"
-         x2="856"
-         y2="552"
-         id="line36" /></g><g
-       font-family="ui-monospace, monospace"
-       font-size="11px"
-       fill="#5c7188"
-       id="g39"><text
-         x="424"
-         y="572"
-         id="text37">aarch64</text><text
-         x="640"
-         y="572"
-         text-anchor="middle"
-         id="text38">no-root shell</text><text
-         x="856"
-         y="572"
-         text-anchor="end"
-         id="text39">bash 5.2</text></g></g><g
-     id="g158"><g
-       id="chip-penguin"
-       transform="translate(594,70)"><rect
-         width="92"
-         height="92"
-         rx="18"
-         fill="url(#panel)"
-         stroke="#243447"
-         stroke-width="1.6"
-         id="rect39"
-         style="fill:url(#linearGradient165)"
-         x="0"
-         y="0" /><g
-         transform="translate(46,48)"
-         id="g42"><path
-           d="M 0,-24 C 12,-24 15,-9 15,4 15,16 8,23 0,23 -8,23 -15,16 -15,4 -15,-9 -12,-24 0,-24 Z"
-           fill="#1c2836"
-           stroke="#9fb3c8"
-           stroke-width="2"
-           id="path39" /><path
-           d="M 0,-8 C 8,-8 10,0 10,8 10,16 5,20 0,20 -5,20 -10,16 -10,8 -10,0 -8,-8 0,-8 Z"
-           fill="#dbe7f3"
-           id="path40" /><circle
-           cx="-5"
-           cy="-14"
-           r="2"
-           fill="#dbe7f3"
-           id="circle40" /><circle
-           cx="5"
-           cy="-14"
-           r="2"
-           fill="#dbe7f3"
-           id="circle41" /><path
-           d="M -4,-9 H 4 L 0,-4 Z"
-           fill="#fbbf24"
-           id="path41" /><path
-           d="m -9,23 h 7 l -3.5,4 z m 11,0 h 7 l -3.5,4 z"
-           fill="#fbbf24"
-           id="path42" /></g></g><text
-       x="640"
-       y="56"
-       text-anchor="middle"
-       font-size="11px"
-       letter-spacing="3"
-       fill="#5c7188"
-       id="text42">LINUX</text></g><g
-     id="g162"><g
-       id="chip-code"
-       transform="translate(594,670)"><rect
-         width="92"
-         height="92"
-         rx="18"
-         fill="url(#panel)"
-         stroke="#243447"
-         stroke-width="1.6"
-         id="rect42"
-         style="fill:url(#linearGradient166)"
-         x="0"
-         y="0" /><g
-         stroke="#22d3ee"
-         stroke-width="3"
-         stroke-linecap="round"
-         stroke-linejoin="round"
-         fill="none"
-         id="g45"><path
-           d="M 34,34 22,46 34,58"
-           id="path43" /><path
-           d="M 58,34 70,46 58,58"
-           id="path44" /><path
-           d="M 51,30 41,62"
-           stroke="#9fb3c8"
-           id="path45" /></g></g><text
-       x="640"
-       y="786"
-       text-anchor="middle"
-       font-size="11px"
-       letter-spacing="3"
-       fill="#5c7188"
-       id="text45">SHELL SCRIPT</text></g><g
-     id="g160"><g
-       id="chip-droid"
-       transform="translate(154,370)"><rect
-         width="92"
-         height="92"
-         rx="18"
-         fill="url(#panel)"
-         stroke="#243447"
-         stroke-width="1.6"
-         id="rect45"
-         style="fill:url(#linearGradient167)"
-         x="0"
-         y="0" /><g
-         transform="translate(46,48)"
-         id="g49"><path
-           d="m -15,-4 a 15,15 0 0 1 30,0 z"
-           fill="#3ddc84"
-           id="path46" /><g
-           stroke="#3ddc84"
-           stroke-width="2.4"
-           stroke-linecap="round"
-           id="g47"><line
-             x1="-10"
-             y1="-15"
-             x2="-15"
-             y2="-23"
-             id="line46" /><line
-             x1="10"
-             y1="-15"
-             x2="15"
-             y2="-23"
-             id="line47" /></g><circle
-           cx="-6"
-           cy="-9"
-           r="1.9"
-           fill="#0b111a"
-           id="circle47" /><circle
-           cx="6"
-           cy="-9"
-           r="1.9"
-           fill="#0b111a"
-           id="circle48" /><rect
-           x="-15"
-           y="0"
-           width="30"
-           height="20"
-           rx="5"
-           fill="none"
-           stroke="#3ddc84"
-           stroke-width="2.4"
-           id="rect48" /><line
-           x1="-8"
-           y1="6"
-           x2="-8"
-           y2="14"
-           stroke="#3ddc84"
-           stroke-width="2.4"
-           stroke-linecap="round"
-           id="line48" /><line
-           x1="8"
-           y1="6"
-           x2="8"
-           y2="14"
-           stroke="#3ddc84"
-           stroke-width="2.4"
-           stroke-linecap="round"
-           id="line49" /></g></g><text
-       x="200"
-       y="486"
-       text-anchor="middle"
-       font-size="11px"
-       letter-spacing="3"
-       fill="#5c7188"
-       id="text49">ANDROID</text></g><g
-     id="g157"><g
-       id="chip-database"
-       transform="translate(1034,370)"><rect
-         width="92"
-         height="92"
-         rx="18"
-         fill="url(#panel)"
-         stroke="#243447"
-         stroke-width="1.6"
-         id="rect49"
-         style="fill:url(#linearGradient168)"
-         x="0"
-         y="0" /><g
-         transform="translate(46,46)"
-         stroke="#fbbf24"
-         stroke-width="2.4"
-         fill="none"
-         stroke-linecap="round"
-         id="g50"><ellipse
-           cx="0"
-           cy="-15"
-           rx="16"
-           ry="6"
-           id="ellipse49" /><path
-           d="m -16,-15 v 30 a 16,6 0 0 0 32,0 v -30"
-           id="path49" /><path
-           d="M -16,0 A 16,6 0 0 0 16,0"
-           id="path50" /></g></g><text
-       x="1080"
-       y="486"
-       text-anchor="middle"
-       font-size="11px"
-       letter-spacing="3"
-       fill="#5c7188"
-       id="text50">SQLITE</text></g><g
-     id="g159"><g
-       id="chip-gear"
-       transform="translate(283,158)"><rect
-         width="92"
-         height="92"
-         rx="18"
-         fill="url(#panel)"
-         stroke="#243447"
-         stroke-width="1.6"
-         id="rect54"
-         style="fill:url(#linearGradient169)"
-         x="0"
-         y="0" /><g
-         transform="translate(46,46)"
-         id="g62"><g
-           stroke="#9fb3c8"
-           stroke-width="5.6"
-           stroke-linecap="round"
-           id="g61"><line
-             x1="0"
-             y1="-15"
-             x2="0"
-             y2="-21"
-             id="line54" /><line
-             x1="0"
-             y1="15"
-             x2="0"
-             y2="21"
-             id="line55" /><line
-             x1="-15"
-             y1="0"
-             x2="-21"
-             y2="0"
-             id="line56" /><line
-             x1="15"
-             y1="0"
-             x2="21"
-             y2="0"
-             id="line57" /><line
-             x1="-10.6"
-             y1="-10.6"
-             x2="-14.8"
-             y2="-14.8"
-             id="line58" /><line
-             x1="10.6"
-             y1="-10.6"
-             x2="14.8"
-             y2="-14.8"
-             id="line59" /><line
-             x1="-10.6"
-             y1="10.6"
-             x2="-14.8"
-             y2="14.8"
-             id="line60" /><line
-             x1="10.6"
-             y1="10.6"
-             x2="14.8"
-             y2="14.8"
-             id="line61" /></g><circle
-           r="14"
-           fill="none"
-           stroke="#9fb3c8"
-           stroke-width="2.6"
-           id="circle61"
-           cx="0"
-           cy="0" /><circle
-           r="5.5"
-           fill="none"
-           stroke="#9fb3c8"
-           stroke-width="2.6"
-           id="circle62"
-           cx="0"
-           cy="0" /></g></g><text
-       x="329"
-       y="140"
-       text-anchor="middle"
-       font-size="11px"
-       letter-spacing="3"
-       fill="#5c7188"
-       id="text62">DOTFILES</text></g><g
-     id="g161"><g
-       id="chip-git"
-       transform="translate(283,582)"><rect
-         width="92"
-         height="92"
-         rx="18"
-         fill="url(#panel)"
-         stroke="#243447"
-         stroke-width="1.6"
-         id="rect62"
-         style="fill:url(#linearGradient170)"
-         x="0"
-         y="0" /><g
-         transform="translate(46,46)"
-         stroke="#f97316"
-         stroke-width="2.4"
-         fill="none"
-         stroke-linecap="round"
-         id="g66"><circle
-           cx="-9"
-           cy="-13"
-           r="5"
-           id="circle63" /><circle
-           cx="-9"
-           cy="13"
-           r="5"
-           id="circle64" /><circle
-           cx="12"
-           cy="-1"
-           r="5"
-           id="circle65" /><path
-           d="M -9,-8 V 8"
-           id="path65" /><path
-           d="m -9,-4 c 0,7 14,3 16,3"
-           id="path66" /></g></g><text
-       x="329"
-       y="698"
-       text-anchor="middle"
-       font-size="11px"
-       letter-spacing="3"
-       fill="#5c7188"
-       id="text66">GIT</text></g><g
-     id="g163"><g
-       id="chip-package"
-       transform="translate(905,582)"><rect
-         width="92"
-         height="92"
-         rx="18"
-         fill="url(#panel)"
-         stroke="#243447"
-         stroke-width="1.6"
-         id="rect66"
-         style="fill:url(#linearGradient171)"
-         x="0"
-         y="0" /><g
-         transform="translate(46,47)"
-         stroke="#3ddc84"
-         stroke-width="2.2"
-         fill="none"
-         stroke-linejoin="round"
-         stroke-linecap="round"
-         id="g70"><path
-           d="m 0,-19 16,8 V 9 L 0,17 -16,9 v -20 z"
-           id="path67" /><path
-           d="m -16,-11 16,8 16,-8"
-           id="path68" /><path
-           d="M 0,-3 V 17"
-           id="path69" /><path
-           d="M -8,-15 8,-7"
-           stroke="#9fb3c8"
-           id="path70" /></g></g><text
-       x="951"
-       y="698"
-       text-anchor="middle"
-       font-size="11px"
-       letter-spacing="3"
-       fill="#5c7188"
-       id="text70">PKG</text></g><text
+       id="circle24" /></g><text
      x="640"
      y="818"
      text-anchor="middle"
      font-size="12px"
      letter-spacing="6"
      fill="#3f5266"
-     id="text71">LINUX · TERMUX · ANDROID</text><g
-     id="chip-fish"><text
-       x="951.24579"
-       y="140"
-       text-anchor="middle"
-       font-size="11px"
-       letter-spacing="3"
-       fill="#5c7188"
-       id="text54">FISH SHELL</text><g
-       id="g155"><rect
-         width="92"
-         height="92"
-         rx="18"
-         fill="url(#panel)"
-         stroke="#243447"
+     id="title">LINUX · TERMUX · ANDROID</text><g
+     id="termux-linux-design"><g
+       id="background-elements"><rect
+         width="1280"
+         height="832"
+         fill="url(#bgGlow)"
+         id="background" /><rect
+         width="1280"
+         height="832"
+         fill="url(#dots)"
+         id="background-texture" /><g
+         fill="none"
+         stroke="#16202d"
+         stroke-width="1.4"
+         id="circular-visual-element"><ellipse
+           cx="640"
+           cy="416"
+           rx="440"
+           ry="300"
+           id="ellipse9" /><ellipse
+           cx="640"
+           cy="416"
+           rx="520"
+           ry="356"
+           stroke-dasharray="1, 10"
+           stroke-linecap="round"
+           id="ellipse10" /></g><g
+         stroke="#2a3b4d"
          stroke-width="1.6"
-         id="rect50"
-         style="fill:url(#linearGradient147)"
-         x="905"
-         y="158" /><g
-         id="g154"
-         transform="translate(0.18529,1.2513892)"><path
-           style="fill:#3ddc84;fill-opacity:1;stroke-width:0.564659;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
-           d="m 936.68385,220.10886 -1.72225,0.0309 -1.72226,0.0313 -0.0316,1.3245 -0.032,1.32414 1.17798,2.30398 c 0.64777,1.26724 1.26614,2.43917 1.37433,2.60429 0.19094,0.29139 0.22534,0.2994 1.16925,0.26795 l 0.97221,-0.0324 -0.0164,-0.3952 c -0.0164,-0.39884 -0.11374,-0.8221 -0.66281,-2.87988 -0.46614,-1.74703 -0.49652,-1.94632 -0.50173,-3.30635 z"
-           id="path153" /><path
-           style="fill:#3ddc84;fill-opacity:1;stroke-width:0.564659;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
-           d="m 927.62283,200.00971 v 3.72301 h 3.72301 v -3.72301 z"
-           id="path151" /><path
-           style="fill:#3ddc84;fill-opacity:1;stroke-width:0.564659;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
-           d="m 976.15683,194.42374 c -3.27101,2.8689 -6.54482,5.73465 -9.81545,8.604 l -0.34575,0.76424 0.34575,0.7646 c 3.27169,2.86814 6.54362,5.73602 9.81545,8.604 h 0.12688 l -0.004,-3.88953 -6.11571,-5.47871 6.11571,-5.47907 0.004,-3.88953 z"
-           id="path150" /><path
-           style="fill:#3ddc84;fill-opacity:1;stroke-width:0.564659;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
-           d="m 954.80371,194.42374 0.004,3.88953 6.11569,5.47907 -6.11569,5.47871 -0.004,3.88953 h 0.12688 c 3.27183,-2.86798 6.54374,-5.73586 9.81543,-8.604 l 0.34613,-0.7646 -0.34613,-0.76424 c -3.27063,-2.86935 -6.54442,-5.7351 -9.81543,-8.604 z"
-           id="path149" /><path
-           style="fill:#3ddc84;fill-opacity:1;stroke-width:0.564659;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
-           d="m 924.13869,194.42374 c -3.271,2.8689 -6.54481,5.73465 -9.81543,8.604 l -0.34611,0.76424 0.34611,0.7646 c 3.27169,2.86814 6.5436,5.73602 9.81543,8.604 h 0.1269 l -0.004,-3.88953 -6.11571,-5.47871 6.11571,-5.47907 0.004,-3.88953 z"
-           id="path148" /><path
-           style="fill:#3ddc84;fill-opacity:1;stroke-width:0.564659;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
-           d="m 952.87532,212.0893 c -0.0915,0.004 -0.22265,0.07 -0.41011,0.17088 -1.05273,0.5666 -2.59881,1.3065 -3.3878,1.62119 -0.49691,0.19818 -1.00505,0.40138 -1.12927,0.45156 -0.56022,0.22625 -1.94238,0.64214 -2.99257,0.90057 -3.39629,0.83577 -7.44549,0.83577 -10.84181,0 -1.03537,-0.25479 -2.40223,-0.66526 -2.99259,-0.89876 -1.9715,-0.77974 -2.42872,-0.98878 -3.91496,-1.79097 -0.96532,-0.52102 -1.05676,-0.54398 -1.15473,-0.28868 -0.0377,0.0983 -0.0687,0.60378 -0.0687,1.12345 0,0.83692 0.0307,0.97766 0.26722,1.23288 0.14689,0.15848 0.29829,0.28832 0.33667,0.28832 0.0384,0 0.3884,0.19417 0.7777,0.43156 0.90264,0.55042 2.70733,1.45323 3.86988,1.93604 5.62943,2.3379 11.63983,2.23576 17.3349,-0.29486 0.7051,-0.31332 2.64618,-1.30362 2.93622,-1.49793 0.15529,-0.10403 0.47621,-0.28849 0.71333,-0.41011 0.83729,-0.42947 0.86785,-0.49264 0.86785,-1.80661 0,-0.88439 -0.01,-1.17699 -0.21122,-1.16853 z"
-           id="path152" /><path
-           style="fill:#3ddc84;fill-opacity:1;stroke-width:0.564659;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
-           d="m 939.87715,188.63872 c -2.91821,-0.0497 -5.82819,0.50931 -8.64291,1.67826 -1.16255,0.48281 -2.96724,1.38562 -3.86988,1.93604 -0.3893,0.23739 -0.73933,0.43156 -0.7777,0.43156 -0.0384,0 -0.18978,0.12984 -0.33667,0.28832 -0.23652,0.25522 -0.26722,0.39596 -0.26722,1.23288 0,0.51967 0.031,1.0252 0.0687,1.12345 0.098,0.2553 0.18939,0.23271 1.15471,-0.28832 1.48624,-0.80219 1.94346,-1.01159 3.91496,-1.79133 0.59036,-0.2335 1.95723,-0.64397 2.99259,-0.89876 3.39632,-0.83577 7.44552,-0.83577 10.84181,0 1.05019,0.25843 2.43235,0.67432 2.99257,0.90057 0.12422,0.0502 0.63236,0.25338 1.12927,0.45156 0.789,0.31469 2.33507,1.05459 3.3878,1.62118 0.59987,0.32287 0.62134,0.28874 0.62134,-0.99764 0,-1.31397 -0.0306,-1.37714 -0.86786,-1.80661 -0.23711,-0.12162 -0.55804,-0.30608 -0.71332,-0.41011 -0.29004,-0.19431 -2.23113,-1.18461 -2.93623,-1.49793 -2.84754,-1.26531 -5.77379,-1.92346 -8.69197,-1.97312 z"
-           id="path147" /><path
-           style="fill:#3ddc84;fill-opacity:1;stroke-width:0.564659;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
-           d="m 947.3259,177.48883 -0.76272,0.34919 c -2.85405,3.28397 -5.70791,6.56833 -8.56182,9.85245 v 0.12695 l 3.88949,-0.0212 5.45238,-6.13939 5.50525,6.09214 3.88959,-0.0121 v -0.12695 c -2.88291,-3.25866 -5.7626,-6.52008 -8.64598,-9.77835 z"
-           id="path84" /><path
-           id="path112"
-           style="fill:#22d3ee;fill-opacity:1;stroke-width:0.564659;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
-           d="m 977.49086,213.16058 c 3.27102,-2.8689 6.54481,-5.73464 9.81543,-8.604 l 0.34598,-0.76441 -0.34598,-0.76441 c -3.27169,-2.86815 -6.5436,-5.73604 -9.81543,-8.60402 h -0.12697 l 0.004,3.88954 6.11571,5.4787 -6.11571,5.47908 -0.004,3.88952 z"
-           sodipodi:nodetypes="ccccccccccc" /></g></g></g></svg>
+         stroke-dasharray="2, 7"
+         stroke-linecap="round"
+         fill="none"
+         id="indicator-dahses-dots"><path
+           d="M 640,246 V 176"
+           id="path10" /><!-- to penguin (top) --><path
+           d="m 640,586 v 70"
+           id="path11" /><!-- to code (bottom) --><path
+           d="M 400,416 H 260"
+           id="path12" /><!-- to droid (left) --><path
+           d="m 880,416 h 140"
+           id="path13" /><!-- to database (right) --><path
+           d="m 872,254 46,-40"
+           id="path14" /><!-- to cloud (NE) --><path
+           d="M 408,254 362,214"
+           id="path15" /><!-- to gear (NW) --><path
+           d="m 408,578 -46,40"
+           id="path16" /><!-- to git (SW) --><path
+           d="m 872,578 46,40"
+           id="path17" /><!-- to package (SE) --></g></g><g
+       id="foreground-elements"><g
+         id="terminal-area"><path
+           d="M 880,282 H 400 v 290 c 0,7.756 6.244,14 14,14 h 452 c 7.756,0 14,-6.244 14,-14 z"
+           style="fill:url(#linearGradient164);stroke:#243447;stroke-width:1.6"
+           id="terminal-screen" /><path
+           d="m 414,246 a 14,14 0 0 0 -1.68164,0.10937 c -0.13823,0.0164 -0.27322,0.0421 -0.41016,0.0625 a 14,14 0 0 0 -1.35547,0.26954 c -0.0985,0.0248 -0.19724,0.0493 -0.29492,0.0762 a 14,14 0 0 0 -3.23828,1.34765 c -0.0185,0.0106 -0.0362,0.0225 -0.0547,0.0332 a 14,14 0 0 0 -1.43945,0.96093 c -0.0259,0.0197 -0.0524,0.0387 -0.0781,0.0586 a 14,14 0 0 0 -2.5293,2.5293 c -0.0199,0.0257 -0.0389,0.0522 -0.0586,0.0781 a 14,14 0 0 0 -0.96093,1.43945 c -0.0107,0.0185 -0.0226,0.0362 -0.0332,0.0547 a 14,14 0 0 0 -1.34765,3.23828 c -0.0269,0.0977 -0.0514,0.19639 -0.0762,0.29492 a 14,14 0 0 0 -0.26954,1.35547 c -0.0204,0.13694 -0.0461,0.27193 -0.0625,0.41016 A 14,14 0 0 0 400,260 v 22 h 480 v -22 a 14,14 0 0 0 -0.10938,-1.68164 c -0.0165,-0.13886 -0.042,-0.27455 -0.0625,-0.41211 a 14,14 0 0 0 -0.26757,-1.34766 c -0.0258,-0.10253 -0.0521,-0.20503 -0.0801,-0.30664 a 14,14 0 0 0 -1.3457,-3.23242 c -0.0107,-0.0185 -0.0225,-0.0362 -0.0332,-0.0547 a 14,14 0 0 0 -0.96094,-1.43945 c -0.0197,-0.0259 -0.0387,-0.0524 -0.0586,-0.0781 a 14,14 0 0 0 -2.54297,-2.53907 c -0.0162,-0.0125 -0.0326,-0.0247 -0.0488,-0.0371 a 14,14 0 0 0 -1.45507,-0.97265 c -0.0185,-0.0107 -0.0362,-0.0226 -0.0547,-0.0332 a 14,14 0 0 0 -3.23828,-1.34765 c -0.0977,-0.0269 -0.19639,-0.0514 -0.29492,-0.0762 a 14,14 0 0 0 -1.35547,-0.26954 c -0.13694,-0.0204 -0.27194,-0.0461 -0.41016,-0.0625 A 14,14 0 0 0 866,246 Z"
+           style="fill:url(#titlebar)"
+           id="terminal-header" /><line
+           x1="400"
+           y1="282"
+           x2="880"
+           y2="282"
+           stroke="#243447"
+           stroke-width="1.2"
+           id="line24" /><text
+           x="424"
+           y="269"
+           font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace"
+           font-size="13px"
+           font-weight="700"
+           letter-spacing="-0.5"
+           fill="#d4b15c"
+           id="text-mark">&gt;_</text><text
+           x="640"
+           y="269"
+           text-anchor="middle"
+           font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace"
+           font-size="12px"
+           fill="#8aa0b6"
+           id="localhost">termux@localhost: ~</text><text
+           x="424"
+           y="314"
+           id="pkg-update"
+           style="font-size:14px;font-family:ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace"><tspan
+             fill="#3ddc84"
+             id="tspan27">~ $</tspan><tspan
+             fill="#dbe7f3"
+             dx="8"
+             id="tspan28">pkg update &amp;&amp; pkg upgrade -y</tspan></text><text
+           x="424"
+           y="340"
+           fill="#8aa0b6"
+           id="aarch64-package"
+           style="font-size:14px;font-family:ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace">Get:1 stable/main aarch64 Packages [147 kB]</text><text
+           x="424"
+           y="366"
+           fill="#8aa0b6"
+           id="up-to-date"
+           style="font-size:14px;font-family:ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace">All packages are up to date.</text><text
+           x="424"
+           y="392"
+           id="pip-install"
+           style="font-size:14px;font-family:ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace"><tspan
+             fill="#3ddc84"
+             id="tspan30">~ $</tspan><tspan
+             fill="#dbe7f3"
+             dx="8"
+             id="tspan31">pip install rich</tspan></text><text
+           x="424"
+           y="418"
+           fill="#8aa0b6"
+           id="rich-14.0"
+           style="font-size:14px;font-family:ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace">Successfully installed rich-14.0.0</text><text
+           x="424"
+           y="444"
+           id="ssh"
+           style="font-size:14px;font-family:ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace"><tspan
+             fill="#3ddc84"
+             id="tspan32">~ $</tspan><tspan
+             fill="#dbe7f3"
+             dx="8"
+             id="tspan33">ssh dendogg@digispace</tspan></text><text
+           x="424"
+           y="470"
+           id="forge"
+           style="font-size:14px;font-family:ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace"><tspan
+             fill="#22d3ee"
+             id="tspan34">[forge]</tspan><tspan
+             fill="#8aa0b6"
+             dx="8"
+             id="tspan35">connection established</tspan></text><text
+           x="424"
+           y="500"
+           id="prompt"
+           style="font-size:14px;font-family:ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace"><tspan
+             fill="#3ddc84"
+             id="tspan36">~ $</tspan></text><rect
+           x="462"
+           y="488"
+           width="9"
+           height="15"
+           fill="#3ddc84"
+           id="cursor-indicator"
+           style="font-size:14px;font-family:ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace"><animate
+             attributeName="opacity"
+             values="1;1;0;0"
+             dur="1.1s"
+             repeatCount="indefinite" /></rect><g
+           stroke="#2a3b4d"
+           stroke-width="1.2"
+           id="terminal-divider"><line
+             x1="424"
+             y1="552"
+             x2="856"
+             y2="552"
+             id="line36" /></g><g
+           font-family="ui-monospace, monospace"
+           font-size="11px"
+           fill="#5c7188"
+           id="metadata"><text
+             x="424"
+             y="572"
+             id="text37">aarch64</text><text
+             x="640"
+             y="572"
+             text-anchor="middle"
+             id="text38">no-root shell</text><text
+             x="856"
+             y="572"
+             text-anchor="end"
+             id="text39">bash 5.2</text></g></g><g
+         id="icon-logo-chips"><g
+           id="script-braces"><g
+             id="shell-script-chip"><rect
+               width="92"
+               height="92"
+               rx="18"
+               fill="url(#panel)"
+               stroke="#243447"
+               stroke-width="1.6"
+               id="rect42"
+               style="fill:url(#linearGradient166)"
+               x="594"
+               y="670" /><g
+               id="shell-script"
+               transform="matrix(0.16128609,0,0,0.16128609,550.58238,541.21645)"><path
+                 id="path43"
+                 style="baseline-shift:baseline;display:inline;overflow:visible;opacity:1;vector-effect:none;fill:#22d3ee;stroke-linecap:round;stroke-linejoin:round;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+                 d="m 422.02344,949.43945 -123.34375,123.34375 -6.71681,10.9024 6.71681,10.9023 123.34375,123.3437 h 21.80468 v -21.8046 l -112.4414,-112.4415 112.4414,-112.44136 v -21.80469 z m 246.6875,0 v 21.80469 l 112.4414,112.44136 -112.4414,112.4415 v 21.8046 h 21.80468 l 123.34376,-123.3437 2.98525,-10.9023 -2.98525,-10.9024 -123.34376,-123.34375 z"
+                 sodipodi:nodetypes="cccccccccccccccccccccc" /><path
+                 style="baseline-shift:baseline;display:inline;overflow:visible;opacity:1;vector-effect:none;fill:#9fb3c8;stroke-linecap:round;stroke-linejoin:round;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+                 d="m 592.94727,914.62891 -102.78711,328.91599 10.11718,19.3164 19.31446,-10.1191 102.78711,-328.91603 -10.11719,-19.31445 z"
+                 id="path45"
+                 sodipodi:nodetypes="ccccccc" /></g></g><text
+             x="640"
+             y="786"
+             text-anchor="middle"
+             font-size="11px"
+             letter-spacing="3"
+             fill="#5c7188"
+             id="text45">SHELL SCRIPT</text></g><g
+           id="android"><g
+             id="android-chip"><rect
+               width="92"
+               height="92"
+               rx="18"
+               fill="url(#panel)"
+               stroke="#243447"
+               stroke-width="1.6"
+               id="rect45"
+               style="fill:url(#linearGradient167)"
+               x="154"
+               y="370" /><path
+               d="m 175.23296,378.62556 a 1.9758174,1.9758174 0 0 0 -0.9776,0.29876 1.9758174,1.9758174 0 0 0 -0.62844,2.72274 l 8.2323,13.17182 a 1.9758174,1.9758174 0 0 0 0.12181,0.17394 24.697634,24.697634 0 0 0 -6.67887,16.89045 h 49.39551 a 24.697634,24.697634 0 0 0 -6.67887,-16.89045 1.9758174,1.9758174 0 0 0 0.1218,-0.17394 l 8.2323,-13.17182 a 1.9758174,1.9758174 0 0 0 -0.62843,-2.72274 1.9758174,1.9758174 0 0 0 -0.9782,-0.29876 1.9758174,1.9758174 0 0 0 -0.51338,0.0493 1.9758174,1.9758174 0 0 0 -1.23117,0.87799 l -7.96902,12.75054 a 24.697634,24.697634 0 0 0 -30.10575,0 l -7.96902,-12.75054 a 1.9758174,1.9758174 0 0 0 -1.23173,-0.87799 1.9758174,1.9758174 0 0 0 -0.51341,-0.0493 z m 14.88776,21.89691 a 3.1283664,3.1283664 0 0 1 3.12854,3.12854 3.1283664,3.1283664 0 0 1 -3.12854,3.12854 3.1283664,3.1283664 0 0 1 -3.12797,-3.12854 3.1283664,3.1283664 0 0 1 3.12797,-3.12854 z m 19.75855,0 a 3.1283664,3.1283664 0 0 1 3.12797,3.12854 3.1283664,3.1283664 0 0 1 -3.12797,3.12854 3.1283664,3.1283664 0 0 1 -3.12854,-3.12854 3.1283664,3.1283664 0 0 1 3.12854,-3.12854 z m -26.34417,15.97124 c -5.62125,0 -10.20869,4.58685 -10.20869,10.2081 V 443.167 c 0,5.62125 4.58744,10.20866 10.20869,10.20866 h 32.92979 c 5.62125,0 10.20869,-4.58741 10.20869,-10.20866 v -16.46519 c 0,-5.62125 -4.58744,-10.2081 -10.20866,-10.2081 z m 0,3.95159 h 32.92979 c 3.50041,0 6.25708,2.7561 6.25708,6.25651 V 443.167 c 0,3.5004 -2.75667,6.25708 -6.25708,6.25708 H 183.5351 c -3.50041,0 -6.25708,-2.75668 -6.25708,-6.25708 v -16.46519 c 0,-3.50041 2.75667,-6.25651 6.25708,-6.25651 z m 3.29281,5.92739 a 1.9758174,1.9758174 0 0 0 -1.97579,1.97582 v 13.17236 a 1.9758174,1.9758174 0 0 0 1.97579,1.97581 1.9758174,1.9758174 0 0 0 1.97579,-1.97581 v -13.17236 a 1.9758174,1.9758174 0 0 0 -1.97579,-1.97582 z m 26.34417,0 a 1.9758174,1.9758174 0 0 0 -1.97579,1.97582 v 13.17236 a 1.9758174,1.9758174 0 0 0 1.97579,1.97581 1.9758174,1.9758174 0 0 0 1.97582,-1.97581 v -13.17236 a 1.9758174,1.9758174 0 0 0 -1.97582,-1.97582 z"
+               style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;fill:#3ddc84;stroke-width:0.29305;stroke-linecap:round;stroke-linejoin:round;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+               id="android-icon" /></g><text
+             x="200"
+             y="486"
+             text-anchor="middle"
+             font-size="11px"
+             letter-spacing="3"
+             fill="#5c7188"
+             id="text49">ANDROID</text></g><g
+           id="ubuntu"><text
+             x="951.24579"
+             y="140"
+             text-anchor="middle"
+             font-size="11px"
+             letter-spacing="3"
+             fill="#5c7188"
+             id="text54">UBUNTU</text><g
+             id="ubuntu-chip"><rect
+               width="92"
+               height="92"
+               rx="18"
+               fill="url(#panel)"
+               stroke="#243447"
+               stroke-width="1.6"
+               id="rect50"
+               style="fill:url(#linearGradient147)"
+               x="905"
+               y="158" /><path
+               d="m 966.37915,172.37709 -6.60435,2.73561 -2.7356,6.60433 2.7356,6.60432 6.60435,2.7356 6.6043,-2.7356 2.7356,-6.60432 -2.7356,-6.60433 z m -39.61119,16.42294 3.29974,0.23731 4.49267,1.76215 7.98407,-7.11905 10.35341,-2.68925 0.83852,-4.00462 1.99634,-3.5714 -14.96106,2.66904 z m 52.03515,-1.79951 -2.15362,3.47981 -3.0997,2.67194 2.65085,11.47034 -3.39858,11.27142 2.78535,3.12491 1.68466,3.8321 6.5823,-17.67683 z m -51.31753,5.85594 -6.6043,2.7356 -2.7356,6.60433 2.73654,6.60255 6.60336,2.73463 6.60435,-2.7356 2.7356,-6.60432 -2.7356,-6.60434 -6.60435,-2.73559 v 0.002 z m 5.55192,21.54483 -3.917,1.10147 -4.06713,-0.12091 12.14323,14.40565 16.37781,4.62204 -1.98729,-3.686 -0.74899,-4.12009 -9.2123,-3.09472 -8.58833,-9.11018 v 0.002 z m 31.23808,2.54177 -6.6043,2.7356 -2.7356,6.60432 2.7356,6.60432 6.6043,2.73561 6.60435,-2.73559 2.7356,-6.60434 -2.7356,-6.60432 z"
+               id="ubuntu-logo"
+               style="fill:#ffffff;fill-opacity:1;stroke-width:2.73898"
+               sodipodi:nodetypes="cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" /></g></g><g
+           id="g28"><text
+             x="640"
+             y="56"
+             text-anchor="middle"
+             font-size="11px"
+             letter-spacing="3"
+             fill="#5c7188"
+             id="text42">LINUX</text><g
+             id="tux-chip"><rect
+               width="92"
+               height="92"
+               rx="18"
+               fill="url(#panel)"
+               stroke="#243447"
+               stroke-width="1.6"
+               id="rect39"
+               style="fill:url(#linearGradient165)"
+               x="594"
+               y="70" /><g
+               id="tux"><path
+                 d="m 631.80805,88.683018 a 3.2770771,3.2770771 0 0 0 -3.27695,3.276955 3.2770771,3.2770771 0 0 0 3.27695,3.277419 3.2770771,3.2770771 0 0 0 3.27698,-3.277419 3.2770771,3.2770771 0 0 0 -3.27698,-3.276955 z"
+                 style="fill:#dbe7f3;stroke-width:0.230721"
+                 id="path443" /><path
+                 d="m 648.19329,88.683018 a 3.2770771,3.2770771 0 0 0 -3.27695,3.276955 3.2770771,3.2770771 0 0 0 3.27695,3.277419 3.2770771,3.2770771 0 0 0 3.27695,-3.277419 3.2770771,3.2770771 0 0 0 -3.27695,-3.276955 z"
+                 style="fill:#dbe7f3;stroke-width:0.230721"
+                 id="path444" /><path
+                 d="m 644.71446,102.45328 -4.71402,5.89238 -4.71353,-5.89238 c -9.20634,2.81687 -11.67168,14.18557 -11.67168,25.55456 0,13.10831 8.19252,19.66265 16.38521,19.66265 8.19271,0 16.3857,-6.55434 16.3857,-19.66265 0,-11.36899 -2.46537,-22.73769 -11.67168,-25.55456 z"
+                 style="fill:#dbe7f3;stroke-width:0.230721"
+                 id="path440" /><path
+                 d="m 640.00044,75.574744 c -19.66246,0 -24.57806,24.578196 -24.57806,45.879196 0,13.73772 5.59911,23.47603 13.44398,28.09746 3.09526,1.82341 6.5402,2.85034 10.12874,3.01199 v 0 c 0.33385,0.015 0.66874,0.0226 1.0049,0.0226 0.33616,0 0.67105,-0.008 1.00491,-0.0226 v 0 c 3.58854,-0.16165 7.03347,-1.18858 10.12873,-3.01199 7.84488,-4.62143 13.44399,-14.35977 13.44399,-28.09746 0,-21.301 -4.91562,-45.879196 -24.57807,-45.879196 z m -8.19239,13.108274 a 3.2770771,3.2770771 0 0 1 3.27698,3.276955 3.2770771,3.2770771 0 0 1 -3.27698,3.277419 3.2770771,3.2770771 0 0 1 -3.27695,-3.277419 3.2770771,3.2770771 0 0 1 3.27695,-3.276955 z m 16.38524,0 a 3.2770771,3.2770771 0 0 1 3.27695,3.276955 3.2770771,3.2770771 0 0 1 -3.27695,3.277419 3.2770771,3.2770771 0 0 1 -3.27695,-3.277419 3.2770771,3.2770771 0 0 1 3.27695,-3.276955 z m -14.74675,11.469812 h 13.10829 l -1.84037,2.30045 c 5.09478,1.55884 8.12499,5.73694 9.81555,11.08449 0.34105,1.07888 0.6277,2.20535 0.86564,3.36753 0.71383,3.48656 0.99049,7.29459 0.99049,11.10254 0,13.10831 -8.19299,19.66265 -16.3857,19.66265 -8.19269,0 -16.38521,-6.55434 -16.38521,-19.66265 0,-11.36899 2.46534,-22.73769 11.67168,-25.55456 z"
+                 style="fill:#1c2836;fill-opacity:1;stroke-width:0.230721"
+                 id="path442" /><path
+                 d="m 633.44654,100.15283 1.84037,2.30045 4.71353,5.89238 4.71402,-5.89238 1.84037,-2.30045 z"
+                 style="fill:#fbbf24;stroke-width:0;stroke:none;stroke-dasharray:none"
+                 id="path441" /><path
+                 d="m 638.99556,152.56339 v 0 c -3.58856,-0.16165 -7.0335,-1.18858 -10.12874,-3.01199 l 2.32479,6.87386 7.80619,-3.86097 z"
+                 style="fill:#fbbf24;stroke-width:0.230721"
+                 id="path439" /><path
+                 d="m 651.13454,149.5514 c -3.09526,1.82341 -6.54017,2.85034 -10.12873,3.01199 h -0.002 l 7.80621,3.86097 z"
+                 style="fill:#fbbf24;stroke-width:0.230721"
+                 id="path438" /></g></g></g><g
+           id="bash-shell"><text
+             x="951"
+             y="698"
+             text-anchor="middle"
+             font-size="11px"
+             letter-spacing="3"
+             fill="#5c7188"
+             id="text70">BASH SHELL</text><g
+             id="bash-chip"><rect
+               width="92"
+               height="92"
+               rx="18"
+               fill="url(#panel)"
+               stroke="#243447"
+               stroke-width="1.6"
+               id="rect66"
+               style="fill:url(#linearGradient171)"
+               x="905"
+               y="582" /><g
+               id="bash"
+               transform="matrix(0.32628425,0,0,0.32628425,363.40987,547.98452)"><g
+                 id="g73"><path
+                   d="m 1912.7246,182.06641 -110.8613,61.44531 v 130.60547 l 110.8613,-64.00586 z"
+                   style="fill:#3ab14a;fill-opacity:1;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+                   id="path59" /><path
+                   d="m 1688.9824,182.06641 v 128.04492 l 110.8614,64.00586 V 243.51172 Z"
+                   style="fill:#2f3a3e;fill-opacity:1;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+                   id="path61" /><path
+                   d="m 1800.8535,116.34766 -110.8301,63.98632 110.8301,61.42774 110.8301,-61.42774 z"
+                   style="fill:#2f3a3e;fill-opacity:1;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+                   id="path60" /></g><path
+                 d="m 1909.7246,187.1582 -104.8613,58.1211 v 123.64257 l 104.8613,-60.54296 z"
+                 style="fill:#2f3a3e;fill-opacity:1;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+                 id="path63" /><path
+                 d="m 1691.9824,187.1582 v 121.22071 l 104.8614,60.54296 V 245.2793 Z"
+                 style="fill:#ffffff;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+                 id="path64" /><path
+                 d="m 1800.8535,119.81055 -104.7363,60.4707 104.7363,58.05078 104.7363,-58.05078 z"
+                 style="fill:#ffffff;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+                 id="path71-8" /><path
+                 d="m 1879.031,291.19563 -20.0391,12.10742 v 7.0918 l 20.0391,-12.18555 z"
+                 style="fill:#3ab14a;fill-opacity:1;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+                 id="path35" /><path
+                 d="m 1848.5098,284.90085 -0.509,15.90756 -0.8813,3.82453 -1.8392,2.74956 -7.6615,5.90069 -0.3586,11.20636 -2.6608,6.52805 -2.4268,-2.60958 0.3619,-11.31574 -7.6015,5.85457 -2.3671,-2.65569 2.6609,-6.528 17.777,-13.69151 0.2116,-6.61453 -17.7172,13.64538 -1.7537,0.071 -0.6134,-2.72662 0.5072,-15.85293 0.8215,-3.7785 1.8394,-2.74961 7.5417,-5.80846 0.3585,-11.20637 2.7505,-6.59716 2.3372,2.67869 -0.3585,11.20637 7.7213,-5.94674 2.4269,2.60959 -2.7242,6.68348 -17.777,13.6915 -0.2099,6.55985 17.7172,-13.64545 1.7519,-0.0163 z"
+                 id="text73"
+                 style="font-size:77.1664px;font-family:'OCR A Extended';-inkscape-font-specification:'OCR A Extended, Normal';fill:#3ab14a;fill-opacity:1;stroke-width:12.2714;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+                 aria-label="$"
+                 sodipodi:nodetypes="ccccccccccccccccccccccccccccccccc" /></g></g></g><g
+           id="git"><text
+             x="329"
+             y="698"
+             text-anchor="middle"
+             font-size="11px"
+             letter-spacing="3"
+             fill="#5c7188"
+             id="text66">GIT</text><g
+             id="git-chip"><rect
+               width="92"
+               height="92"
+               rx="18"
+               fill="url(#panel)"
+               stroke="#243447"
+               stroke-width="1.6"
+               id="rect62"
+               style="fill:url(#linearGradient170)"
+               x="283"
+               y="582" /><path
+               id="git-icon"
+               style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;fill:#f97316;stroke-width:0.298548;stroke-linecap:round;stroke-linejoin:round;enable-background:accumulate;stop-color:#000000"
+               d="m 310.01864,593.29098 c -6.16438,0 -11.20835,5.04396 -11.20835,11.20834 0,5.42285 3.90345,9.97851 9.03922,10.9961 v 25.00973 c -5.13577,1.01759 -9.03922,5.57325 -9.03922,10.99611 0,6.16438 5.04397,11.20775 11.20835,11.20775 6.16438,0 11.20835,-5.04337 11.20835,-11.20775 0,-5.42285 -3.90344,-9.97851 -9.03922,-10.99611 v -12.21244 c 6.87709,3.83307 20.00168,1.45048 24.88029,0.44899 1.162,4.94689 5.62516,8.65904 10.9133,8.65904 6.16438,0 11.20835,-5.04397 11.20835,-11.20835 0,-6.16438 -5.04397,-11.20777 -11.20835,-11.20777 -5.46925,0 -10.05625,3.97031 -11.02117,9.171 -7.88703,0.87477 -24.77242,5.52817 -24.77242,-3.38664 v -5.27356 c 5.13578,-1.01758 9.03922,-5.57325 9.03922,-10.99609 0,-6.16438 -5.04397,-11.20835 -11.20835,-11.20835 z m 0,4.33884 c 3.81961,0 6.8695,3.04989 6.8695,6.8695 0,3.81961 -3.04989,6.8695 -6.8695,6.8695 -3.81961,0 -6.8695,-3.04989 -6.8695,-6.8695 0,-3.81961 3.04989,-6.8695 6.8695,-6.8695 z m 37.96272,21.69307 c 3.81961,0 6.8695,3.04989 6.8695,6.8695 0,3.8196 -3.04989,6.86949 -6.8695,6.86949 -3.81941,0 -6.86918,-3.04959 -6.8695,-6.86891 a 2.1693182,2.1693182 0 0 0 0,-6e-4 c 0,-3.81961 3.04989,-6.8695 6.8695,-6.8695 z m -37.96272,25.30886 c 3.81961,0 6.8695,3.0499 6.8695,6.86951 0,3.8196 -3.04989,6.86949 -6.8695,6.86949 -3.81961,0 -6.8695,-3.04989 -6.8695,-6.86949 0,-3.81961 3.04989,-6.86951 6.8695,-6.86951 z" /></g></g><g
+           id="dotfiles"><text
+             x="329"
+             y="140"
+             text-anchor="middle"
+             font-size="11px"
+             letter-spacing="3"
+             fill="#5c7188"
+             id="text62">DOTFILES</text><g
+             id="dor-chip"><rect
+               width="92"
+               height="92"
+               rx="18"
+               fill="url(#panel)"
+               stroke="#243447"
+               stroke-width="1.6"
+               id="rect54"
+               style="fill:url(#linearGradient169)"
+               x="283"
+               y="158" /><path
+               id="dot"
+               style="fill:#9fb3c8;fill-opacity:1;fill-rule:evenodd;stroke-width:0;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+               d="m 328.21085,168.31845 c -2.81872,0 -5.08812,2.26937 -5.08812,5.0881 v 6.20248 a 25.08894,25.08894 0 0 0 -7.2135,2.98823 l -4.3858,-4.38623 c -0.99657,-0.99657 -2.29723,-1.49474 -3.59791,-1.49474 -1.30065,0 -2.60131,0.49817 -3.59789,1.49474 l -1.11642,1.11642 c -1.99314,1.99314 -1.99314,5.20264 0,7.1958 l 4.38623,4.38581 a 25.08894,25.08894 0 0 0 0,4e-4 25.08894,25.08894 0 0 0 -2.98825,7.21309 h -6.20245 c -2.81873,0 -5.0881,2.26937 -5.0881,5.08811 v 1.57871 c 0,2.81873 2.26937,5.0881 5.0881,5.0881 h 6.20245 a 25.08894,25.08894 0 0 0 2.98825,7.21309 25.08894,25.08894 0 0 0 0,4.1e-4 l -4.38623,4.38581 c -1.99314,1.99315 -1.99314,5.20266 0,7.1958 l 1.11642,1.11642 c 1.99314,1.99315 5.20264,1.99315 7.1958,0 l 4.3858,-4.38622 a 25.08894,25.08894 0 0 0 7.2135,2.98782 v 6.20287 c 0,2.81872 2.2694,5.08808 5.08812,5.08808 h 1.57872 c 2.81871,0 5.0881,-2.26936 5.0881,-5.08808 v -6.20289 a 25.08894,25.08894 0 0 0 7.2131,-2.98783 l 4.3858,4.38623 c 1.99316,1.99314 5.20266,1.99314 7.1958,0 l 1.11642,-1.11641 c 1.99314,-1.99316 1.99314,-5.20266 0,-7.1958 l -4.38623,-4.38582 a 25.08894,25.08894 0 0 0 0,-4e-4 25.08894,25.08894 0 0 0 2.98781,-7.2131 h 6.20289 c 2.81875,0 5.0881,-2.26937 5.0881,-5.0881 v -1.5787 c 0,-2.81874 -2.26935,-5.08811 -5.0881,-5.08811 h -6.20289 a 25.08894,25.08894 0 0 0 -2.98781,-7.21309 25.08894,25.08894 0 0 0 0,-4e-4 l 4.38623,-4.38582 c 1.99314,-1.99314 1.99314,-5.20264 0,-7.1958 l -1.11642,-1.11641 c -0.99656,-0.99657 -2.29723,-1.49473 -3.59789,-1.49473 -1.30068,0 -2.60132,0.49816 -3.59791,1.49473 l -4.3858,4.38623 a 25.08894,25.08894 0 0 0 -7.2131,-2.98783 v -6.20288 c 0,-2.81873 -2.26939,-5.08809 -5.0881,-5.08809 z M 329,183.29707 a 20.702765,20.702765 0 0 1 5.87767,0.85214 20.702765,20.702765 0 0 1 4.00296,1.65816 20.702765,20.702765 0 0 1 8.31181,8.31181 v 4e-4 a 20.702765,20.702765 0 0 1 1.65817,4.00297 20.702765,20.702765 0 0 1 0.85172,5.87726 20.702765,20.702765 0 0 1 -0.85172,5.87766 20.702765,20.702765 0 0 1 -1.65817,4.00298 v 4e-4 a 20.702765,20.702765 0 0 1 -8.31181,8.3118 20.702765,20.702765 0 0 1 -4.00296,1.65817 20.702765,20.702765 0 0 1 -5.87767,0.85214 20.702765,20.702765 0 0 1 -5.87727,-0.85214 20.702765,20.702765 0 0 1 -4.00336,-1.65817 20.702765,20.702765 0 0 1 -8.31183,-8.3118 v -4e-4 a 20.702765,20.702765 0 0 1 -1.65815,-4.00298 20.702765,20.702765 0 0 1 -0.85213,-5.87766 20.702765,20.702765 0 0 1 0.85213,-5.87726 20.702765,20.702765 0 0 1 1.65815,-4.00297 v -4e-4 a 20.702765,20.702765 0 0 1 8.31183,-8.31181 20.702765,20.702765 0 0 1 4.00336,-1.65816 A 20.702765,20.702765 0 0 1 329,183.29707 Z m -0.0121,9.05773 a 11.645305,11.645305 0 0 0 -8.1982,3.38672 l -0.0469,0.0469 a 11.645305,11.645305 0 0 0 -3.38795,8.18172 v 0.0596 a 11.645305,11.645305 0 0 0 3.39206,8.18584 l 0.0375,0.0375 a 11.645305,11.645305 0 0 0 8.21549,3.39207 11.645305,11.645305 0 0 0 8.23154,-3.40771 l 0.006,-0.006 a 11.645305,11.645305 0 0 0 3.40769,-8.23153 11.645305,11.645305 0 0 0 -3.40649,-8.22988 l -0.008,-0.008 a 11.645305,11.645305 0 0 0 -8.21793,-3.40649 z M 329,198.67089 a 5.329207,5.329207 0 0 1 5.32932,5.32893 A 5.329207,5.329207 0 0 1 329,209.32915 5.329207,5.329207 0 0 1 323.67107,203.99982 5.329207,5.329207 0 0 1 329,198.67089 Z" /></g></g><g
+           id="database"><text
+             x="1080"
+             y="486"
+             text-anchor="middle"
+             font-size="11px"
+             letter-spacing="3"
+             fill="#5c7188"
+             id="text50">SQLITE</text><g
+             id="sqlite-chip"><rect
+               width="92"
+               height="92"
+               rx="18"
+               fill="url(#panel)"
+               stroke="#243447"
+               stroke-width="1.6"
+               id="rect49"
+               style="fill:url(#linearGradient168)"
+               x="1034"
+               y="370" /><path
+               id="sqlite"
+               style="color:#b7c5d3;font-family:ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;fill:#fbbf24;fill-opacity:1;stroke:none;stroke-width:0.700298"
+               d="m 1080.3908,379.41324 c -2.3351,-0.0254 -4.6067,0.0589 -6.7775,0.23834 -6.463,0.53422 -12.1485,1.93513 -15.9051,3.80564 -1.9875,0.98965 -3.4472,2.11858 -4.2849,3.25507 -0.5673,0.76945 -0.8812,1.57337 -0.8901,2.37555 -0.01,0.80114 0.2878,1.613 0.8382,2.39491 0.8129,1.15472 2.2473,2.3131 4.2128,3.34565 4.9633,2.6078 13.3019,4.4363 22.5893,4.53739 9.2871,0.10113 17.6641,-1.54395 22.6835,-4.0431 1.9876,-0.98969 3.4465,-2.11873 4.2841,-3.25507 0.5673,-0.76966 0.8812,-1.57464 0.8901,-2.37555 0.01,-0.80307 -0.2883,-1.61374 -0.8383,-2.39491 -0.8126,-1.15424 -2.2463,-2.31379 -4.2119,-3.34653 -4.9635,-2.60774 -13.3029,-4.43628 -22.5902,-4.53739 z m -0.031,2.83465 c 8.9845,0.0978 16.9943,1.94756 21.3026,4.2111 1.7231,0.90531 2.782,1.85837 3.2129,2.47054 0.2971,0.42198 0.3217,0.65406 0.3209,0.72735 0,0.0836 -0.031,0.31373 -0.3368,0.72824 -0.444,0.60244 -1.5234,1.53181 -3.2656,2.3993 -4.3568,2.16931 -12.4054,3.84544 -21.3897,3.74759 -8.9845,-0.0978 -16.9943,-1.94833 -21.3026,-4.21197 -1.7234,-0.90539 -2.7823,-1.85806 -3.2129,-2.46966 -0.2971,-0.42211 -0.3226,-0.65692 -0.3219,-0.72824 0,-0.0815 0.032,-0.31335 0.3378,-0.72823 0.4439,-0.60228 1.5232,-1.53081 3.2656,-2.39843 3.2688,-1.62764 8.6333,-3.00281 14.8769,-3.51891 2.082,-0.17207 4.2656,-0.25317 6.5128,-0.22868 z m -27.986,10.63504 -0.2481,22.83911 v 0.007 0.006 c 0,0.002 10e-5,0.004 0,0.005 v 0.005 c -0.01,0.80031 0.2953,1.60802 0.8435,2.38435 0.8145,1.15297 2.2489,2.31257 4.2137,3.3439 4.9643,2.60579 13.3009,4.43105 22.5832,4.53212 9.2824,0.10106 17.6565,-1.54344 22.6764,-4.04047 1.9871,-0.9885 3.4483,-2.11565 4.2885,-3.25155 0.5687,-0.76919 0.884,-1.57366 0.8927,-2.37556 l 0.2498,-22.85142 -1.4846,1.17766 c -2.4271,1.92601 -6.3128,3.5051 -10.9402,4.55059 -4.6275,1.04548 -9.9946,1.57434 -15.4073,1.51539 -5.413,-0.0589 -10.7676,-0.70465 -15.3712,-1.85049 -4.6037,-1.14583 -8.4536,-2.80878 -10.8382,-4.78717 z m 2.7757,5.47407 c 6.1503,3.34562 15.6319,5.10625 24.8611,5.2067 9.2291,0.1005 18.7474,-1.45319 24.9693,-4.66405 l -0.19,17.40375 c 0,0.0756 -0.031,0.30968 -0.3386,0.72471 -0.4457,0.60271 -1.5282,1.5315 -3.2709,2.39843 -4.3584,2.16796 -12.404,3.84272 -21.3835,3.74495 -8.9797,-0.0978 -16.9865,-1.94701 -21.2965,-4.20933 -1.7226,-0.90412 -2.7832,-1.85561 -3.2163,-2.46879 -0.2988,-0.42291 -0.3252,-0.6592 -0.3246,-0.73351 v -0.004 -0.0677 -0.005 -0.01 z m -2.9332,21.09768 -0.248,22.84791 v 0.007 0.006 c 0,0.002 10e-5,0.004 0,0.005 v 0.005 c -0.01,0.80008 0.2951,1.60812 0.8435,2.38435 0.8143,1.1533 2.2488,2.31334 4.2137,3.34478 4.9645,2.60593 13.3008,4.43105 22.5832,4.53212 9.2823,0.10106 17.6563,-1.54236 22.6764,-4.03959 1.9875,-0.98871 3.4489,-2.11753 4.2885,-3.25331 0.5685,-0.76894 0.884,-1.57282 0.8927,-2.37468 l 0.2497,-22.86022 -1.4845,1.17767 c -2.4273,1.92626 -6.3134,3.5054 -10.9412,4.55058 -4.6277,1.04519 -9.995,1.57344 -15.4072,1.51452 -5.4123,-0.0589 -10.766,-0.70385 -15.3694,-1.84961 -4.6035,-1.14576 -8.4543,-2.80936 -10.8391,-4.78805 z m 2.7758,5.47407 c 6.1506,3.34605 15.6327,5.10714 24.8611,5.20758 9.2281,0.10047 18.7469,-1.45363 24.9693,-4.66492 l -0.19,17.41341 c 0,0.0777 -0.031,0.31 -0.3377,0.72472 -0.4457,0.60271 -1.5292,1.53243 -3.2718,2.3993 -4.3582,2.16804 -12.4037,3.84182 -21.3836,3.74407 -8.9797,-0.0978 -16.9854,-1.94686 -21.2955,-4.20933 -1.7226,-0.90418 -2.7834,-1.85558 -3.2164,-2.46878 -0.2985,-0.42259 -0.3251,-0.66016 -0.3245,-0.7344 v -0.004 -0.0686 -0.004 -0.01 z" /></g></g></g></g></g><metadata
+     id="metadata-digispace"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title>Termux Constellation - Linux, Termux, Android</dc:title><dc:date>2026-08-11</dc:date><dc:creator><cc:Agent><dc:title>Dennis 'dendogg' Smaltz</dc:title></cc:Agent></dc:creator><dc:contributor><cc:Agent><dc:title>Anthropic - Claude Fable 5</dc:title></cc:Agent></dc:contributor><dc:contributor><cc:Agent><dc:title>Anthropic - Claude Opus 5</dc:title></cc:Agent></dc:contributor><dc:rights><cc:Agent><dc:title>Dennis 'dendogg' Smaltz</dc:title></cc:Agent></dc:rights><dc:language>en</dc:language><dc:description>A Termux terminal window surrounded by eight Linux-themed chip icons: Linux (Tux), Ubuntu, dotfiles, Android, SQLite, Git, Bash shell, and shell script.</dc:description><dc:subject><rdf:Bag><rdf:li>termux</rdf:li><rdf:li>linux</rdf:li><rdf:li>android</rdf:li><rdf:li>terminal</rdf:li><rdf:li>ubuntu</rdf:li><rdf:li>bash</rdf:li><rdf:li>git</rdf:li><rdf:li>sqlite</rdf:li><rdf:li>dotfiles</rdf:li><rdf:li>shell-script</rdf:li><rdf:li>constellation</rdf:li><rdf:li>hero-banner</rdf:li><rdf:li>dark-theme</rdf:li></rdf:Bag></dc:subject></cc:Work></rdf:RDF></metadata></svg>

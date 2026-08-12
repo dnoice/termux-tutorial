@@ -280,6 +280,41 @@ the dialog's own header comment lists which do. Do not restore a blanket
 "everything here applies everywhere" claim — that sentence was there and only one
 key made it true.
 
+## The boot splash
+
+`src/components/splash/BootSplash.astro` + `splash.css`. **The hub is the only
+project that renders one** — the courses each still carry an unmounted copy of
+the older component, deliberately, so a per-course splash stays a mount away.
+
+It is a port of a standalone review harness that lives outside the repo at
+`scratchpad/load-screen-idea/`, with its own `SPLASH_INTEGRATION.md` covering
+the full cue sheet, public API and event contract. **Retime the sequence
+there**, diff, then re-port; that file is the reviewable version.
+
+Four things about it that are easy to break:
+
+- **The engine binds artwork by element id and mutates nothing.** The component
+  it replaced rewrote the SVG with regex at build time to inject class names.
+  That is a bad bet against a hand-authored Inkscape file — attributes sit on
+  their own lines, so a re-export can silently stop matching. If you re-export
+  the artwork, check the `NODES` and `LINES` tables at the top of the script:
+  a renamed id drops that element from the choreography **without throwing**, so
+  a clean console is not proof. Watch for a chip that never mounts.
+- **CSS owns HOW, the script owns WHEN.** Every `animation-delay` is supplied by
+  the engine as `--tx-d`, pre-divided by the speed multiplier. Adding a delay in
+  `splash.css` desynchronises the two clocks.
+- **The artwork brings ~160 element ids into the document.** `#title`,
+  `#background`, `#panel`, `#dots`, `#prompt` and `#metadata` are the plausible
+  collisions. None collides with the hub today — verified — but check before
+  adding markup with generic ids.
+- **`prefers-reduced-data` is handled in `hub.css`, not in `splash.css`.** The
+  component covers reduced motion (a static path on a 2.2x-compressed clock, so
+  those visitors are not held on a still image) and short viewports; data-saver
+  is the one case left to the host, and it hides the splash outright.
+
+The artwork of record is `global-assets/termux_linux_elements.svg`, imported
+`?raw`. The superseded first drawing is retired to `scratchpad/retired-artwork/`.
+
 ## Design system: Fire Watch v6
 
 `src/styles/hub.css` (1,573 lines) imports `src/styles/_tokens.css` (273 lines).

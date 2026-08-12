@@ -1,285 +1,926 @@
 ---
 /*
- * BootSplash — a sequenced boot animation over the landing page.
+ * Termux Constellation boot splash.
  *
- * Total runtime is DERIVED, not stated here — see THE SCHEDULE below. Any
- * number written into this comment would be the first thing to go stale.
+ * Authored by Dennis 'dendogg' Smaltz as a standalone review harness at
+ * scratchpad/load-screen-idea/termux-boot-splash.html, with the choreography
+ * documented in SPLASH_INTEGRATION.md alongside it. That file remains the
+ * place to review and retime the sequence; this is the port into Astro, and
+ * the two should be diffable.
  *
- * THE RULES THIS OBEYS, because a splash screen is a tax on everyone who did
- * not ask for it and the difference between "sophisticated" and "infuriating"
- * is entirely in the guard rails:
+ * WHAT MAKES THIS DIFFERENT FROM THE COMPONENT IT REPLACES, and why it is
+ * worth the size: the chips are not "entrance animated" at all. Eight traces
+ * fire outward along the artwork's own wire paths, and each chip detonates as
+ * its trace lands on it. The motion is therefore CAUSED rather than merely
+ * staggered — which is why a 0.16s stagger reads as eight distinct arrivals
+ * here, where 0.17s read as one moving mass in the version before it. Nothing
+ * shares a direction, so nothing groups.
  *
- *   1. ONCE PER SESSION. sessionStorage, not localStorage — it should feel like
- *      arriving, not like a paywall. Navigate into a lesson and back and you
- *      will never see it twice.
- *   2. LANDING PAGE ONLY. Mounted from index.mdx, not a layout override. The
- *      last thing that rendered site-wide took the sticky header with it.
- *   3. SKIPPABLE INSTANTLY. Any click, key, scroll or touch ends it. Someone
- *      who wants to read is never made to wait.
- *   4. REDUCED MOTION MEANS NO SPLASH, not a fast one. A 4s sequence compressed
- *      to 0.1s is a strobe, which is worse than nothing.
- *   5. NEVER BLOCKS. The page is fully rendered and interactive underneath the
- *      whole time; this is a curtain, not a loading gate. Nothing waits on it.
- *   6. FAILS OPEN. The markup ships `hidden` and an inline pre-paint script
- *      REVEALS it. No JS, a thrown script, an unsupported API — any of those
- *      and the splash simply never appears, rather than covering the site
- *      forever with no way to dismiss it. (The inverse mistake — markup that
- *      needs JS to become visible — is what made the scatter field vanish.)
+ * IT ALSO NEVER TOUCHES THE ARTWORK. The previous component rewrote the SVG
+ * with regex at build time to inject class names, which is a bad bet against a
+ * hand-authored Inkscape file — attributes sit on their own lines, so a
+ * re-export could silently stop matching. The engine here binds by element id
+ * and mutates nothing, so the drawing ships exactly as it was drawn.
  *
- * The artwork is termux_linux_elements.svg, inlined so its named parts become
- * addressable. That naming is why this works where the scatter field did not:
- * these are eight DESIGNED chips with labels, not generic scattered icons, so
- * animating them individually is the point rather than an intrusion.
+ * The `?raw` import keeps ONE artwork of record: global-assets/ is the file
+ * you edit, scripts/sync-assets.mjs copies it into each project, and
+ * `npm run assets:check` fails if a copy drifts.
  */
-import raw from '../../assets/termux_linux_elements.svg?raw';
+import '../splash/splash.css';
+import rawSvg from '../../assets/termux_linux_elements.svg?raw';
 
-/*
- * Tag the parts the sequence drives. Build time, so runtime cost is zero and
- * the file on disk stays the canonical artwork.
- *
- * EVERY REWRITE IS ASSERTED. A `.replace()` that matches nothing returns the
- * input unchanged and reports success, and this file was bitten by exactly
- * that twice — the artwork is Inkscape-pretty-printed, so `<svg ` and
- * `<rect width="1280" height="832" ...>` both look right and both match
- * NOTHING, because the real markup puts every attribute on its own line. The
- * symptom is a silent visual bug with correct-looking CSS that has no element
- * to match. `must()` turns that into a failed build, which is where a broken
- * assumption about someone else's file format belongs.
- */
-function must(input: string, pattern: RegExp | string, replacement: string, what: string): string {
-	const out = input.replace(pattern as RegExp, replacement);
-	if (out === input) {
-		throw new Error(
-			`BootSplash: "${what}" matched nothing in termux_linux_elements.svg. ` +
-				`The artwork changed shape — fix the pattern rather than shipping a splash with a missing part.`
-		);
-	}
-	return out;
+interface Props {
+	/** Header wordmark. Defaults to the series, not a single course. */
+	title?: string;
+	subtitle?: string;
 }
-
-let svg = raw.replace(/<\?xml[^>]*\?>/, '').replace(/<!--[\s\S]*?-->/, '');
-
-/* Drop the artwork's own backdrop rect. The SVG has to letterbox to keep all
-   eight chips in frame, so a baked-in background paints a hard-edged panel
-   floating on the page canvas — it reads as a pasted-in image rather than a
-   boot screen. The glow is worth keeping, so it is re-created on the overlay
-   in CSS from the same stops, where it covers the full viewport and can follow
-   the theme. The `dots` rect stays: that texture is transparent and lands on
-   the canvas correctly. */
-svg = must(svg, /<rect\b[^>]*?url\(#bgGlow\)[^>]*?\/>/, '', 'strip bgGlow backdrop');
-
-// The window frame — the first thing to arrive.
-svg = must(svg, /id="terminal"/, 'id="terminal" class="tmx-splash__window"', 'tag terminal window');
-
-/* The console lines, in document order. Everything below the title bar (y>=300)
-   is output; the title itself and the prompt mark are chrome and arrive with
-   the frame. Attributes are newline-separated in the source, hence \s+. */
-let line = 0;
-svg = svg.replace(/<text\s+x="424"\s+y="(\d+)"/g, (m, y) =>
-	Number(y) >= 300 ? `<text class="tmx-splash__line" style="--i:${line++}" x="424" y="${y}"` : m
-);
-if (line === 0) throw new Error('BootSplash: tagged no console lines — the terminal markup changed.');
-
-/* The eight chips. Ordered by their id so the stagger is stable rather than
-   dependent on how the editor happened to serialise the document. */
-const CHIPS = [
-	'chip-penguin', 'chip-code', 'chip-droid', 'chip-database',
-	'chip-gear', 'chip-git', 'chip-package', 'chip-fish',
-];
-CHIPS.forEach((id, i) => {
-	svg = must(
-		svg,
-		new RegExp(`id="${id}"`),
-		`id="${id}" class="tmx-splash__chip" style="--i:${i}"`,
-		`tag ${id}`
-	);
-});
-
-// The closing wordmark.
-svg = must(svg, /<text([^>]*id="text71")/, '<text class="tmx-splash__wordmark"$1', 'tag wordmark');
-
-// Regex, not the string '<svg ' — see must() above for why that matters here.
-svg = must(
-	svg,
-	/<svg\b/,
-	'<svg class="tmx-splash__art" aria-hidden="true" focusable="false"',
-	'tag svg root'
-);
-
-/* ====================================================================== *
- * THE SCHEDULE — one source of truth for the CSS and the teardown timer.
- *
- * The first cut felt rushed, and the cause was structural rather than any one
- * duration being too short:
- *
- *   1. THE PHASES OVERLAPPED. Lines began at 650ms while the window was still
- *      arriving (it landed at 700ms), and chips began at 1500ms while lines
- *      were still typing until 2270ms — 770ms of two separate things moving at
- *      once. Simultaneous motion reads as busy; sequential motion reads as
- *      deliberate.
- *   2. THE CADENCE WAS INCONSISTENT — 165ms between lines against 190ms
- *      between chips. Close enough to read as a mistake rather than a choice.
- *   3. THERE WAS NO HOLD. The curtain lifted 100ms after the wordmark landed,
- *      so the assembled composition was never actually on screen. Biggest of
- *      the three, because it means the payoff frame did not exist.
- *
- * Now each phase has the stage to itself, phases are separated by a BEAT of
- * stillness, one cadence runs throughout, and the whole thing HOLDS before it
- * lifts.
- *
- * Every number below is derived rather than hand-computed, and this object
- * emits BOTH the CSS custom properties and the teardown delay — so the
- * "change one, change the other" hazard the previous version carried is gone.
- * ====================================================================== */
-const T = {
-	window: 450,   // the frame resolves
-	line: 260,     // one output line reveals
-	lineStep: 105, // cadence between lines: a boot log SHOULD scroll briskly
-	chip: 400,     // one chip materialises
-	chipStep: 230, // cadence between chips — the load-bearing number, see below
-	word: 560,     // the wordmark tracks in
-	hold: 800,     // stillness after the last motion, so it reads as FINISHED
-	fade: 500,     // the curtain
-	/*
-	 * Phases OVERLAP by this much rather than being separated by a pause. Four
-	 * phases with dead air between them read as four events; a small overlap
-	 * reads as one continuous assembly.
-	 */
-	overlap: 150,
-};
+const { title = 'Termux Tutorial', subtitle = 'digiSpace Research Studio' } = Astro.props;
 
 /*
- * WHY THIS IS SHAPED THIS WAY — three revisions got it wrong, so the reasoning
- * matters more than the numbers.
- *
- * MOTION TYPE FOLLOWS PROVENANCE. An object already sitting in its final
- * composed position MATERIALISES IN PLACE: opacity, a micro-scale from 0.94,
- * and a blur that resolves. Only an object that genuinely arrives from
- * somewhere else is allowed to translate.
- *
- * The chips used to fly up from below on `scale(0.78) translateY(16px)`, and
- * that was the whole problem. Shared directional motion is the STRONGEST
- * Gestalt grouping cue there is — stronger than shared size change, which is
- * stronger than shared opacity change (arXiv:1908.00661, "Common Fate for
- * Animated Transitions in Visualization"). Eight chips sharing one translateY
- * therefore do not read as eight arrivals; they read as ONE MASS MOVING. No
- * amount of stagger tuning fixes that, which is why two attempts at "slow it
- * down" failed. Removing the travel removes the cue. Material's own
- * fade-through and fade transitions are scale-only for the same reason.
- *
- * OPACITY IS ANIMATED LINEAR, and gets its own animation track to make that
- * possible. Opacity is not spatial, so it gains nothing from physical easing,
- * and a front-loaded curve is actively harmful: it flashes to ~83% in the first
- * quarter and then crawls invisibly to 100%, so the element "arrives" long
- * before its duration is up. Scale and blur get --ease-form. Nothing overshoots,
- * because nothing travels and there is no momentum to express.
- *
- * STAGGER IS THE DIAL. chipStep / chip = 230/400 = 0.58, so ~1.7 chips are in
- * flight at once. At 170/560 = 0.30 it was 3.3 and read as a swarm. Keep the
- * ratio above ~0.55. (That threshold is our own measurement, not a published
- * finding — do not cite it as one.)
- *
- * IT IS ALSO 38% SHORTER THAN THE VERSION THAT FELT SLOW, which is the
- * counter-intuitive part. Runtime went 7.16s -> ~4.5s while each chip gained
- * reading time relative to its phase. Length was never the complaint: a longer
- * sequence makes it worse, because the eye has to keep re-targeting. Splash
- * guidance clusters well under this; we are only defensible at all because it
- * is once per session and skippable by any input.
+ * Strip the XML prolog and Inkscape's leading metadata comment: neither is
+ * legal or useful inside an HTML host. Everything from the opening <svg> tag
+ * onward is passed through untouched.
  */
-
-const linesStart = T.window - T.overlap;
-const linesEnd = linesStart + (line - 1) * T.lineStep + T.line;
-const chipsStart = linesEnd - T.overlap;
-const chipsEnd = chipsStart + (CHIPS.length - 1) * T.chipStep + T.chip;
-const wordStart = chipsEnd - T.overlap;
-const teardownAt = wordStart + T.word + T.hold;
-
-const scheduleVars = [
-	`--t-window:${T.window}ms`,
-	`--t-line:${T.line}ms`,
-	`--t-line-step:${T.lineStep}ms`,
-	`--t-lines-start:${linesStart}ms`,
-	`--t-chip:${T.chip}ms`,
-	`--t-chip-step:${T.chipStep}ms`,
-	`--t-chips-start:${chipsStart}ms`,
-	`--t-word:${T.word}ms`,
-	`--t-word-start:${wordStart}ms`,
-	`--t-fade:${T.fade}ms`,
-].join(';');
+const svg = rawSvg.slice(Math.max(0, rawSvg.indexOf('<svg')));
 ---
 
-<div
-	class="tmx-splash"
-	data-tmx-splash
-	data-teardown={String(teardownAt)}
-	style={scheduleVars}
-	hidden
-	aria-hidden="true"
-	set:html={svg}
-/>
+<div id="termux-splash"
+     role="group"
+     aria-label={`Loading ${title}`}
+     aria-busy="true"
+     data-speed="1"
+     data-auto="true"
+     data-min-ms="0"
+     data-failsafe-ms="16000"
+     data-title={title}
+     data-subtitle={subtitle}>
+
+  <div class="tx-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+  <header class="tx-head">
+    <div class="tx-brand">
+      <span class="tx-brand-mark" aria-hidden="true">&gt;_</span>
+      <span class="tx-brand-text">
+        <b data-tx-title>{title}</b>
+        <em data-tx-subtitle>{subtitle}</em>
+      </span>
+    </div>
+    <div class="tx-head-meta">
+      <span class="tx-dot" aria-hidden="true"></span>
+      <span>aarch64</span>
+      <span aria-hidden="true">&middot;</span>
+      <span>no-root</span>
+    </div>
+  </header>
+
+  <div class="tx-stagewrap">
+    <div class="tx-stage" id="tx-stage">
+<Fragment set:html={svg} />
+      <div class="tx-screen" id="tx-screen" aria-hidden="true">
+        <div class="tx-flash"></div>
+        <div class="tx-beam"></div>
+        <div class="tx-scan"></div>
+        <div class="tx-grain"></div>
+        <div class="tx-vig"></div>
+        <div class="tx-bezel"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="tx-foot">
+    <div class="tx-log" id="tx-log" aria-hidden="true"></div>
+
+    <div class="tx-status">
+      <span class="tx-phase" id="tx-phase">cold start</span>
+      <span class="tx-pct"><span id="tx-pct">0</span><i>%</i></span>
+    </div>
+
+    <div class="tx-rail" id="tx-rail" role="progressbar"
+         aria-label="Boot progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+
+    <div class="tx-actions">
+      <span class="tx-hint">8 nodes &middot; no-root shell &middot; self-contained</span>
+      <button type="button" class="tx-skip" id="tx-skip">skip <kbd>esc</kbd></button>
+    </div>
+  </footer>
+
+  <p class="tx-sr" id="tx-sr" role="status" aria-live="polite">Loading.</p>
+</div>
+
+<noscript><style>
+  /* No script: the splash can never dismiss itself, so it never shows.  */
+  #termux-splash { display:none !important; }
+</style></noscript>
 
 <script is:inline>
-	/*
-	 * Inline and synchronous: it has to decide BEFORE first paint, or the
-	 * splash flashes in after the page is already visible, which is the one
-	 * thing worse than a splash.
-	 */
-	(() => {
-		const el = document.querySelector('[data-tmx-splash]');
-		if (!el) return;
+/* ======================================================================
+   Termux Constellation Boot Splash - sequence engine
+   CSS owns HOW things animate; this file owns WHEN. Every timing number
+   lives in the CUES / LINES / LOG / PROGRESS tables below - nowhere else.
+   ====================================================================== */
+(function () {
+  'use strict';
 
-		const KEY = 'tmx:splash-seen';
-		let seen = false;
-		try {
-			seen = sessionStorage.getItem(KEY) === '1';
-			sessionStorage.setItem(KEY, '1');
-		} catch {
-			// Private mode / storage disabled. Treat as seen: showing the splash
-			// on every single navigation is far worse than never showing it.
-			seen = true;
-		}
+  var ROOT_ID = 'termux-splash';
+  var host = document.getElementById(ROOT_ID);
+  if (!host) { return; }
 
-		const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-		if (seen || calm) {
-			el.remove();
-			return;
-		}
+  /* Pristine snapshot, taken before any mutation, so replay() is exact. */
+  var PRISTINE = host.cloneNode(true);
 
-		/* Reparent to <body> before revealing. The component is authored inside
-		   the page content, and a fixed element with z-index still cannot escape
-		   an ancestor that establishes a stacking context — which is why the
-		   header painted OVER a z-index:100 overlay. Hoisting to the root makes
-		   the layering depend on nothing but our own z-index. */
-		document.body.appendChild(el);
+  /* ---------------------------------------------------------------- map
+     The only place artwork element ids appear. Re-syncing the SVG means
+     checking this table, nothing else.                                  */
+  var NODES = [
+    { key:'linux',    group:'g28',            chip:'tux-chip',          label:'text42', wire:'path10', dot:[640,176],  hue:'#3ddc84', name:'linux kernel'   },
+    { key:'ubuntu',   group:'ubuntu',         chip:'ubuntu-chip',       label:'text54', wire:'path14', dot:[918,214],  hue:'#dbe7f3', name:'ubuntu rootfs'  },
+    { key:'sqlite',   group:'database',       chip:'sqlite-chip',       label:'text50', wire:'path13', dot:[1020,416], hue:'#fbbf24', name:'sqlite3'        },
+    { key:'bash',     group:'bash-shell',     chip:'bash-chip',         label:'text70', wire:'path17', dot:[918,618],  hue:'#3ab14a', name:'bash 5.2'       },
+    { key:'script',   group:'script-braces',  chip:'shell-script-chip', label:'text45', wire:'path11', dot:[640,656],  hue:'#22d3ee', name:'shell scripts'  },
+    { key:'git',      group:'git',            chip:'git-chip',          label:'text66', wire:'path16', dot:[362,618],  hue:'#f97316', name:'git 2.49'       },
+    { key:'android',  group:'android',        chip:'android-chip',      label:'text49', wire:'path12', dot:[260,416],  hue:'#3ddc84', name:'android bridge' },
+    { key:'dotfiles', group:'dotfiles',       chip:'dor-chip',          label:'text62', wire:'path15', dot:[362,214],  hue:'#9fb3c8', name:'dotfiles'       }
+  ];
 
-		el.hidden = false;
-		document.documentElement.setAttribute('data-splash', '');
+  var LINES = [
+    { id:'pkg-update',      kind:'cmd', at:1.80, dur:0.80 },
+    { id:'aarch64-package', kind:'out', at:2.66, dur:0.30 },
+    { id:'up-to-date',      kind:'out', at:2.98, dur:0.26 },
+    { id:'pip-install',     kind:'cmd', at:3.26, dur:0.55 },
+    { id:'rich-14.0',       kind:'out', at:3.87, dur:0.30 },
+    { id:'ssh',             kind:'cmd', at:4.19, dur:0.60 },
+    { id:'forge',           kind:'out', at:4.85, dur:0.32 },
+    { id:'prompt',          kind:'out', at:5.20, dur:0.20 }
+  ];
 
-		let done = false;
-		const end = () => {
-			if (done) return;
-			done = true;
-			el.setAttribute('data-leaving', '');
-			document.documentElement.removeAttribute('data-splash');
-			// Outlast the fade, then stop existing — an inert full-screen layer
-			// is still a layer.
-			setTimeout(() => el.remove(), 600);
-		};
+  /* Master cue sheet, in timeline seconds at speed 1. */
+  var CUES = {
+    field:      0.30,
+    orbit:      0.50,
+    orbitDash:  0.88,
+    shell:      1.05,
+    shellBits:  1.58,
+    chrome:     5.30,
+    cursor:     5.45,
+    bus:        5.28,
+    traceAt:    5.45,
+    traceStep:  0.16,
+    traceDur:   0.55,
+    mountLead:  0.86,   /* chip fires at traceDur * mountLead */
+    sync:       7.05,
+    ready:      7.55,
+    outro:      8.15
+  };
 
-		/*
-		 * The full sequence, and every way to cut it short. The delay is read
-		 * from data-teardown, which the component derived from the same
-		 * constants the CSS animations use — so this timer cannot drift out of
-		 * step with the animation it is waiting on.
-		 */
-		const teardown = Number(el.getAttribute('data-teardown')) || 5800;
-		const timer = setTimeout(end, teardown);
-		const skip = () => {
-			clearTimeout(timer);
-			end();
-		};
-		for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) {
-			addEventListener(ev, skip, { once: true, passive: true });
-		}
-	})();
+  var PHASES = [
+    [0.00, 'cold start'],
+    [0.30, 'field wake'],
+    [1.05, 'mounting shell'],
+    [1.80, 'session bootstrap'],
+    [5.28, 'energizing bus'],
+    [5.92, 'mounting nodes'],
+    [7.05, 'synchronizing'],
+    [7.55, 'ready']
+  ];
+
+  var LOG = [
+    [0.05, 'termux-boot: cold start',              'ok'  ],
+    [0.42, 'kernel aarch64 \u00b7 page size 4K',   'ok'  ],
+    [0.90, 'mount /data/data/com.termux/files',    'ok'  ],
+    [1.25, 'linker64: bionic symbols resolved',    'ok'  ],
+    [1.70, '$PREFIX/bin registered on PATH',       'ok'  ],
+    [2.10, 'login shell: bash 5.2',                'ok'  ],
+    [2.75, 'apt: reading package lists',           'info'],
+    [3.30, 'python 3.12 \u00b7 pip 25.1',          'ok'  ],
+    [3.95, 'venv "working env" attached',          'ok'  ],
+    [4.35, 'openssh 9.9 \u00b7 known_hosts ok',    'ok'  ],
+    [4.95, 'proot-distro: ubuntu rootfs detected', 'ok'  ],
+    [5.35, 'node bus energized',                   'info'],
+    [6.10, 'sqlite3 3.46 \u00b7 journal=wal',      'ok'  ],
+    [6.60, 'git 2.49 \u00b7 credential helper up', 'ok'  ],
+    [7.05, 'constellation synchronized 8/8',       'ok'  ],
+    [7.60, 'handoff \u2192 course runtime',        'ok'  ]
+  ];
+
+  /* Scripted progress curve: [timeline seconds, percent]. */
+  var PROGRESS = [[0,0],[0.5,4],[1.05,10],[1.8,17],[5.28,58],[7.04,90],[7.55,97],[8.15,100]];
+
+  /* Responsive framings: pick the first whose min aspect ratio fits. */
+  var FRAMES = [
+    { min:1.45, box:'0 0 1280 832'    },
+    { min:1.02, box:'128 28 1024 776' },
+    { min:0,    box:'384 40 512 760'  }
+  ];
+
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+
+  /* ============================================================ state */
+  var S = null;   /* live instance state, rebuilt on every boot/replay */
+
+  function num(v, dflt) { var n = parseFloat(v); return isFinite(n) ? n : dflt; }
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function byId(id) { return document.getElementById(id); }
+  function svgEl(tag) { return document.createElementNS(SVG_NS, tag); }
+
+  function interp(table, t) {
+    if (t <= table[0][0]) { return table[0][1]; }
+    for (var i = 1; i < table.length; i++) {
+      if (t <= table[i][0]) {
+        var a = table[i - 1], b = table[i];
+        var f = (t - a[0]) / (b[0] - a[0] || 1);
+        return a[1] + (b[1] - a[1]) * f;
+      }
+    }
+    return table[table.length - 1][1];
+  }
+
+  function fmtClock(t) {
+    var s = t.toFixed(3);
+    while (s.length < 6) { s = ' ' + s; }
+    return '[ ' + s + ' ]';
+  }
+
+  function emit(name, detail) {
+    S.root.dispatchEvent(new CustomEvent('termux-splash:' + name, {
+      bubbles: true, detail: detail || {}
+    }));
+  }
+
+  /* ================================================= artwork wiring == */
+
+  /* Delay/duration helpers - CSS divides its own durations by --tx-speed,
+     so JS-supplied times are pre-scaled here to stay in the same clock. */
+  function setDelay(el, seconds) {
+    el.style.setProperty('--tx-d', (seconds / S.speed).toFixed(4) + 's');
+  }
+  function setDur(el, seconds) {
+    el.style.setProperty('--tx-dur', (seconds / S.speed).toFixed(4) + 's');
+  }
+
+  function ellipseLength(el) {
+    if (el && typeof el.getTotalLength === 'function') {
+      try {
+        var l = el.getTotalLength();
+        if (l && isFinite(l) && l > 1) { return l; }
+      } catch (e) { /* fall through to the closed form */ }
+    }
+    /* Ramanujan approximation - used when getTotalLength is unavailable
+       for <ellipse> in the host engine. */
+    var a = num(el && el.getAttribute('rx'), 440);
+    var b = num(el && el.getAttribute('ry'), 300);
+    return Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+  }
+
+  function buildDefs(svg) {
+    var defs = svg.querySelector('defs');
+    if (!defs) { defs = svgEl('defs'); svg.insertBefore(defs, svg.firstChild); }
+
+    var f = svgEl('filter');
+    f.setAttribute('id', 'tx-glow');
+    f.setAttribute('x', '-60%'); f.setAttribute('y', '-60%');
+    f.setAttribute('width', '220%'); f.setAttribute('height', '220%');
+    var blur = svgEl('feGaussianBlur');
+    blur.setAttribute('stdDeviation', '2.6');
+    blur.setAttribute('result', 'txb');
+    var merge = svgEl('feMerge');
+    var m1 = svgEl('feMergeNode'); m1.setAttribute('in', 'txb');
+    var m2 = svgEl('feMergeNode'); m2.setAttribute('in', 'SourceGraphic');
+    merge.appendChild(m1); merge.appendChild(m2);
+    f.appendChild(blur); f.appendChild(merge);
+    defs.appendChild(f);
+    return defs;
+  }
+
+  /* Terminal line reveal: one primitive for every line. A clip rect over
+     the line's own bounding box scales from p0 to 1 in character steps.
+     Command lines set p0 at the end of the "~ $" prompt so the prompt is
+     present from the start and only the command types.                  */
+  function wireLine(svg, defs, spec, index) {
+    var text = byId(spec.id);
+    if (!text) { return null; }
+
+    var box;
+    try { box = text.getBBox(); } catch (e) { return null; }
+    if (!box || !box.width) { return null; }
+
+    var pad = 3;
+    var x = box.x - pad, w = box.width + pad * 2;
+    var y = box.y - pad, h = box.height + pad * 2;
+
+    var clip = svgEl('clipPath');
+    clip.setAttribute('id', 'tx-clip-' + index);
+    clip.setAttribute('clipPathUnits', 'userSpaceOnUse');
+    var rect = svgEl('rect');
+    rect.setAttribute('x', x); rect.setAttribute('y', y);
+    rect.setAttribute('width', w); rect.setAttribute('height', h);
+    rect.setAttribute('class', 'tx-clip-rect');
+    clip.appendChild(rect);
+    defs.appendChild(clip);
+    text.setAttribute('clip-path', 'url(#tx-clip-' + index + ')');
+
+    /* Where does the typed portion begin? */
+    var splitX = x, steps = (text.textContent || '').length;
+    if (spec.kind === 'cmd') {
+      var first = text.querySelector('tspan');
+      var promptLen = first ? (first.textContent || '').length : 0;
+      try {
+        splitX = text.getStartPositionOfChar(promptLen).x;
+        steps = Math.max(1, (text.textContent || '').length - promptLen);
+      } catch (e2) {
+        splitX = x; steps = Math.max(1, (text.textContent || '').length);
+      }
+    }
+
+    rect.style.setProperty('--tx-p0', ((splitX - x) / w).toFixed(4));
+    rect.style.setProperty('--tx-steps', String(clamp(steps, 1, 200)));
+    setDur(rect, spec.dur);
+    setDelay(rect, spec.at);
+
+    /* Typing caret, command lines only. */
+    if (spec.kind === 'cmd') {
+      var caret = svgEl('rect');
+      caret.setAttribute('class', 'tx-caret');
+      caret.setAttribute('x', splitX);
+      caret.setAttribute('y', (y + 3).toFixed(2));
+      caret.setAttribute('width', '8.5');
+      caret.setAttribute('height', Math.max(12, h - 8).toFixed(2));
+      caret.style.setProperty('--tx-x0', '0px');
+      caret.style.setProperty('--tx-x1', ((x + w - pad) - splitX).toFixed(2) + 'px');
+      caret.style.setProperty('--tx-steps', String(clamp(steps, 1, 200)));
+      setDur(caret, spec.dur);
+      setDelay(caret, spec.at);
+      S.fx.appendChild(caret);
+    }
+    return text;
+  }
+
+  function wireArtwork() {
+    var svg = S.root.querySelector('svg');
+    if (!svg) { return; }
+    S.svg = svg;
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    svg.removeAttribute('role');
+    svg.removeAttribute('aria-labelledby');
+
+    var defs = buildDefs(svg);
+
+    /* FX overlay - all added geometry lives here, above the artwork. */
+    var fx = svgEl('g');
+    fx.setAttribute('id', 'tx-fx');
+    svg.appendChild(fx);
+    S.fx = fx;
+
+    /* --- field ---------------------------------------------------- */
+    var bezel = S.root.querySelector('.tx-bezel');
+    if (bezel) { setDelay(bezel, CUES.field); }
+
+    var bg = byId('background');
+    if (bg) { bg.classList.add('tx-bg'); setDelay(bg, CUES.field); }
+    var tex = byId('background-texture');
+    if (tex) { tex.classList.add('tx-grid-tex'); setDelay(tex, CUES.field + 0.12); }
+
+    var orbit = byId('ellipse9');
+    if (orbit) {
+      var L = ellipseLength(orbit);
+      orbit.classList.add('tx-orbit');
+      orbit.style.strokeDasharray = L.toFixed(2);
+      orbit.style.setProperty('--tx-len', L.toFixed(2));
+      setDelay(orbit, CUES.orbit);
+    }
+    var dashed = byId('ellipse10');
+    if (dashed) { dashed.classList.add('tx-orbit-dashed'); setDelay(dashed, CUES.orbitDash); }
+
+    /* Comet arcs riding the outer orbit. */
+    if (dashed) {
+      var cl = ellipseLength(dashed);
+      ['tx-comet-head', 'tx-comet-tail'].forEach(function (variant, i) {
+        var c = svgEl('ellipse');
+        c.setAttribute('cx', dashed.getAttribute('cx') || 640);
+        c.setAttribute('cy', dashed.getAttribute('cy') || 416);
+        c.setAttribute('rx', dashed.getAttribute('rx') || 520);
+        c.setAttribute('ry', dashed.getAttribute('ry') || 356);
+        c.setAttribute('class', 'tx-comet ' + variant);
+        var seg = i === 0 ? cl * 0.035 : cl * 0.11;
+        c.style.strokeDasharray = seg.toFixed(2) + ' ' + (cl - seg).toFixed(2);
+        c.style.setProperty('--tx-len', cl.toFixed(2));
+        c.style.setProperty('--tx-lenneg', '-' + cl.toFixed(2));
+        setDelay(c, CUES.orbitDash + (i === 0 ? 0.25 : 0.1));
+        fx.insertBefore(c, fx.firstChild);
+      });
+    }
+
+    /* --- terminal chassis ----------------------------------------- */
+    var term = byId('terminal-area');
+    if (term) { term.classList.add('tx-term'); setDelay(term, CUES.shell); }
+
+    ['text-mark', 'localhost'].forEach(function (id) {
+      var el = byId(id);
+      if (el) { el.classList.add('tx-term-bits'); setDelay(el, CUES.shellBits); }
+    });
+    ['terminal-divider', 'metadata'].forEach(function (id, i) {
+      var el = byId(id);
+      if (el) { el.classList.add('tx-term-bits'); setDelay(el, CUES.chrome + i * 0.12); }
+    });
+
+    /* --- session lines -------------------------------------------- */
+    LINES.forEach(function (spec, i) { wireLine(svg, defs, spec, i); });
+
+    var cursor = byId('cursor-indicator');
+    if (cursor) { cursor.classList.add('tx-cursor'); }
+
+    /* --- connector wires ------------------------------------------ */
+    var wires = byId('indicator-dahses-dots');
+    if (wires) { wires.classList.add('tx-wire'); setDelay(wires, CUES.bus); }
+
+    /* --- per-node traces, sparks, rings, chips, labels ------------- */
+    NODES.forEach(function (n, i) {
+      var at = CUES.traceAt + i * CUES.traceStep;
+      var land = at + CUES.traceDur * CUES.mountLead;
+
+      var wire = byId(n.wire);
+      if (wire) {
+        var tr = svgEl('path');
+        tr.setAttribute('d', wire.getAttribute('d'));
+        tr.setAttribute('pathLength', '100');
+        tr.setAttribute('class', 'tx-trace');
+        tr.setAttribute('stroke', n.hue);
+        setDur(tr, CUES.traceDur);
+        setDelay(tr, at);
+        fx.appendChild(tr);
+      }
+
+      var spark = svgEl('circle');
+      spark.setAttribute('cx', n.dot[0]); spark.setAttribute('cy', n.dot[1]);
+      spark.setAttribute('r', '3.4');
+      spark.setAttribute('fill', n.hue);
+      spark.setAttribute('filter', 'url(#tx-glow)');
+      spark.setAttribute('class', 'tx-spark');
+      setDelay(spark, land);
+      fx.appendChild(spark);
+
+      var ring = svgEl('circle');
+      ring.setAttribute('cx', n.dot[0]); ring.setAttribute('cy', n.dot[1]);
+      ring.setAttribute('r', '16');
+      ring.setAttribute('stroke', n.hue);
+      ring.setAttribute('class', 'tx-arrival');
+      setDelay(ring, land);
+      fx.appendChild(ring);
+
+      var group = byId(n.group);
+      if (group) {
+        group.classList.add('tx-node');
+        group.style.setProperty('--tx-d2', (1 + i * 0.42).toFixed(2) + 's');
+      }
+      var chip = byId(n.chip);
+      if (chip) { chip.classList.add('tx-chip'); setDelay(chip, land); }
+      var label = byId(n.label);
+      if (label) { label.classList.add('tx-label'); setDelay(label, land + 0.16); }
+
+      n._mountAt = land;
+    });
+
+    /* --- synchronization pulse ------------------------------------ */
+    var sync = svgEl('ellipse');
+    sync.setAttribute('cx', '640'); sync.setAttribute('cy', '416');
+    sync.setAttribute('rx', '520'); sync.setAttribute('ry', '356');
+    sync.setAttribute('class', 'tx-sync');
+    setDelay(sync, CUES.sync);
+    fx.appendChild(sync);
+
+    frame();
+  }
+
+  /* Choose the viewBox crop that suits the stage's aspect ratio, then seat
+     the screen bezel on the rect the artwork actually paints into. Both
+     derive from the same measurement, so the frame can never drift away
+     from the art it frames. */
+  function frame() {
+    if (!S.svg || !S.stage) { return; }
+    var r = S.stage.getBoundingClientRect();
+    if (!r.width || !r.height) { return; }
+
+    var ar = r.width / r.height;
+    var pick = FRAMES[FRAMES.length - 1];
+    for (var i = 0; i < FRAMES.length; i++) {
+      if (ar >= FRAMES[i].min) { pick = FRAMES[i]; break; }
+    }
+    if (S.frameBox !== pick.box) {
+      S.frameBox = pick.box;
+      S.svg.setAttribute('viewBox', pick.box);
+    }
+
+    if (!S.screen) { return; }
+    /* preserveAspectRatio="xMidYMid meet" - reproduce its fit here. */
+    var vb = pick.box.split(/\s+/);
+    var vw = parseFloat(vb[2]), vh = parseFloat(vb[3]);
+    var scale = Math.min(r.width / vw, r.height / vh);
+    var w = vw * scale, h = vh * scale;
+    var st = S.screen.style;
+    st.left = ((r.width - w) / 2).toFixed(1) + 'px';
+    st.top = ((r.height - h) / 2).toFixed(1) + 'px';
+    st.width = w.toFixed(1) + 'px';
+    st.height = h.toFixed(1) + 'px';
+  }
+
+  /* ================================================== chrome updates = */
+
+  function pushLog(message, level, atSeconds) {
+    var line = document.createElement('div');
+    line.className = 'tx-log-line';
+    line.setAttribute('data-level', level || 'ok');
+    var t = document.createElement('span');
+    t.className = 'tx-t';
+    t.textContent = fmtClock(atSeconds === undefined ? S.t : atSeconds);
+    var m = document.createElement('span');
+    m.className = 'tx-m';
+    m.textContent = message;
+    var s = document.createElement('span');
+    s.className = 'tx-s';
+    s.textContent = level === 'warn' ? 'warn' : (level === 'info' ? '..' : 'ok');
+    line.appendChild(t); line.appendChild(m); line.appendChild(s);
+    S.log.appendChild(line);
+    while (S.log.children.length > 9) { S.log.removeChild(S.log.firstChild); }
+  }
+
+  function setPhase(text) {
+    if (S.phaseText === text) { return; }
+    S.phaseText = text;
+    S.phaseEl.textContent = text;
+    S.sr.textContent = 'Loading: ' + text + '.';
+    emit('phase', { phase: text });
+  }
+
+  function paintProgress(pct) {
+    pct = clamp(pct, 0, 100);
+    if (Math.round(pct) !== S.shownPct) {
+      S.shownPct = Math.round(pct);
+      S.pctEl.textContent = S.shownPct;
+      S.rail.setAttribute('aria-valuenow', S.shownPct);
+      emit('progress', { value: pct / 100 });
+    }
+  }
+
+  function lightSegment(i) {
+    var seg = S.segs[i];
+    if (seg && seg.getAttribute('data-on') !== '1') { seg.setAttribute('data-on', '1'); }
+  }
+
+  /* ======================================================= sequencing = */
+
+  function tick(now) {
+    if (!S || S.done) { return; }
+    var realMs = now - S.t0 - S.pausedFor;
+    if (!S.paused) {
+      S.t = (realMs / 1000) * S.speed;
+    }
+    var t = S.t;
+
+    /* Fail-safe on the same pause-adjusted clock, so a backgrounded tab
+       cannot trip it while the sequence is frozen. */
+    if (!S.completing && realMs > S.opts.failsafe) {
+      pushLog('fail-safe timeout \u00b7 handing off', 'warn');
+      skip();
+      return;
+    }
+
+    /* phase label */
+    for (var p = PHASES.length - 1; p >= 0; p--) {
+      if (t >= PHASES[p][0]) { setPhase(PHASES[p][1]); break; }
+    }
+
+    /* boot log */
+    while (S.logIndex < LOG.length && t >= LOG[S.logIndex][0]) {
+      var entry = LOG[S.logIndex];
+      pushLog(entry[1], entry[2], entry[0]);
+      S.logIndex++;
+    }
+
+    /* rail segments follow node mounts */
+    for (var i = 0; i < NODES.length; i++) {
+      if (t >= NODES[i]._mountAt) { lightSegment(i); }
+    }
+
+    /* cursor becomes visible once the prompt line lands */
+    if (!S.cursorOn && t >= CUES.cursor) {
+      S.cursorOn = true;
+      S.root.classList.add('tx-cursor-on');
+    }
+
+    /* idle breathing once the constellation is up */
+    if (!S.live && t >= CUES.sync) {
+      S.live = true;
+      S.root.classList.add('tx-live');
+    }
+
+    /* progress: scripted, held at 97 in manual mode, floored by any
+       externally reported value so real loading can run ahead.        */
+    var scripted = interp(PROGRESS, t);
+    if (!S.opts.auto && !S.completing) { scripted = Math.min(scripted, 97); }
+    paintProgress(Math.max(scripted, S.external * 100));
+
+    if (!S.ready && t >= CUES.ready && (S.opts.auto || S.completing)) { markReady(); }
+    if (S.opts.auto && !S.completing && t >= CUES.outro) { complete(); }
+
+    S.raf = requestAnimationFrame(tick);
+  }
+
+  function markReady() {
+    if (S.ready) { return; }
+    S.ready = true;
+    S.root.classList.add('tx-ready');
+    setPhase('ready');
+    S.sr.textContent = 'Ready.';
+    S.root.setAttribute('aria-busy', 'false');
+    S.skipBtn.innerHTML = 'enter <kbd>\u21b5</kbd>';
+    emit('ready', {});
+  }
+
+  function finish() {
+    if (S.done) { return; }
+    S.done = true;
+    if (S.raf) { cancelAnimationFrame(S.raf); }
+    for (var i = 0; i < NODES.length; i++) { lightSegment(i); }
+    paintProgress(100);
+    markReady();
+
+    var root = S.root;
+    var wait = Math.max(0, S.opts.minMs - (performance.now() - S.t0 - S.pausedFor));
+    setTimeout(function () {
+      root.classList.add('tx-out');
+      var closed = false;
+      var close = function () {
+        if (closed) { return; }
+        closed = true;
+        root.hidden = true;
+        document.documentElement.classList.remove('tx-locked');
+        if (S.prevFocus && document.contains(S.prevFocus)) {
+          try { S.prevFocus.focus({ preventScroll: true }); } catch (e) {}
+        }
+        emit('done', {});
+      };
+      root.addEventListener('transitionend', close, { once: true });
+      setTimeout(close, 900);
+    }, wait + 380 / S.speed);
+  }
+
+  function complete() {
+    if (!S || S.done || S.completing) { return; }
+    S.completing = true;
+    S.external = 1;
+    if (S.t < CUES.ready) {
+      /* Loading beat the choreography: fast-forward to the finished frame
+         rather than stalling the user on an unfinished animation.       */
+      S.root.classList.add('tx-static');
+      S.t = CUES.ready;
+    }
+    markReady();
+    pushLog('handoff \u2192 host runtime', 'ok');
+    finish();
+  }
+
+  function skip() {
+    if (!S || S.done) { return; }
+    S.root.classList.add('tx-static');
+    S.completing = true;
+    S.t = CUES.ready;
+    while (S.logIndex < LOG.length) {
+      pushLog(LOG[S.logIndex][1], LOG[S.logIndex][2], LOG[S.logIndex][0]);
+      S.logIndex++;
+    }
+    S.root.classList.add('tx-cursor-on');
+    finish();
+  }
+
+  function pause() {
+    if (!S || S.paused || S.done) { return; }
+    S.paused = true;
+    S.pausedAt = performance.now();
+    S.root.classList.add('tx-paused');
+    S.root.querySelectorAll('*').forEach(function (el) {
+      el.style.animationPlayState = 'paused';
+    });
+  }
+
+  function resume() {
+    if (!S || !S.paused || S.done) { return; }
+    S.pausedFor += performance.now() - S.pausedAt;
+    S.paused = false;
+    S.root.classList.remove('tx-paused');
+    S.root.querySelectorAll('*').forEach(function (el) {
+      el.style.animationPlayState = '';
+    });
+  }
+
+  /* ============================================================= boot = */
+
+  function readOptions(root) {
+    var reduce = window.matchMedia &&
+                 window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var motion = root.getAttribute('data-motion');
+    var motionOn = motion === 'off' ? false : (motion === 'on' ? true : !reduce);
+    var speed = clamp(num(root.getAttribute('data-speed'), 1), 0.25, 4);
+    /* With motion suppressed there is nothing to watch, so the same cue
+       sheet is played on a compressed clock instead of holding a still
+       frame for the full run time. */
+    if (!motionOn) { speed = clamp(speed * 2.2, 0.25, 6); }
+    return {
+      speed:    speed,
+      auto:     root.getAttribute('data-auto') !== 'false',
+      minMs:    num(root.getAttribute('data-min-ms'), 0),
+      failsafe: Math.max(2000, num(root.getAttribute('data-failsafe-ms'), 16000)),
+      motion:   motionOn,
+      title:    root.getAttribute('data-title'),
+      subtitle: root.getAttribute('data-subtitle')
+    };
+  }
+
+  function boot(root) {
+    var opts = readOptions(root);
+
+    S = {
+      root: root, opts: opts, speed: opts.speed,
+      t: 0, t0: performance.now(), pausedFor: 0, pausedAt: 0,
+      logIndex: 0, shownPct: -1, external: 0,
+      ready: false, done: false, completing: false,
+      paused: false, cursorOn: false, live: false,
+      phaseText: '', frameBox: '',
+      prevFocus: document.activeElement,
+      log: root.querySelector('#tx-log'),
+      phaseEl: root.querySelector('#tx-phase'),
+      pctEl: root.querySelector('#tx-pct'),
+      rail: root.querySelector('#tx-rail'),
+      sr: root.querySelector('#tx-sr'),
+      skipBtn: root.querySelector('#tx-skip'),
+      stage: root.querySelector('#tx-stage'),
+      screen: root.querySelector('#tx-screen'),
+      segs: []
+    };
+
+    root.style.setProperty('--tx-speed', String(opts.speed));
+    if (opts.title) { root.querySelector('[data-tx-title]').textContent = opts.title; }
+    if (opts.subtitle) { root.querySelector('[data-tx-subtitle]').textContent = opts.subtitle; }
+
+    /* rail segments, one per constellation node */
+    S.rail.textContent = '';
+    NODES.forEach(function (n) {
+      var seg = document.createElement('span');
+      seg.className = 'tx-seg';
+      seg.setAttribute('data-on', '0');
+      seg.title = n.name;
+      seg.appendChild(document.createElement('i'));
+      S.rail.appendChild(seg);
+      S.segs.push(seg);
+    });
+
+    document.documentElement.classList.add('tx-locked');
+
+    wireArtwork();
+    if (!opts.motion) { root.classList.add('tx-static'); }
+
+    /* controls */
+    S.skipBtn.addEventListener('click', function () {
+      if (S.ready) { finish(); } else { skip(); }
+    });
+    S.keyHandler = function (e) {
+      if (!S || S.done) { return; }
+      if (e.key === 'Escape') { e.preventDefault(); skip(); }
+      else if ((e.key === 'Enter' || e.key === ' ') && e.target !== S.skipBtn) {
+        e.preventDefault();
+        if (S.ready) { finish(); } else { skip(); }
+      }
+    };
+    document.addEventListener('keydown', S.keyHandler);
+
+    S.resizeHandler = function () { frame(); };
+    window.addEventListener('resize', S.resizeHandler, { passive: true });
+    if (window.ResizeObserver) {
+      S.ro = new ResizeObserver(function () { frame(); });
+      S.ro.observe(S.stage);
+    }
+
+    S.visHandler = function () {
+      if (document.hidden) { pause(); } else { resume(); }
+    };
+    document.addEventListener('visibilitychange', S.visHandler);
+
+    try { S.skipBtn.focus({ preventScroll: true }); } catch (e) {}
+
+    S.raf = requestAnimationFrame(tick);
+  }
+
+  function teardown() {
+    if (!S) { return; }
+    if (S.raf) { cancelAnimationFrame(S.raf); }
+    if (S.keyHandler) { document.removeEventListener('keydown', S.keyHandler); }
+    if (S.visHandler) { document.removeEventListener('visibilitychange', S.visHandler); }
+    if (S.resizeHandler) { window.removeEventListener('resize', S.resizeHandler); }
+    if (S.ro) { S.ro.disconnect(); }
+    S.done = true;
+  }
+
+  function replay(overrides) {
+    teardown();
+    var current = document.getElementById(ROOT_ID);
+    var fresh = PRISTINE.cloneNode(true);
+    if (overrides) {
+      Object.keys(overrides).forEach(function (k) {
+        var attr = 'data-' + k.replace(/[A-Z]/g, function (c) { return '-' + c.toLowerCase(); });
+        fresh.setAttribute(attr, String(overrides[k]));
+      });
+    }
+    if (current) { current.parentNode.replaceChild(fresh, current); }
+    else { document.body.insertBefore(fresh, document.body.firstChild); }
+    fresh.hidden = false;
+    /* Let layout settle so getBBox/getComputedTextLength are trustworthy. */
+    requestAnimationFrame(function () { boot(fresh); });
+    return API;
+  }
+
+  /* ============================================================== API = */
+  var API = {
+    get el() { return document.getElementById(ROOT_ID); },
+    get progress() { return S ? S.shownPct / 100 : 0; },
+    get isDone() { return !!(S && S.done); },
+    get isRunning() { return !!(S && !S.done); },
+    setProgress: function (v) {
+      if (S) { S.external = clamp(num(v, 0), 0, 1); }
+      return API;
+    },
+    task: function (message, level) {
+      if (S && message) { pushLog(String(message), level || 'info'); }
+      return API;
+    },
+    complete: complete,
+    skip: skip,
+    pause: pause,
+    resume: resume,
+    replay: replay,
+    on: function (name, fn, o) {
+      document.addEventListener('termux-splash:' + name, fn, o); return API;
+    },
+    off: function (name, fn, o) {
+      document.removeEventListener('termux-splash:' + name, fn, o); return API;
+    }
+  };
+  window.TermuxSplash = API;
+
+  /* Start once fonts are settled - text measurement drives the typing. */
+  function start() {
+    var go = function () { requestAnimationFrame(function () { boot(host); }); };
+    if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+      document.fonts.ready.then(go).catch(go);
+    } else { go(); }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else { start(); }
+}());
+
+/* ====================================================================
+   Demo host controls - not part of the splash component. Delete this
+   block when embedding into a host page.
+   ==================================================================== */
+(function () {
+  'use strict';
+  var speedSel = document.getElementById('demo-speed');
+  var motionBox = document.getElementById('demo-motion');
+
+  function opts(extra) {
+    var o = { speed: speedSel ? speedSel.value : 1,
+              motion: (motionBox && motionBox.checked) ? 'off' : 'on' };
+    if (extra) { Object.keys(extra).forEach(function (k) { o[k] = extra[k]; }); }
+    return o;
+  }
+
+  var replayBtn = document.getElementById('demo-replay');
+  if (replayBtn) {
+    replayBtn.addEventListener('click', function () {
+      window.TermuxSplash.replay(opts({ auto: 'true' }));
+    });
+  }
+
+  var manualBtn = document.getElementById('demo-manual');
+  if (manualBtn) {
+    manualBtn.addEventListener('click', function () {
+      window.TermuxSplash.replay(opts({ auto: 'false' }));
+      /* Simulated real loader: reports progress, then completes. */
+      var loaded = 0;
+      var steps = [
+        [600,  0.25, 'fetching lesson index'],
+        [1400, 0.50, 'decoding sandbox wasm'],
+        [2300, 0.72, 'warming fish sandbox'],
+        [3200, 0.93, 'hydrating course shell']
+      ];
+      steps.forEach(function (s) {
+        setTimeout(function () {
+          if (window.TermuxSplash.isDone) { return; }
+          loaded = s[1];
+          window.TermuxSplash.setProgress(loaded).task(s[2], 'info');
+        }, s[0]);
+      });
+      setTimeout(function () { window.TermuxSplash.complete(); }, 4200);
+    });
+  }
+}());
 </script>
