@@ -71,6 +71,10 @@
 	   for anything that lands somewhere: it is 83% done a quarter of the way in,
 	   so extra duration goes into a tail nobody can see. */
 	--ease-settle: cubic-bezier(0.34, 1.12, 0.64, 1);
+	/* Scale/blur on something materialising in place. No overshoot — nothing
+	   travels, so there is no momentum to express. Opacity is animated LINEAR
+	   and deliberately gets no curve at all. */
+	--ease-form: cubic-bezier(0.2, 0, 0, 1);
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 	--dur-fast: 120ms;
 	--dur-normal: 200ms;
@@ -1573,7 +1577,7 @@ html[data-splash] {
 @keyframes tmx-splash-window {
 	from {
 		opacity: 0;
-		transform: scale(0.965) translateY(10px);
+		transform: scale(0.965);
 	}
 }
 
@@ -1605,15 +1609,30 @@ html[data-splash] {
       distinct, individually-designed chips arrived as one blur, which defeats
       the point of having eight. */
 .tmx-splash__chip {
-	animation: tmx-splash-chip var(--t-chip, 520ms) var(--ease-settle) both;
-	animation-delay: calc(var(--t-chips-start, 2700ms) + var(--i, 0) * var(--t-chip-step, 170ms));
+	/* TWO tracks, same duration and delay, different easing — because opacity
+	   and the spatial properties want different curves and CSS will not let one
+	   animation carry both. */
+	animation:
+		tmx-splash-chip-fade var(--t-chip, 400ms) linear both,
+		tmx-splash-chip-form var(--t-chip, 400ms) var(--ease-form) both;
+	animation-delay: calc(var(--t-chips-start, 1250ms) + var(--i, 0) * var(--t-chip-step, 230ms));
+	/* Without these, CSS scales each chip about the whole SVG's box rather than
+	   its own centre, so every chip slides diagonally toward the middle while it
+	   grows — which looks exactly like the flying-in we are removing. */
 	transform-box: fill-box;
 	transform-origin: center;
 }
-@keyframes tmx-splash-chip {
+@keyframes tmx-splash-chip-fade {
 	from {
 		opacity: 0;
-		transform: scale(0.78) translateY(16px);
+	}
+}
+@keyframes tmx-splash-chip-form {
+	from {
+		/* 0.94, not 0.78, and NO translate. See the note above the schedule in
+		   BootSplash.astro for why travel is the thing that broke this. */
+		transform: scale(0.94);
+		filter: blur(6px);
 	}
 }
 
@@ -1626,7 +1645,7 @@ html[data-splash] {
 @keyframes tmx-splash-word {
 	from {
 		opacity: 0;
-		letter-spacing: 2px;
+		letter-spacing: 0.06em;
 	}
 }
 

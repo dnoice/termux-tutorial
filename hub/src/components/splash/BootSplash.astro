@@ -132,48 +132,66 @@ svg = must(
  * "change one, change the other" hazard the previous version carried is gone.
  * ====================================================================== */
 const T = {
-	window: 700,   // the frame arrives
-	beat: 280,     // stillness between phases — the thing that separates them
-	line: 280,     // one output line reveals
-	lineStep: 120, // cadence between lines: a boot log SHOULD scroll briskly
-	chip: 520,     // one chip settles into place, on --ease-settle
-	chipStep: 300, // cadence between chips — see the note below
-	word: 760,     // the wordmark tracks in
-	hold: 1000,    // everything still, so the finished composition is SEEN
-	fade: 600,     // the curtain
+	window: 450,   // the frame resolves
+	line: 260,     // one output line reveals
+	lineStep: 105, // cadence between lines: a boot log SHOULD scroll briskly
+	chip: 400,     // one chip materialises
+	chipStep: 230, // cadence between chips — the load-bearing number, see below
+	word: 560,     // the wordmark tracks in
+	hold: 800,     // stillness after the last motion, so it reads as FINISHED
+	fade: 500,     // the curtain
+	/*
+	 * Phases OVERLAP by this much rather than being separated by a pause. Four
+	 * phases with dead air between them read as four events; a small overlap
+	 * reads as one continuous assembly.
+	 */
+	overlap: 150,
 };
 
 /*
- * WHY THESE NUMBERS, since "make it slower" was tried twice and did not work.
+ * WHY THIS IS SHAPED THIS WAY — three revisions got it wrong, so the reasoning
+ * matters more than the numbers.
  *
- * The splash felt rushed at a five-and-three-quarter-second runtime, which
- * should have been the clue: the problem was never the total. Two things caused
- * it, and both are about what the eye can actually resolve.
+ * MOTION TYPE FOLLOWS PROVENANCE. An object already sitting in its final
+ * composed position MATERIALISES IN PLACE: opacity, a micro-scale from 0.94,
+ * and a blur that resolves. Only an object that genuinely arrives from
+ * somewhere else is allowed to translate.
  *
- * 1. EASING. Everything ran on --ease-out, an expo curve that is 83% finished a
- *    quarter of the way through. A 560ms chip therefore read as a ~140ms snap
- *    plus an invisible tail, and every extra millisecond went into the tail.
- *    Chips and the wordmark now use --ease-settle, which spreads the motion and
- *    lands with a slight overshoot.
+ * The chips used to fly up from below on `scale(0.78) translateY(16px)`, and
+ * that was the whole problem. Shared directional motion is the STRONGEST
+ * Gestalt grouping cue there is — stronger than shared size change, which is
+ * stronger than shared opacity change (arXiv:1908.00661, "Common Fate for
+ * Animated Transitions in Visualization"). Eight chips sharing one translateY
+ * therefore do not read as eight arrivals; they read as ONE MASS MOVING. No
+ * amount of stagger tuning fixes that, which is why two attempts at "slow it
+ * down" failed. Removing the travel removes the cue. Material's own
+ * fade-through and fade transitions are scale-only for the same reason.
  *
- * 2. OVERLAP. chipStep was 170ms against a 560ms chip, so 3.3 chips were moving
- *    at any instant — a continuous swarm in which no single chip is ever seen
- *    ARRIVING. At 300ms against 520ms it is ~1.7: each chip is most of the way
- *    home before the next starts, which reads as a cascade rather than a burst.
- *    That ratio is the dial. Below about 0.5 it becomes a swarm again.
+ * OPACITY IS ANIMATED LINEAR, and gets its own animation track to make that
+ * possible. Opacity is not spatial, so it gains nothing from physical easing,
+ * and a front-loaded curve is actively harmful: it flashes to ~83% in the first
+ * quarter and then crawls invisibly to 100%, so the element "arrives" long
+ * before its duration is up. Scale and blur get --ease-form. Nothing overshoots,
+ * because nothing travels and there is no momentum to express.
  *
- * The lines are deliberately still brisk — they are a boot log, and a log that
- * scrolls fast is authentic rather than hurried. The hold more than doubled,
- * because the composition arriving is the payoff and it needs a beat of
- * stillness to register as finished rather than interrupted.
+ * STAGGER IS THE DIAL. chipStep / chip = 230/400 = 0.58, so ~1.7 chips are in
+ * flight at once. At 170/560 = 0.30 it was 3.3 and read as a swarm. Keep the
+ * ratio above ~0.55. (That threshold is our own measurement, not a published
+ * finding — do not cite it as one.)
+ *
+ * IT IS ALSO 38% SHORTER THAN THE VERSION THAT FELT SLOW, which is the
+ * counter-intuitive part. Runtime went 7.16s -> ~4.5s while each chip gained
+ * reading time relative to its phase. Length was never the complaint: a longer
+ * sequence makes it worse, because the eye has to keep re-targeting. Splash
+ * guidance clusters well under this; we are only defensible at all because it
+ * is once per session and skippable by any input.
  */
 
-const linesStart = T.window + T.beat;
+const linesStart = T.window - T.overlap;
 const linesEnd = linesStart + (line - 1) * T.lineStep + T.line;
-const chipsStart = linesEnd + T.beat;
+const chipsStart = linesEnd - T.overlap;
 const chipsEnd = chipsStart + (CHIPS.length - 1) * T.chipStep + T.chip;
-const wordStart = chipsEnd + T.beat;
-/** The moment nothing is moving any more — when the curtain may lift. */
+const wordStart = chipsEnd - T.overlap;
 const teardownAt = wordStart + T.word + T.hold;
 
 const scheduleVars = [

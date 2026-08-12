@@ -69,6 +69,19 @@
 	 * slightly, so an element lands and settles instead of stamping into place.
 	 */
 	--ease-settle: cubic-bezier(0.34, 1.12, 0.64, 1);
+	/*
+	 * FORM — for scale and blur on something materialising in place. Material
+	 * Design 3's standard decelerate curve. No overshoot: overshoot models
+	 * momentum, and an object that never travelled has none to express.
+	 *
+	 * OPACITY DELIBERATELY GETS NO CURVE AT ALL — it is animated `linear`, which
+	 * is what Material's own Fade transition specifies. Opacity is not spatial,
+	 * so physical easing buys nothing, and a front-loaded curve is actively
+	 * harmful: it flashes the element to ~83% in the first quarter and then
+	 * crawls invisibly to 100%. That is the single biggest reason this splash
+	 * read as "rushed" across three revisions.
+	 */
+	--ease-form: cubic-bezier(0.2, 0, 0, 1);
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 	--dur-fast: 120ms;
 	--dur-normal: 200ms;
