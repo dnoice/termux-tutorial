@@ -132,16 +132,41 @@ svg = must(
  * "change one, change the other" hazard the previous version carried is gone.
  * ====================================================================== */
 const T = {
-	window: 800,   // the frame arrives
-	beat: 200,     // stillness between phases — the thing that was missing
-	line: 300,     // one output line reveals
-	lineStep: 150, // cadence between lines
-	chip: 560,     // one chip settles into place
-	chipStep: 170, // cadence between chips
-	word: 700,     // the wordmark tracks in
-	hold: 400,     // everything still, so the finished composition is SEEN
-	fade: 550,     // the curtain
+	window: 700,   // the frame arrives
+	beat: 280,     // stillness between phases — the thing that separates them
+	line: 280,     // one output line reveals
+	lineStep: 120, // cadence between lines: a boot log SHOULD scroll briskly
+	chip: 520,     // one chip settles into place, on --ease-settle
+	chipStep: 300, // cadence between chips — see the note below
+	word: 760,     // the wordmark tracks in
+	hold: 1000,    // everything still, so the finished composition is SEEN
+	fade: 600,     // the curtain
 };
+
+/*
+ * WHY THESE NUMBERS, since "make it slower" was tried twice and did not work.
+ *
+ * The splash felt rushed at a five-and-three-quarter-second runtime, which
+ * should have been the clue: the problem was never the total. Two things caused
+ * it, and both are about what the eye can actually resolve.
+ *
+ * 1. EASING. Everything ran on --ease-out, an expo curve that is 83% finished a
+ *    quarter of the way through. A 560ms chip therefore read as a ~140ms snap
+ *    plus an invisible tail, and every extra millisecond went into the tail.
+ *    Chips and the wordmark now use --ease-settle, which spreads the motion and
+ *    lands with a slight overshoot.
+ *
+ * 2. OVERLAP. chipStep was 170ms against a 560ms chip, so 3.3 chips were moving
+ *    at any instant — a continuous swarm in which no single chip is ever seen
+ *    ARRIVING. At 300ms against 520ms it is ~1.7: each chip is most of the way
+ *    home before the next starts, which reads as a cascade rather than a burst.
+ *    That ratio is the dial. Below about 0.5 it becomes a swarm again.
+ *
+ * The lines are deliberately still brisk — they are a boot log, and a log that
+ * scrolls fast is authentic rather than hurried. The hold more than doubled,
+ * because the composition arriving is the payoff and it needs a beat of
+ * stillness to register as finished rather than interrupted.
+ */
 
 const linesStart = T.window + T.beat;
 const linesEnd = linesStart + (line - 1) * T.lineStep + T.line;

@@ -56,6 +56,19 @@
 
 	/* Motion (Fire Watch) */
 	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	/*
+	 * SETTLE — for things that ARRIVE somewhere and stop, as opposed to things
+	 * that simply appear. --ease-out above is an expo curve: it completes 83% of
+	 * its motion in the first 25% of its duration, so a 560ms animation on it
+	 * reads as a ~140ms snap followed by an invisible creep. Lengthening the
+	 * duration does almost nothing, because the part you extend is the part
+	 * nobody can see — which is why the boot splash stayed "rushed" across two
+	 * attempts at slowing it down.
+	 *
+	 * This spreads the motion (63% at the quarter mark) and overshoots very
+	 * slightly, so an element lands and settles instead of stamping into place.
+	 */
+	--ease-settle: cubic-bezier(0.34, 1.12, 0.64, 1);
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 	--dur-fast: 120ms;
 	--dur-normal: 200ms;

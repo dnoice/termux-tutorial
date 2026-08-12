@@ -67,6 +67,10 @@
 
 	/* Motion (Fire Watch) */
 	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	/* Arrival curve — see hub/src/styles/_tokens.css for why --ease-out is wrong
+	   for anything that lands somewhere: it is 83% done a quarter of the way in,
+	   so extra duration goes into a tail nobody can see. */
+	--ease-settle: cubic-bezier(0.34, 1.12, 0.64, 1);
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 	--dur-fast: 120ms;
 	--dur-normal: 200ms;
@@ -1601,7 +1605,7 @@ html[data-splash] {
       distinct, individually-designed chips arrived as one blur, which defeats
       the point of having eight. */
 .tmx-splash__chip {
-	animation: tmx-splash-chip var(--t-chip, 560ms) var(--ease-out) both;
+	animation: tmx-splash-chip var(--t-chip, 520ms) var(--ease-settle) both;
 	animation-delay: calc(var(--t-chips-start, 2700ms) + var(--i, 0) * var(--t-chip-step, 170ms));
 	transform-box: fill-box;
 	transform-origin: center;
@@ -1616,7 +1620,7 @@ html[data-splash] {
 /* 4. THE WORDMARK — tracks out as it fades in, landing on the letter-spacing
       the artwork already specifies. Waits for the last chip to land. */
 .tmx-splash__wordmark {
-	animation: tmx-splash-word var(--t-word, 700ms) var(--ease-out) both;
+	animation: tmx-splash-word var(--t-word, 760ms) var(--ease-settle) both;
 	animation-delay: var(--t-word-start, 4650ms);
 }
 @keyframes tmx-splash-word {
