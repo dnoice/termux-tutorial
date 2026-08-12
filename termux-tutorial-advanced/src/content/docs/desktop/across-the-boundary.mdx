@@ -393,8 +393,8 @@ sleep before you suspect anything else.
 
 ## The failure catalogue
 
-A black screen is not one bug. It is six, and they look identical. This is the
-part of the lesson worth bookmarking.
+A black screen is not one bug, and they all look identical from the outside.
+This is the part of the lesson worth bookmarking.
 
 Start with the symptom, then run the numbered test — each one checks exactly one
 link in the chain, and none of them depends on the others passing.
@@ -605,9 +605,9 @@ container ends it without taking the container down with it.
   into "boundary" or "XFCE" in four seconds.
 - Start it with `dbus-launch --exit-with-session xfce4-session` — without a
   session bus XFCE half-starts and blames nothing.
-- Six causes, six independent tests, in chain order: server up (1), tmp shared
-  (2), `DISPLAY` right (3), a trivial client connects (4), session bus present
-  (5), desktop on the side you think (6).
+- The causes, each with its own independent test, in chain order: server up
+  (1), tmp shared (2), `DISPLAY` right (3), a trivial client connects (4),
+  session bus present (5), desktop on the side you think (6).
 - XFCE exists on **both** sides now. `command -v xfce4-session` is how you tell
   which one you are about to start; run only one at a time.
 - It is slow, software-rendered, hot, and killable by Android on a low-RAM

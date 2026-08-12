@@ -355,10 +355,11 @@ that file is `/root/.bashrc` *inside* the container, unrelated to your Termux
 `~`. `startxfce4` is the one-word shortcut; `dbus-launch --exit-with-session
 xfce4-session` is the version that fails legibly.
 
-### The six tests
+### The chain
 
-A black screen is not one bug, it is six. Walk them in chain order and stop at
-the first failure.
+A black screen is not one bug. Walk these in order and stop at the first
+failure — each test checks exactly one link, and none depends on the others
+passing.
 
 | # | Where | Command | Reads |
 | :-- | :--- | :--- | :--- |

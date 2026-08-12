@@ -131,11 +131,12 @@ never fixed it. Go read the session's output.
 
 ## A black screen where the desktop should be
 
-Black is not one bug, and the causes look identical from the outside. The
-desktop lesson walks **six** of them as a chain you test in order; this page
-catalogues those six plus the ones that turn up outside that chain, so it runs
-longer. Work the chain first — it is ordered so each test rules out everything
-above it — and come back here if it clears and the screen is still black.
+Black is not one bug, and the causes look identical from the outside.
+
+Work **the chain in the desktop lesson first** — it is ordered so each test
+rules out everything above it, which is what makes it fast. This page is the
+longer catalogue: it covers that chain and the failures that turn up outside
+it. Come back here when the chain clears and the screen is still black.
 
 **Run the cheap test first.** From wherever you were about to start the
 desktop — inside the container if that is where the session lives:
