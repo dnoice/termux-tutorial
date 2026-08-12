@@ -22,11 +22,13 @@ const DIST = join(root, 'dist');
  * Must match `base` in astro.config.mjs — and it is resolved the SAME way here
  * (`process.env.BASE ?? <literal>`) rather than as a bare constant, deliberately.
  *
- * This repo was created by copying the beginner course's shell, and this line
- * came across still reading '/termux-tutorial'. Every emitted link correctly
- * carried '/termux-tutorial-intermediate', so the guard reported 323 links
+ * This course was created by copying a sibling's shell, and this line came
+ * across still holding the SIBLING'S base. Every emitted link was correctly
+ * prefixed for this course, so the guard reported every one of them as
  * "missing the base prefix" and failed the build — the checker was wrong, not
- * the site. Reading the env var the way astro.config.mjs does also keeps
+ * the site. That is the failure this literal causes when it drifts, and it is
+ * why it must be changed in the same commit as `base` in astro.config.mjs.
+ * Reading the env var the way astro.config.mjs does also keeps
  * `BASE=/preview npm run build` honest instead of failing 323 times.
  */
 const BASE = (process.env.BASE ?? '/termux-tutorial/intermediate').replace(/\/$/, '');

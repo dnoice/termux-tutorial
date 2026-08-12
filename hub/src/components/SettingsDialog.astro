@@ -11,11 +11,23 @@
  *
  * WHY <dialog>. `showModal()` gives focus trapping, Escape-to-close, inertness
  * of the page behind, and the top layer — four things that are tedious and
- * easy to get subtly wrong by hand. The fallback matters too: with no JS the
- * dialog never opens, and the button is simply absent rather than dead.
+ * easy to get subtly wrong by hand.
  *
- * Everything here writes to localStorage keys the whole series already shares,
- * so a preference set on the hub is in force inside a course and vice versa.
+ * WHICH PREFERENCES ACTUALLY CARRY INTO A COURSE — they are not all the same:
+ *
+ *   starlight-theme   YES. Every course reads it (their ThemeSelect override
+ *                     honours Starlight's contract), so light/dark set here is
+ *                     in force there and vice versa.
+ *   tmx:motion        HUB ONLY, today. No course reads `tmx:motion` or styles
+ *                     against `data-tmx-motion` — grep them; there are no hits.
+ *                     Setting it here does nothing inside a course. Either the
+ *                     courses need the hook or this control should say it is
+ *                     hub-scoped; it is a product decision, not a wording one.
+ *   tmx:splash-seen   Per-course sessionStorage, not shared by design.
+ *
+ * Do not restore a blanket "everything here is in force everywhere" claim
+ * without checking each key — that sentence was here and only one key made it
+ * true.
  */
 interface Props {
 	/** Series root, for the links out. */

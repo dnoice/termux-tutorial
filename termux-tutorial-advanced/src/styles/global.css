@@ -1489,7 +1489,12 @@ h1#_top {
 /* ================================================================== *
  * BOOT SPLASH — components/splash/BootSplash.astro
  *
- * A ~3.8s sequence: the window arrives, the session types itself out, the
+ * A sequenced boot animation — total runtime DERIVED, never stated: the
+ * component owns one `T` object of phase durations that emits BOTH these custom
+ * properties and its own teardown delay, so there is no number here to drift
+ * out of step with it. (The beginner copy works this way; the intermediate and
+ * advanced copies are an older revision that still hardcodes its timeout.)
+ * The window arrives, the session types itself out, the
  * eight chips resolve around it, the wordmark tracks in, and the whole thing
  * lifts away. Every guard rail is documented in the component; the one that
  * matters here is that the page underneath is fully rendered and interactive

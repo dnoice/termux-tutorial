@@ -10,7 +10,7 @@
 		"url": "https://github.com/dnoice/termux-tutorial.git"
 	},
 	"author": "dnoice",
-	"license": "MIT",
+	"license": "BSD-3-Clause",
 	"engines": {
 		"node": ">=22.12.0"
 	},

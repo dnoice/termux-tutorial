@@ -14,9 +14,16 @@ import { join } from 'node:path';
  * check-curriculum.mjs enforces that it agrees with the sidebar and the content
  * files). Reading it here extends that guarantee to the hub for free.
  *
- * If a course directory is missing or its LESSONS array cannot be found, the
- * course is reported as `present: false` and the page renders it as "not yet"
- * rather than inventing a total. That is also how `advanced` is handled today.
+ * If a course directory is missing entirely, it is reported as `present: false`
+ * and the page renders it as "not yet" rather than inventing a total. All three
+ * courses are present today — `advanced` was the last to arrive and parses nine
+ * lessons — so that branch currently describes a state nothing produces.
+ *
+ * A directory that EXISTS but parses to zero lessons is a different case and is
+ * treated as a build failure, not as absence: see the throw further down. The
+ * distinction matters because "the file moved and the regex stopped matching"
+ * looks exactly like "the course does not exist", and only one of those should
+ * ship.
  */
 
 /*

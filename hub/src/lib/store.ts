@@ -67,8 +67,16 @@ export function write(key: string, data: ProgressData): boolean {
 	if (!isBrowser()) return false;
 	try {
 		localStorage.setItem(key, JSON.stringify(data));
-		// Same-document listeners (a course open in this tab) use this event;
-		// other tabs get the native `storage` event for free.
+		// NOTHING IN THE HUB LISTENS FOR THIS TODAY. `storage` does not fire in
+		// the document that wrote, so a same-page consumer would need this
+		// event — but the hub's two islands live on different pages
+		// (SeriesDashboard on index, ProfileManager on profile) and both
+		// subscribe to `storage` only, which covers the case that matters:
+		// a course open in ANOTHER tab.
+		//
+		// Kept because it costs nothing and is the hook a second island on one
+		// page would need. If you add one, subscribe here — do not assume
+		// `storage` will tell you about your own write.
 		window.dispatchEvent(new CustomEvent('tmx:progress-changed'));
 		return true;
 	} catch {

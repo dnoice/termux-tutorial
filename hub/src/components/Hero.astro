@@ -54,6 +54,12 @@ const segments = splitCopy(fallback.copy);
 		 * this site has stored by summing keys with that prefix, so a key outside
 		 * the convention would be invisible there — and invisible storage is
 		 * exactly what the site tells people it does not do.
+		 *
+		 * ONE SANCTIONED EXCEPTION: `starlight-theme`, which Starlight owns and
+		 * whose name is fixed by its contract. It is written by the settings
+		 * dialog and is NOT counted in that readout. Any further exception needs
+		 * the same deliberate decision — the convention is what makes the
+		 * privacy claim checkable.
 		 */
 		const KEY = 'tmx:hero:v1';
 

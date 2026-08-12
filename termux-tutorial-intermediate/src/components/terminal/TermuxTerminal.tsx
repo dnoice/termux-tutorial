@@ -83,7 +83,14 @@ export interface TermuxTerminalProps {
 	boot?: string[];
 	/** Extra banner line under the default welcome message. */
 	hint?: string;
-	/** Fixed height in CSS pixels. Defaults to 340. */
+	/**
+	 * Screen height in CSS pixels, defaulting to 340 — but a CEILING, not a
+	 * fixed value: it is applied as `min(${height}px, 45vh)` and floored by CSS
+	 * at 12rem. With the soft keyboard up an Android viewport is roughly half
+	 * height, and a flat 340px screen plus chrome plus the key row left no room
+	 * for the lesson. Anything reasoning about the rendered height must account
+	 * for all three, not just this number.
+	 */
 	height?: number;
 	/**
 	 * Which login shell the session starts in. Defaults to `fish` so every
@@ -503,9 +510,14 @@ export default function TermuxTerminal({
 		}
 
 		/* Named, because the touch key row feeds the SAME handler rather than
-		   carrying its own copy of the key semantics. Every sequence the row
-		   sends already has a case below; duplicating them in a click handler
-		   is how the two drift apart. */
+		   carrying its own copy of the key semantics — duplicating them in a
+		   click handler is how the two drift apart.
+
+		   INVARIANT, currently violated: every sequence TOUCH_KEYS sends should
+		   have a case below. ESC sends '' and has none, so the default
+		   branch rejects it and tapping ESC does nothing. Nothing tests this.
+		   Fixing it is a behaviour change, not a comment change; do not
+		   "correct" this note by deleting it. */
 		const handleData = (raw: string) => {
 			let data = raw;
 

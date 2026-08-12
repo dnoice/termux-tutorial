@@ -14,9 +14,11 @@ import {
  * THIS WORKS BECAUSE OF A DECISION MADE MUCH EARLIER. Every course is a path on
  * one origin, and `localStorage` is scoped to the ORIGIN, not the path — so the
  * hub can read every course's progress without a backend, an account, or any
- * data leaving the browser. The courses keep deliberately DISTINCT keys
- * (`tmx:beginners:v1`, `tmx:intermediate:v1`) precisely so they do not
- * overwrite each other; the payoff is that they can all be read here.
+ * data leaving the browser. The courses keep deliberately DISTINCT keys —
+ * `tmx:beginners:v1`, `tmx:intermediate:v1`, `tmx:advanced:v1` — precisely so
+ * they do not overwrite each other; the payoff is that they can all be read
+ * here. The keys are not hardcoded in this file: `lib/courses.ts` parses each
+ * course's own `progress.ts` at build time, so this list is descriptive.
  *
  * It renders on the client only. Progress is per-browser, so there is nothing
  * meaningful to prerender — and a server-rendered "0%" that flips to "45%" on

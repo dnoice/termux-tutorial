@@ -29,7 +29,10 @@
  * Unlike TermuxTerminal (a scripted simulation), this boots an unmodified
  * Debian/Alpine image entirely client-side using WebAssembly. It requires a
  * cross-origin-isolated context (SharedArrayBuffer) — supplied on GitHub Pages
- * by /coi-serviceworker.js — and pulls CheerpX from Leaning Technologies' CDN.
+ * by the vendored `coi-serviceworker.js`, which is served from THIS SITE'S BASE
+ * (`COI_SW_URL` in astro.config.mjs), not from the origin root: the deployed
+ * site lives under /termux-tutorial/, so a root-absolute path would 404 — and
+ * pulls CheerpX from Leaning Technologies' CDN.
  *
  * The VM is heavy (tens of MB), so it only boots when the learner clicks
  * "Boot Linux". When isolation or the network is unavailable we fail loudly

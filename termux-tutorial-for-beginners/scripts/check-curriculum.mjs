@@ -96,8 +96,14 @@ for (const slug of lessonSlugs) {
 }
 
 /* ---- frontmatter helpers ---------------------------------------------------
- * Deliberately regex, not a YAML dependency: this script has to run before
- * anything is installed in CI, and it only ever asks four yes/no questions.
+ * Deliberately regex, not a YAML dependency. It only ever asks a handful of
+ * yes/no questions about frontmatter, and staying dependency-free means this
+ * guard can be run on a bare checkout — `node scripts/check-curriculum.mjs`,
+ * no install — which is how you check a curriculum edit without a full build.
+ *
+ * (It does NOT run before `npm ci` in CI: the workflow installs each project
+ * before building it. The only genuinely pre-install step is the root's
+ * check-hmr.mjs, which carries that rationale legitimately.)
  */
 /** @returns {{ path: string, fm: string } | null} */
 function contentFile(slug) {
