@@ -153,10 +153,29 @@ npm run assets:sync -- --refresh   # re-pull the fonts from @fontsource-variable
 The social card carries the course's own name, so those four copies genuinely
 differ and unifying them would be wrong.
 
-Anything the frontend does **not** serve — retired backgrounds, superseded
-artwork revisions, the scatter-field working bundles, screenshots — lives in
-`scratchpad/`, which is git-ignored. It is on disk and out of the repository;
-that directory was roughly 9 MB of a repo that is going public.
+### `scratchpad/` is never committed
+
+`scratchpad/` is the author's own working area for media: artwork that was made
+and then set aside, variant explorations kept in case one is wanted later,
+superseded revisions, working bundles, screenshots. It is git-ignored and it
+**stays** git-ignored — nothing in it is part of the site, and nothing in it
+should ever be committed.
+
+The line between the two directories is simply whether the frontend serves it:
+
+| | |
+| :--- | :--- |
+| `global-assets/` | Everything the site actually uses. Edit here; `assets:sync` fans it out. |
+| `scratchpad/` | Everything else the author has made. Git-ignored, on disk only. |
+
+Roughly 9 MB moved from the repository into `scratchpad/` before the repo went
+public, including the retired backgrounds and the first boot-splash drawing.
+
+**Removing them from the tree did not remove them from history.** The working
+tree is ~7 MB, but a `git clone` still pulls those blobs — the pack is about
+10 MB. That is a one-time download and nothing about the published site is
+affected. Shrinking it would mean rewriting history, which invalidates every
+existing clone and every commit SHA, so it is deliberately not done.
 
 ### Working inside one course
 
@@ -185,9 +204,8 @@ discover from a failed deploy.
 
 ## Before deploying
 
-- [ ] **Make the repository public.** Pages does not publish from a private
-      repo on the free plan, and the plan here is to go public at deploy time
-      rather than pay for Pro. Everything below assumes that.
+- [x] **The repository is public** (2026-08-12). Pages does not publish from a
+      private repo on the free plan, and going public was chosen over Pro.
 - [ ] **Settings → Pages → Source = GitHub Actions**, not "Deploy from a branch".
       The branch method runs Jekyll, which ignores `_astro/` for starting with an
       underscore — the site would lose all its CSS and JS.
@@ -202,11 +220,7 @@ not just the current tree, so this was checked across the whole history: no
 tracked `.env`/key/credential files, no secret-shaped strings in any commit, no
 absolute local paths, and nothing ignored-but-tracked. The only email in tracked
 content is `lewing@isc.tamu.edu` — Larry Ewing, who drew Tux — which is
-attribution, not a leak. Re-run it if anything unusual lands before the flip.
-
-One thing to decide rather than discover: `global-assets/retired-backgrounds/`
-carries roughly 7 MB of superseded artwork that nothing references. Harmless,
-but it is the bulk of the repository and it will be public.
+attribution, not a leak. It was clean, and the repo went public on 2026-08-12.
 
 ## Two things that will bite
 
