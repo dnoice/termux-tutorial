@@ -721,8 +721,8 @@ body::before {
  * behind it is worse than no front door.
  *
  * BREAKPOINTS USED HERE, all shared with the courses:
- *   WIDTH   30rem narrow phone · 50rem Starlight's `md` · 64rem two-up bands
- *           begin · 90rem wide desktop
+ *   WIDTH   30rem narrow phone · 50rem Starlight's `md` · 48rem the two-up
+ *           gate · 64rem the wider band · 90rem wide desktop
  *   HEIGHT  40rem two-up gate · 52rem tall desktop
  *
  * The 40rem height gate is the one worth understanding: it is deliberately

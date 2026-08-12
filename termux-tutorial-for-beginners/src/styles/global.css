@@ -1586,11 +1586,20 @@ html[data-splash] {
 }
 
 /* 3. THE CHIPS — the eight named tools resolve around the window. This is the
-      stretch the whole thing exists for, so it gets the time: 650ms each and
-      190ms apart, and they TRAVEL into place rather than just fading up. The
-      first pass ran them at 420ms/110ms and they arrived faster than the eye
-      could follow them individually, which defeats the point of having eight
-      distinct, individually-designed chips. */
+      stretch the whole thing exists for, so it gets the time, and they TRAVEL
+      into place rather than just fading up.
+
+      NO DURATIONS ARE QUOTED HERE. The component owns them (`T.chip`,
+      `T.chipStep`) and passes them in as custom properties; the fallbacks in
+      the rule below are the only numbers in this file, and they exist solely
+      for the case where the component did not run. An earlier version of this
+      comment named a pair of values that the schedule had since moved past,
+      which is what quoting them costs.
+
+      The constraint that does NOT rot: each chip must be slow enough to be
+      followed individually. A first pass ran them fast enough that eight
+      distinct, individually-designed chips arrived as one blur, which defeats
+      the point of having eight. */
 .tmx-splash__chip {
 	animation: tmx-splash-chip var(--t-chip, 560ms) var(--ease-out) both;
 	animation-delay: calc(var(--t-chips-start, 2700ms) + var(--i, 0) * var(--t-chip-step, 170ms));

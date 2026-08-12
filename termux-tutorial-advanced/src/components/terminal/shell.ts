@@ -142,7 +142,8 @@ export const SUGGESTIONS = [
 	'pkg list-installed > ~/storage/shared/termux-backups/packages.txt',
 	// navigation — filesystem.mdx
 	'pwd', 'ls', 'ls -a', 'ls -l', 'cd ~', 'cd ..', 'cd ~/projects',
-	// environment — filesystem.mdx names $PREFIX in a table and never runs it
+	// environment — filesystem.mdx puts $PREFIX in a table AND runs it in a
+	// fenced block, so the suggestion has to match what the lesson types
 	'echo $PREFIX', 'echo $HOME', 'env',
 	// keyboard — extra-keys.mdx
 	'mkdir -p ~/.termux', 'nano ~/.termux/termux.properties',
@@ -916,8 +917,12 @@ function runCommand(state: ShellState, tokens: string[]): Ran {
 				music: dir(), pictures: dir(), movies: dir(),
 			});
 			// Unaligned on purpose: the old column-padded block was authored at
-			// desktop width and wrapped mid-arrow on a 390px phone. Longest line
-			// here is 31 columns.
+			// desktop width and wrapped mid-arrow on a 390px phone.
+			//
+			// BUDGET: keep every line here under ~50 columns with ANSI stripped —
+			// that is what fits a 390px phone at this font size. Measure before
+			// adding a longer one; nothing enforces it. (This claimed 31 columns
+			// long after the block had grown past it.)
 			return {
 				output: [
 					`${YELLOW}[Android] Allow Termux to access photos, media${RESET}`,
@@ -1140,7 +1145,7 @@ function pkg(state: ShellState, args: string[]): Ran {
 		const names = args.slice(1).filter((a) => !a.startsWith('-'));
 		if (!names.length) return err('pkg: install requires a package name'), { output: out, code: 1 };
 		// The designed failure the whole course is built around: Golden Rule #2,
-		// and the first entry in Troubleshooting. Installing against a package
+		// and its own section in Troubleshooting. Installing against a package
 		// list you never refreshed fails on a real device with exactly this, and
 		// recovering from it is the reflex worth owning.
 		if (!state.packagesUpdated) {
