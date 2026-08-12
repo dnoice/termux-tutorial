@@ -143,11 +143,28 @@ discover from a failed deploy.
 
 ## Before deploying
 
+- [ ] **Make the repository public.** Pages does not publish from a private
+      repo on the free plan, and the plan here is to go public at deploy time
+      rather than pay for Pro. Everything below assumes that.
 - [ ] **Settings → Pages → Source = GitHub Actions**, not "Deploy from a branch".
       The branch method runs Jekyll, which ignores `_astro/` for starting with an
       underscore — the site would lose all its CSS and JS.
-- [ ] **The repo must be public**, or the account needs GitHub Pro. Pages does
-      not publish from a private repository on the free plan.
+
+These are two independent blockers and they fail in different places. With Pages
+never enabled, `actions/configure-pages` fails inside the **build** job with
+"Get Pages site failed" — before the deploy job starts at all, which is why a
+green build log can still end in a red run.
+
+**Pre-public check, run 2026-08-11 — clean.** Going public exposes every commit,
+not just the current tree, so this was checked across the whole history: no
+tracked `.env`/key/credential files, no secret-shaped strings in any commit, no
+absolute local paths, and nothing ignored-but-tracked. The only email in tracked
+content is `lewing@isc.tamu.edu` — Larry Ewing, who drew Tux — which is
+attribution, not a leak. Re-run it if anything unusual lands before the flip.
+
+One thing to decide rather than discover: `global-assets/retired-backgrounds/`
+carries roughly 7 MB of superseded artwork that nothing references. Harmless,
+but it is the bulk of the repository and it will be public.
 
 ## Two things that will bite
 

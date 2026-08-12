@@ -26,7 +26,9 @@
 #      been enabled, `actions/configure-pages` fails inside the BUILD job with
 #      "Get Pages site failed" — before the deploy job starts at all, which is
 #      why a green build log can still end in a red run.
-#   2. Pages from a PRIVATE repository requires GitHub Pro or higher.
+#   2. Pages from a PRIVATE repository requires GitHub Pro or higher. The plan
+#      is to make this repository public at deploy time rather than buy Pro,
+#      so this clears itself — but it clears only when the repo actually flips.
 #
 # These are independent. Fixing one does not clear the other.
 name: Deploy to GitHub Pages
