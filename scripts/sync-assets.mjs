@@ -2,13 +2,23 @@
 /**
  * sync-assets.mjs — fan `global-assets/` out into the projects that need copies.
  *
- * `global-assets/` is THE assets directory for this ecosystem. Most of what
- * lives there needs no copying at all: anything the build imports or `url()`s
- * is referenced straight out of it by relative path, Vite hashes it into that
- * project's `_astro/`, and there is exactly one file on disk.
+ * `global-assets/` is THE assets directory for this ecosystem — the one place
+ * you edit shared artwork.
  *
- * TWO KINDS OF ASSET CANNOT WORK THAT WAY, which is the whole reason this
- * script exists:
+ * EVERY PROJECT GETS ITS OWN COPY, and this script is what keeps those copies
+ * true. `global-assets/` is where you EDIT; the copies are generated.
+ *
+ * That is deliberate, and it was arrived at the hard way. Referencing the
+ * canonical file directly across the project boundary — `url('../../../global-
+ * assets/x.svg')` — builds perfectly: Vite resolves it, hashes it into that
+ * project's `_astro/`, and rewrites the reference. It is broken in DEV. There
+ * Vite serves an out-of-root file as `/@fs/<absolute path>`, a URL at the dev
+ * server's ROOT rather than under the project's base — so behind the
+ * single-port proxy it does not belong to any project, and it also leaks the
+ * author's absolute filesystem path into the stylesheet. The build was verified
+ * and the dev server was not, which is exactly how that shipped.
+ *
+ * Two more assets could never have worked that way regardless:
  *
  *   1. `public/` is copied verbatim into the build output and cannot be
  *      aliased, imported or resolved through Vite. A file served at a stable,
@@ -19,8 +29,6 @@
  *      the same reason. They are also registered PER DOCUMENT, so a face cached
  *      from a course page is unusable on a hub page that never declares it —
  *      every project needs its own copy of the bytes.
- *
- * So these are generated copies, and this script is what makes them true.
  * WHAT IS NOT SYNCED: `og-default.png` / `og-default.svg` are deliberately
  * per-project — the social card carries the course's own name, so the four
  * copies genuinely differ and must not be unified.
@@ -45,6 +53,20 @@ const checkOnly = process.argv.includes('--check');
 
 /** Files copied verbatim into every project's public/. */
 const PUBLIC_FILES = ['favicon.svg'];
+
+/**
+ * Bundled artwork, copied into each project's src/assets/ so stylesheets and
+ * imports can reach it with an IN-PROJECT relative path. See the header for why
+ * the cross-boundary reference had to be abandoned.
+ */
+const SRC_ASSETS = ['linux_scatter_field_v3.svg', 'linux_scatter_field_v3_light.svg'];
+
+/**
+ * Only projects that actually mount a BootSplash need the elements artwork, and
+ * the hub does not. Detected rather than listed, so it stays true by itself.
+ */
+const SPLASH_ASSET = 'termux_linux_elements.svg';
+const hasSplash = (dir) => existsSync(join(dir, 'src', 'components', 'splash', 'BootSplash.astro'));
 
 /** Where the font faces come from upstream, and what they are called. */
 const FONT_FAMILIES = [
@@ -109,6 +131,16 @@ for (const p of PROJECTS) {
 	for (const f of PUBLIC_FILES) {
 		sync(join(SOURCE, f), join(p.dir, 'public', f), `${p.dir}/public/${f}`);
 	}
+	for (const f of SRC_ASSETS) {
+		sync(join(SOURCE, f), join(p.dir, 'src', 'assets', f), `${p.dir}/src/assets/${f}`);
+	}
+	if (hasSplash(p.dir)) {
+		sync(
+			join(SOURCE, SPLASH_ASSET),
+			join(p.dir, 'src', 'assets', SPLASH_ASSET),
+			`${p.dir}/src/assets/${SPLASH_ASSET}`
+		);
+	}
 	for (const f of fontFiles) {
 		sync(join(FONTS, f), join(p.dir, 'public', 'fonts', f), `${p.dir}/public/fonts/${f}`);
 	}
@@ -123,6 +155,6 @@ if (problems.length) {
 
 console.log(
 	checkOnly
-		? `✓ Every project's public/ matches ${SOURCE}/ (${PUBLIC_FILES.length} file(s) + ${fontFiles.length} fonts x ${PROJECTS.length} projects).`
+		? `✓ Every project matches ${SOURCE}/ — public/ and src/assets/, ${fontFiles.length} fonts, ${PROJECTS.length} projects.`
 		: `✓ Synced ${SOURCE}/ into ${PROJECTS.length} projects — ${copied} file(s) written, the rest already matched.`
 );

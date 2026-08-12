@@ -1578,3 +1578,185 @@ body::before {
 	background: var(--color-brand-muted);
 	color: var(--color-brand-emphasis);
 }
+
+
+/* ================================================================== *
+ * BOOT SPLASH — components/splash/BootSplash.astro
+ *
+ * A sequenced boot animation — total runtime DERIVED, never stated: the
+ * component owns one `T` object of phase durations that emits BOTH these custom
+ * properties and its own teardown delay, so there is no number here to drift
+ * out of step with it. (The beginner copy works this way; the intermediate and
+ * advanced copies are an older revision that still hardcodes its timeout.)
+ * The window arrives, the session types itself out, the
+ * eight chips resolve around it, the wordmark tracks in, and the whole thing
+ * lifts away. Every guard rail is documented in the component; the one that
+ * matters here is that the page underneath is fully rendered and interactive
+ * the entire time — this is a curtain, not a loading gate.
+ *
+ * Everything animates opacity / transform / clip-path only, so the sequence is
+ * composited and never triggers layout while the real page paints beneath it.
+ *
+ * TIMING LIVES IN THE COMPONENT, NOT HERE. BootSplash.astro derives the whole
+ * schedule from one constants object and passes it in as --t-* custom
+ * properties, because the teardown timer has to agree with these animations and
+ * a hand-copied number in two files will not stay agreed. The fallbacks below
+ * are the same values, so the stylesheet still reads sensibly on its own — but
+ * the component is the source of truth. Retune there.
+ * ================================================================== */
+.tmx-splash {
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	display: grid;
+	place-items: center;
+	padding: var(--space-block);
+	/* The artwork's own backdrop rect is stripped in the component, and its
+	   radial glow re-created here from the same stops (#101a26 → #0b111a →
+	   #070b11, centred at 50%/46%). On the overlay it covers the whole viewport
+	   instead of just the letterboxed art box, so there is no visible panel
+	   edge — and it sits over --bg-canvas, so a light theme still ends up on
+	   its own canvas rather than a hardcoded near-black. */
+	background:
+		radial-gradient(
+			ellipse 70% 70% at 50% 46%,
+			#101a26 0%,
+			#0b111a 60%,
+			#070b11 100%
+		),
+		var(--bg-canvas);
+	/* Not interactive: the skip listeners are on the window, so clicks land
+	   wherever the learner aimed rather than being eaten by the curtain. */
+	pointer-events: none;
+	animation: tmx-splash-in var(--dur-normal) var(--ease-out);
+}
+@keyframes tmx-splash-in {
+	from { opacity: 0; }
+}
+/* The exit. Lifts very slightly as it goes, so it reads as a curtain rising
+   rather than a layer being switched off. */
+.tmx-splash[data-leaving] {
+	animation: tmx-splash-out var(--t-fade, 550ms) var(--ease-in-out) forwards;
+}
+@keyframes tmx-splash-out {
+	to {
+		opacity: 0;
+		transform: translateY(-1.5%) scale(1.02);
+	}
+}
+/* Scroll is locked only while the splash is actually up, and released the
+   instant it starts leaving — not when it finishes — so a learner who skips is
+   never briefly unable to scroll. */
+html[data-splash] {
+	overflow: hidden;
+}
+/* Height matters as much as width here: at 1100px wide the 1280×832 artwork is
+   ~715px tall, which overflowed a laptop viewport and cropped the top and
+   bottom chips clean off. Constraining BOTH axes lets the SVG's default
+   `preserveAspectRatio` (xMidYMid meet) letterbox it instead, so every chip is
+   always in frame no matter the window shape. */
+.tmx-splash__art {
+	width: min(94vw, 1100px);
+	max-height: 82vh;
+	height: auto;
+}
+
+/* 1. THE WINDOW — arrives first, everything else is staged around it. */
+.tmx-splash__window {
+	animation: tmx-splash-window var(--t-window, 800ms) var(--ease-out) both;
+	transform-box: fill-box;
+	transform-origin: center;
+}
+@keyframes tmx-splash-window {
+	from {
+		opacity: 0;
+		transform: scale(0.965) translateY(10px);
+	}
+}
+
+/* 2. THE SESSION TYPES ITSELF — a left-to-right reveal per line, which reads
+      as output arriving rather than as text fading up. 150ms apart, starting
+      once the frame has settled. */
+.tmx-splash__line {
+	animation: tmx-splash-type var(--t-line, 300ms) steps(24, end) both;
+	animation-delay: calc(var(--t-lines-start, 1000ms) + var(--i, 0) * var(--t-line-step, 150ms));
+}
+@keyframes tmx-splash-type {
+	from { clip-path: inset(0 100% 0 0); }
+	to { clip-path: inset(0 0 0 0); }
+}
+
+/* 3. THE CHIPS — the eight named tools resolve around the window. This is the
+      stretch the whole thing exists for, so it gets the time, and they TRAVEL
+      into place rather than just fading up.
+
+      NO DURATIONS ARE QUOTED HERE. The component owns them (`T.chip`,
+      `T.chipStep`) and passes them in as custom properties; the fallbacks in
+      the rule below are the only numbers in this file, and they exist solely
+      for the case where the component did not run. An earlier version of this
+      comment named a pair of values that the schedule had since moved past,
+      which is what quoting them costs.
+
+      The constraint that does NOT rot: each chip must be slow enough to be
+      followed individually. A first pass ran them fast enough that eight
+      distinct, individually-designed chips arrived as one blur, which defeats
+      the point of having eight. */
+.tmx-splash__chip {
+	animation: tmx-splash-chip var(--t-chip, 560ms) var(--ease-out) both;
+	animation-delay: calc(var(--t-chips-start, 2700ms) + var(--i, 0) * var(--t-chip-step, 170ms));
+	transform-box: fill-box;
+	transform-origin: center;
+}
+@keyframes tmx-splash-chip {
+	from {
+		opacity: 0;
+		transform: scale(0.78) translateY(16px);
+	}
+}
+
+/* 4. THE WORDMARK — tracks out as it fades in, landing on the letter-spacing
+      the artwork already specifies. Waits for the last chip to land. */
+.tmx-splash__wordmark {
+	animation: tmx-splash-word var(--t-word, 700ms) var(--ease-out) both;
+	animation-delay: var(--t-word-start, 4650ms);
+}
+@keyframes tmx-splash-word {
+	from {
+		opacity: 0;
+		letter-spacing: 2px;
+	}
+}
+
+/* Belt and braces: the component already refuses to reveal itself under
+   reduced motion, but if it is ever mounted somewhere that bypasses that, this
+   makes it inert rather than a strobe. */
+@media (prefers-reduced-motion: reduce) {
+	.tmx-splash {
+		display: none;
+	}
+}
+
+/* LOAD-BEARING. `hidden` is a UA-stylesheet `display: none`, and ANY author
+   display rule outranks the UA sheet — so `.tmx-splash { display: grid }`
+   above silently defeats the attribute, and the whole "ships hidden, JS
+   reveals it, fails open without JS" guarantee evaporates: a visitor with no
+   JS would get a full-screen curtain and no way to dismiss it. This restores
+   it as an author-level rule that wins on specificity (0,2,0 vs 0,1,0). */
+.tmx-splash[hidden] {
+	display: none;
+}
+
+/* The splash is pure ornament and inlines its artwork into the HTML, so it is
+   suppressed wherever ornament is the wrong trade. Ported from the courses'
+   global.css with the rules unchanged. */
+@media (prefers-reduced-data: reduce) {
+	.tmx-splash {
+		display: none;
+	}
+}
+@media (height < 34rem) {
+	/* It would cover the entire usable area with no room left to see the result. */
+	.tmx-splash {
+		display: none;
+	}
+}

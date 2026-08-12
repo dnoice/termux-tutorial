@@ -159,15 +159,42 @@ function stopAll() {
 const server = createServer((req, res) => {
 	const pathname = (req.url ?? '/').split('?')[0];
 
-	// The bare origin is what a browser opens by default. Send it to the front
-	// door rather than 404ing, which reads as a broken server.
-	if (pathname === '/' || !pathname.startsWith(SERIES_BASE)) {
-		res.writeHead(302, { Location: `${SERIES_BASE}/` });
-		res.end();
-		return;
+	/*
+	 * ROUTING A REQUEST THAT IS NOT UNDER THE SERIES BASE.
+	 *
+	 * In dev, Vite serves a number of routes from its OWN root rather than under
+	 * the project's `base`: `/src/…` for source files a stylesheet references,
+	 * `/@fs/…` for anything outside the project root, plus `/@id/` and
+	 * `/node_modules/`. None of those carry a project prefix, so a plain
+	 * "redirect anything unrecognised to the front door" rule silently ate them —
+	 * and the visible symptom was that page backgrounds simply did not render,
+	 * with a 302 where an SVG should have been. Nothing errored.
+	 *
+	 * The requesting page is the answer: its Referer tells us which project asked,
+	 * so the sub-resource goes back to the same upstream. Only a request with no
+	 * usable Referer — someone typing a bare address — gets the front door.
+	 *
+	 * This is dev-only. A production build rewrites these to hashed `_astro/`
+	 * paths underneath the project's base, where normal routing applies.
+	 */
+	let target;
+	if (pathname.startsWith(SERIES_BASE)) {
+		target = projectFor(pathname);
+	} else {
+		const ref = req.headers.referer;
+		let refPath = '';
+		try {
+			if (ref) refPath = new URL(ref).pathname;
+		} catch {
+			/* Malformed Referer: treat it as absent. */
+		}
+		if (!refPath.startsWith(SERIES_BASE)) {
+			res.writeHead(302, { Location: `${SERIES_BASE}/` });
+			res.end();
+			return;
+		}
+		target = projectFor(refPath);
 	}
-
-	const target = projectFor(pathname);
 	const upstream = httpRequest(
 		{ host: HOST, port: target.port, path: req.url, method: req.method, headers: req.headers },
 		(up) => {

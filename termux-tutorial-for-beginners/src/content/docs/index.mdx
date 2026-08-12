@@ -42,12 +42,6 @@ next:
 
 import { Icon } from 'astro-icon/components';
 import TermuxTerminal from '../../components/terminal/TermuxTerminal.tsx';
-import BootSplash from '../../components/splash/BootSplash.astro';
-
-{/* Landing page only, once per session, skippable — see the component header.
-    Mounted here rather than in a layout override on purpose: the last thing
-    that rendered site-wide took the sticky header with it. */}
-<BootSplash />
 
 export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 

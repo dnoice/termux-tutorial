@@ -84,6 +84,13 @@ jobs:
       - name: Check HMR routing consistency
         run: node scripts/check-hmr.mjs
 
+      # Shared artwork and fonts are edited once in global-assets/ and copied
+      # into each project. The copies are committed so a clean clone builds
+      # without a pre-step; this asserts they still match their source, because
+      # a stale copy is invisible — the page just renders the old artwork.
+      - name: Check shared assets are in sync
+        run: node scripts/sync-assets.mjs --check
+
       # --------------------------------------------------------------------- hub
       - name: Install — hub
         working-directory: hub

@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import SettingsDialog from '../components/SettingsDialog.astro';
 import Hero from '../components/Hero.astro';
+import BootSplash from '../components/splash/BootSplash.astro';
 import PromptMark from '../components/PromptMark.astro';
 import SeriesDashboard from '../components/SeriesDashboard.tsx';
 import { COURSES, COURSE_MANIFEST } from '../lib/courses.ts';
@@ -39,6 +40,22 @@ const REFS = [
 ---
 
 <Layout title={TITLE} description={DESCRIPTION}>
+	{/*
+	 * THE SERIES BOOT SPLASH LIVES HERE, AND ONLY HERE.
+	 *
+	 * It used to run on the beginner and intermediate landing pages, which meant
+	 * a learner walking the series met the same animation twice and never met it
+	 * at the front door. The hub is where somebody actually arrives, so that is
+	 * where the curtain belongs.
+	 *
+	 * It is once-per-session (sessionStorage), skippable by any input, absent
+	 * under prefers-reduced-motion, and fails open — the markup ships `hidden`
+	 * and an inline pre-paint script reveals it, so no JS means no curtain.
+	 *
+	 * Per-course splashes are a deliberate future option, not an oversight: the
+	 * component is still in each course, unmounted.
+	 */}
+	<BootSplash />
 	<div class="hub">
 		<header class="hub__top">
 			<a class="hub__mark" href={`${base}/`}>
