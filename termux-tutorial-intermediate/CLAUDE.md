@@ -78,7 +78,8 @@ Two consequences worth holding on to:
 **The `localStorage` key is `tmx:intermediate:v1`, and it must never be
 unified with the beginner course's `tmx:beginners:v1`.**
 
-`src/lib/progress.ts` line 10. It looks like a copy-paste leftover from the
+Look for the `KEY` constant in `src/lib/progress.ts` — named rather than
+numbered, because the line moves. It looks like a copy-paste leftover from the
 port. It is the opposite: it is the fix.
 
 All four projects ship to **paths under one origin AND one base directory** —
@@ -404,8 +405,14 @@ all under `prefers-reduced-motion`, and **fails open** — the markup ships
 `hidden` and an inline pre-paint script reveals it, so no JS means no curtain.
 `.tmx-splash[hidden] { display: none }` in `global.css` is what keeps that last
 guarantee true, because the component's own `display: grid` would otherwise beat
-the UA sheet's `hidden`. The teardown timer is derived from the CSS delays;
-change one and change the other.
+the UA sheet's `hidden`.
+
+**The teardown timer is NOT derived here — it is hand-synced, and that is the
+hazard.** This copy hardcodes `setTimeout(end, 4400)` in the component while the
+phase delays and the 500 ms exit animation live as separate literals in
+`global.css`. Change one and you must change the other, with nothing to tell you
+that you did not. The beginner course's copy was rebuilt to emit both from one
+`T` object and no longer has this problem; porting it forward is the real fix.
 
 ### 7. The terminal is built for a phone, and that shows up in five places
 

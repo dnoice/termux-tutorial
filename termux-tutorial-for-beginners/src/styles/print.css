@@ -67,8 +67,16 @@
 		--shadow-xl: none;
 
 		/* The obsidian terminal screen inverts to a bordered white panel; see
-		   the .tmx-terminal rule below for why. */
+		   the .tmx-terminal rule below for why.
+
+		   ALL FOUR members of the dark-locked set must be inverted here.
+		   --tmx-screen-ink was missing, so terminal body text stayed #e8dfcc —
+		   cream on white paper, 1.32:1, effectively invisible. The set is
+		   screen / ink / muted / brand; redefining three of four is the failure
+		   mode, because the one you forget is the one nobody sees until it is
+		   printed. */
 		--tmx-screen: #ffffff;
+		--tmx-screen-ink: #111111;
 		--tmx-screen-muted: #444444;
 		--tmx-screen-brand: #2b2108;
 		--tmx-bg-image: none;

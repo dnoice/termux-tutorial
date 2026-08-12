@@ -31,7 +31,7 @@ Debian, you're already home.
 `pkg search` is the one that changes how you use the phone. There are tens of
 thousands of packages; you find them by guessing a word and searching for it.
 
-## And the two you already know
+## And the three you already know
 
 | Command | What it does |
 | :------ | :----------- |
@@ -108,9 +108,15 @@ compiled to WebAssembly, running entirely in your tab.
 `git clone` will *not* work here — there's nothing to reach out to. Explore what
 the image already ships with instead.
 
-To be completely clear: that limit belongs to **this live sandbox only**. It has
-nothing to do with the practice terminal above, and nothing to do with your
-phone — on a real device `pkg install` works exactly as this lesson describes.
+To be completely clear: that limit belongs to **this live sandbox only**, and
+nothing to do with your phone — on a real device `pkg install` works exactly as
+this lesson describes.
+
+The practice terminal higher up the page has no network either, but it fails the
+other way: its `pkg install` is simulated and *succeeds*, because the point
+there is the rhythm of the command rather than the download. Two terminals, both
+offline, opposite answers — which is why the lesson tells you which one you are
+looking at each time.
 
 It needs a modern browser. If it won't start, refresh the page once so the
 cross-origin-isolation service worker can take effect, then press **Boot Linux**

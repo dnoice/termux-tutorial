@@ -9,9 +9,12 @@ audits/
   intermediate/     three audits of termux-tutorial-intermediate
   advanced/         (empty)
   repo/             audits whose subject is the monorepo, not one course
+decisions/          why a piece of architecture is the way it is, with the
+                    failures behind it and a deletion condition where one exists
 walkthroughs/       first-run walkthroughs: reading a course as a learner
-strategy/           curriculum scope for all three courses
-archive/            point-in-time working documents, superseded but kept
+archive/            point-in-time working documents, superseded but kept —
+                    including pre-implementation research whose recommendations
+                    were reversed during the build (read their banners first)
 ```
 
 ## Naming
@@ -42,20 +45,34 @@ closed finding; the record of what was wrong is the point.
 | Course | Comprehensive | Visual | Lesson flow | Walkthrough |
 | :--- | :--- | :--- | :--- | :--- |
 | Beginner | ✅ all findings closed | ✅ all closed | ✅ all closed | ✅ 2026-08-10, all 6 closed |
-| Intermediate | ⚠️ open | ⚠️ M1/M2 withdrawn; M3–M5 closed | ⚠️ open | — |
+| Intermediate | ⚠️ see note | ⚠️ M1/M2 withdrawn | ⚠️ see note | — |
 | Advanced | — | — | — | — |
+
+:::note
+**The intermediate closures are not recorded where the convention says they
+should be.** The Critical/High set was worked through on 2026-08-10, but none of
+the three intermediate reports carries a closure marker — verified: zero
+occurrences across all three files. So for that course the resolution history
+lives in commit messages rather than in the reports, which is exactly the
+drift the "closed in place" convention exists to prevent.
+
+Treat those three reports as **findings only**, not as findings-plus-resolution,
+and check `git log` before assuming an item is still open. Anyone reopening that
+course should close them in place as they go and delete this note.
+:::
 
 ### Repo-scoped
 
 | Audit | Scope | State |
 | :--- | :--- | :--- |
-| `repo/2026-08-11-documentation` | All four projects: inline comments + markdown | ⚠️ **414 findings, none remediated.** 82 P1 (comment contradicts code), 47 P2. Four decisions outstanding before remediation — see the report's closing section. |
+| `repo/2026-08-11-documentation` | All four projects: inline comments + markdown | 414 findings (82 P1, 47 P2). **Remediated in a single ordered pass** — see `repo/2026-08-11-remediation-ledger.md` for item → decision → files → verification. |
 
-That audit's own findings include this file: the tree above described the
-advanced course as non-existent while the course shipped nine lessons. Corrected
-here because leaving it while adding an index entry beside it would be
-incoherent; everything else it found is still untouched and awaiting the
-remediation pass.
+Three files in this directory were themselves findings of that audit: the tree
+above described the advanced course as non-existent, the status table claimed
+intermediate closures the reports do not record, and `strategy/content-strategy.md`
+prescribed the exact architecture every `CLAUDE.md` forbids. The first two are
+corrected above; the third is archived with a correction banner rather than
+deleted, because rejected reasoning is worth being able to find.
 
 **Withdrawn findings.** Two Critical/High items in the intermediate visual audit
 (M1 "no React island renders", M2 "no terminal markup anywhere") were artifacts

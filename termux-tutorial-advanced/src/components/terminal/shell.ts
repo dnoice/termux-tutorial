@@ -78,7 +78,7 @@ export const BUILTIN_NAMES = [
 	'pkg', 'apt', 'termux-setup-storage', 'termux-reload-settings',
 	'termux-change-repo', 'ls', 'cd', 'pwd', 'cat', 'mkdir', 'touch', 'echo',
 	'whoami', 'id', 'uname', 'env', 'clear', 'help', 'history', 'chsh', 'rm',
-	'cp', 'mv', 'which', 'chmod', 'tar', 'exit',
+	'cp', 'mv', 'which', 'chmod', 'tar', 'exit', 'bash',
 ];
 
 /**
@@ -406,6 +406,20 @@ interface Declined {
 	then?: string;
 }
 const NOT_SIMULATED: Record<string, Declined> = {
+	/*
+	 * `bash` is TAUGHT, in four places: friendly-shell.mdx offers it as the
+	 * escape hatch when a guide assumes bash, and installing.mdx, where-next.mdx
+	 * and the cheatsheet repeat it. Before this entry the simulator had no branch
+	 * for it, so a learner following the lesson on the page that HOSTS a terminal
+	 * typed the command they had just been told to use and watched it highlight
+	 * red as "command not found" — the lesson contradicted by the widget beside
+	 * it. `exit` had the identical gap and was fixed after an earlier audit; this
+	 * is the same defect, found the same way.
+	 */
+	bash: {
+		why: 'starts a nested interactive shell this practice terminal cannot host.',
+		then: 'On your phone it drops you straight into bash; type exit to come back to fish.',
+	},
 	nano: {
 		why: 'takes over the whole screen, and this practice terminal only has one line.',
 		then: 'On your phone it opens right here. Save with Ctrl-O, Enter, then Ctrl-X.',

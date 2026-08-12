@@ -37,9 +37,21 @@ export default function ProfileBadge() {
 	const [editing, setEditing] = useState(false);
 	const [nameDraft, setNameDraft] = useState(data.profile.name);
 	const s = stats(data);
-	// Stable ids so <label for> / aria-labelledby survive the island being
-	// mounted more than once (Starlight renders the sidebar twice: desktop
-	// rail + mobile drawer), which duplicate literal ids would break.
+	// Stable, collision-proof ids for <label for> / aria-labelledby, which
+	// duplicate literal ids would break.
+	//
+	// NOT because Starlight renders the sidebar twice — it does not. In
+	// Starlight 0.41 Page.astro renders <Sidebar> exactly once, and
+	// PageFrame.astro puts that single `<slot name="sidebar" />` in one
+	// .sidebar-pane that CSS reveals as the desktop rail or the mobile drawer.
+	// (ThemeSelect is the genuinely-twice case — Header.astro and
+	// MobileMenuFooter.astro each import it — so do not "harmonise" that
+	// comment with this one.)
+	//
+	// The real reason is the general one: an island's ids must not collide with
+	// anything else on the page, and must survive this component being mounted
+	// more than once. useId() costs nothing, so it is not worth reasoning about
+	// whether today's layout happens to mount it once.
 	const uid = useId();
 	const nameInputId = `${uid}-name`;
 	const avatarGroupId = `${uid}-avatar`;
@@ -82,9 +94,10 @@ export default function ProfileBadge() {
 				</button>
 			</div>
 
-			{/* Progress bar. The numeric "n/8 · n%" line above is the visible
-			    label; the bar itself was a pair of unnamed divs, invisible to
-			    assistive tech. */}
+			{/* Progress bar. The numeric "{done}/{total} lessons · {percent}%"
+			    line above is the visible label (the total comes from LESSONS,
+			    so it differs per course); the bar itself was a pair of unnamed
+			    divs, invisible to assistive tech. */}
 			<div
 				className="tmx-profile-badge__bar"
 				role="progressbar"
@@ -135,8 +148,11 @@ export default function ProfileBadge() {
 								onClick={() => setProfile({ emoji })}
 								aria-pressed={data.profile.emoji === emoji}
 								aria-label={`${label} avatar`}
-								// 26x26 chips on a touch screen; the existing helper
-								// grows them to 44x44 on coarse pointers only.
+								// 26x26 chips on a touch screen; the .tmx-tap-icon
+								// helper grows them to 44x44 under
+								// `(any-pointer: coarse), (width < 50rem)` in
+								// global.css — so on a narrow window too, not
+								// only on a coarse pointer.
 								className="tmx-profile-badge__chip tmx-tap-icon"
 							>
 								<span aria-hidden="true">{emoji}</span>

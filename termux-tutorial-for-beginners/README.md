@@ -9,10 +9,13 @@ terminal for Android. Built with [Astro Starlight](https://starlight.astro.build
 it pairs plain-English lessons with a **live, in-browser terminal** so learners
 practise every command without touching a device.
 
-This is the **beginner** repository in a three-part series
-([beginner](https://github.com/dnoice/termux-tutorial) → intermediate →
-advanced). The closing lesson, **Where to Next**, links to the sibling
-*repositories* rather than to pages that would 404.
+This is the **beginner** course: one of four projects in a single repository,
+[dnoice/termux-tutorial](https://github.com/dnoice/termux-tutorial), which
+deploys as one GitHub Pages site (hub at the root, then `/beginner/`,
+`/intermediate/`, `/advanced/`). The closing lesson, **Where to Next**, links to
+the sibling courses as internal paths derived from `BASE_URL` — so a base change
+moves them and the link checkers can see them, which absolute URLs to separate
+repositories could not.
 
 The course is **eleven lessons** in two sections (Start Here, Foundations), plus
 a Welcome page and three reference pages: fifteen pages in all. The order lives
@@ -53,9 +56,20 @@ in the `sidebar` array in `astro.config.mjs` and is enforced at build time — s
 
 ## Getting started
 
-Run every command from **this directory** (the repo root — it holds
-`package.json` and `node_modules`), not from the `termux-tutorials/` parent
-workspace that contains the sibling courses and the shared `global-docs/`.
+**The monorepo root is the normal place to work** — `npm run dev` there runs
+all four projects behind one URL, which is the only local configuration in which
+the series switcher and cross-course links resolve.
+
+| Where | Command | For |
+| :---- | :------ | :-- |
+| root | `npm run dev` | Everything, one URL. The normal one. |
+| root | `npm run build` | All four + assemble + cross-course link check |
+| root | `npm run check` | Typecheck all four |
+| here | `npm run build` | This course alone — curriculum guard, build, link check |
+| here | `npm run check` | This course alone |
+
+This directory keeps its own `package.json`, `node_modules` and lockfile, and
+the guards below are its own.
 
 ```bash
 npm install
@@ -166,12 +180,18 @@ shipping a lesson that is navigable but uncountable. See
 
 ## Deployment
 
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs on pushes to
-`main`, on pull requests targeting `main`, and on manual dispatch. Every run
-pins **Node 22** (Astro 7 requires `^20.19 || ^22.12 || >=24`, and inheriting
-whatever the runner image ships means a runner bump can break the build with no
-change here), caches npm on `package-lock.json`, installs with `npm ci`, then
-runs `npm run check` as a typecheck gate before `npm run build`.
+[`../.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) lives at
+the **repository root**, not in this course, and builds all four projects before
+assembling them into one Pages artifact. **This course must not grow a workflow
+of its own** — Pages publishes exactly one artifact per repository, so a second
+one would either be ignored or fight the real one for the deployment.
+
+It runs on pushes to `main`, on pull requests targeting `main`, and on manual
+dispatch. Every run pins **Node 22** (Astro 7 declares `engines.node >=22.12.0`;
+inheriting whatever the runner image ships means a runner bump can break the
+build with no change here), caches npm on each project's `package-lock.json`,
+installs with `npm ci`, then runs `npm run check` as a typecheck gate before
+`npm run build` — for each project in turn.
 
 A pull request gets the typecheck and the build but **never the deployment**:
 both Pages steps and the whole `deploy` job are skipped on `pull_request`

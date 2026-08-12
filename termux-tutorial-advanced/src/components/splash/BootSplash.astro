@@ -25,7 +25,12 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 /*
- * BootSplash — a ~3.8s sequenced boot animation over the landing page.
+ * BootSplash — a sequenced boot animation over the landing page.
+ *
+ * NO TOTAL RUNTIME IS STATED HERE. The total is the timer's, not this header's:
+ * read `setTimeout(end, …)` in the inline script below, plus the exit animation
+ * it triggers (`.tmx-splash[data-leaving]`, 500ms, in global.css). This line
+ * used to claim ~3.8s while the timer in the same file said 4400ms.
  *
  * THE RULES THIS OBEYS, because a splash screen is a tax on everyone who did
  * not ask for it and the difference between "sophisticated" and "infuriating"

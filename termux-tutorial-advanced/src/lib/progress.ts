@@ -7,6 +7,22 @@
  * keeps multiple tabs consistent.
  */
 
+/*
+ * NEVER SHARE THIS KEY WITH ANOTHER COURSE — not even to "consolidate the
+ * duplicated store", which is the exact change that breaks it.
+ *
+ * The four projects are PATHS on one origin AND one base directory
+ * (/termux-tutorial/{,beginner,intermediate,advanced}), and localStorage is
+ * scoped to the origin, not the path. A shared key means each course silently
+ * overwrites the others' `completed` array and profile: no error, no warning,
+ * no recovery — the learner just finds their other course blank.
+ *
+ * `v1` is a SCHEMA version, not a course counter. Bump it only when the stored
+ * shape changes, never to distinguish a course.
+ *
+ * The payoff for keeping them distinct: hub/src/lib/store.ts reads all three
+ * keys and writes the shared profile back into each.
+ */
 const KEY = 'tmx:advanced:v1';
 const EVENT = 'tmx:progress-changed';
 

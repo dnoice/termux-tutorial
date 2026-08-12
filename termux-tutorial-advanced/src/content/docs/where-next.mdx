@@ -24,11 +24,16 @@ export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     the hub at the series root, then /beginner/, /intermediate/, /advanced/.
     Those paths sit OUTSIDE this course's own base, which is why they are built
     from SERIES_ROOT rather than from `base` — and why check-links.mjs carries
-    them in its SIBLINGS allowlist instead of trying to resolve them in dist/. */}
+    them as cross-course and defers them instead of resolving them in dist/. */}
 export const SERIES_ROOT = base.replace(/\/[^/]+$/, '');
 export const SERIES = {
   beginner: `${SERIES_ROOT}/beginner/`,
   intermediate: `${SERIES_ROOT}/intermediate/`,
+  // Deep links into a sibling course are fine: check-links.mjs defers anything
+  // under SERIES_ROOT, and scripts/check-assembled-links.mjs resolves it against
+  // the assembled tree. Prose that names a specific lesson should link to THAT
+  // lesson rather than dropping the reader on the course root to hunt for it.
+  scheduling: `${SERIES_ROOT}/intermediate/automation/scheduling/`,
 };
 
 That's course three. It's also the end of the series.
@@ -225,7 +230,7 @@ all three.
       <span class="tmx-panel__kicker">Course 2 · Done</span>
       <h3 class="tmx-panel__title">Intermediate</h3>
     </div>
-    <p class="tmx-panel__body">Termux:API, the sensors and the camera, notifications and dialogs, shell scripting, cron and Android's own scheduler, a local server, and a tunnel to the open internet. <a href={SERIES.intermediate}>Its scheduling lesson</a> is the one worth re-reading the first time a job stops overnight.</p>
+    <p class="tmx-panel__body">Termux:API, the sensors and the camera, notifications and dialogs, shell scripting, cron and Android's own scheduler, a local server, and a tunnel to the open internet. <a href={SERIES.scheduling}>Its scheduling lesson</a> is the one worth re-reading the first time a job stops overnight.</p>
   </div>
   <div class="tmx-panel">
     <span class="tmx-chip"><Icon name="fa6-solid:flag-checkered" aria-hidden="true" focusable="false" /></span>

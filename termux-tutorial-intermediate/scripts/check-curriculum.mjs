@@ -60,6 +60,55 @@ const lessonSlugs = [...lessonsBlock.matchAll(/slug:\s*'([^']+)'/g)].map((m) => 
 // reachable, but they are not steps and must not inflate the progress total.
 const UTILITY = new Set(['index', 'progress', 'reference/cheatsheet', 'reference/troubleshooting']);
 
+// ---- 2b. schema.org `teaches` covers the curriculum -------------------------
+//
+// `teaches` in the Course JSON-LD is what the site advertises to search engines
+// as the competencies it imparts. It is hand-written, it sits ~300 lines away
+// from the sidebar it is supposed to track, and it has drifted twice: the
+// beginner course once advertised five skills while teaching seven, and until
+// 2026-08-11 listed eight against eleven lessons while a comment beside it
+// claimed one entry per lesson.
+//
+// Nothing validated it, so this does. The rule is COVERAGE, not wording: one
+// entry per lesson, so adding a lesson without describing it fails the build
+// instead of quietly under-selling the course.
+const teachesBlock = config.slice(
+	config.indexOf('teaches: ['),
+	config.indexOf('],', config.indexOf('teaches: ['))
+);
+const teachesCount = [...teachesBlock.matchAll(/^\s*'/gm)].length;
+if (config.includes('teaches: [') && teachesCount !== lessonSlugs.length) {
+	fail(
+		`schema.org teaches[] has ${teachesCount} entries but LESSONS has ${lessonSlugs.length}. ` +
+			`One entry per lesson, in sidebar order — add the missing description in astro.config.mjs.`
+	);
+}
+
+// ---- 2c. SANDBOX_PATH names a page that exists ------------------------------
+//
+// SANDBOX_PATH is the one route that gets the COI service worker, which is what
+// makes SharedArrayBuffer (and therefore LiveSandbox/CheerpX) work. It is a
+// hand-written slug in astro.config.mjs, ~500 lines from the loader that reads
+// it, and its failure is SILENT: the Boot button never leaves "needs a refresh",
+// with a green build and nothing in the console.
+//
+// The advanced course shipped with course two's slug for exactly this reason.
+// `null` is the correct value for a course with no sandbox and is allowed.
+const sandboxDecl = /const SANDBOX_PATH = (null|`\$\{BASE_PATH\}\/([^`]*)`)/.exec(config);
+if (sandboxDecl && sandboxDecl[2] !== undefined) {
+	const slug = sandboxDecl[2].replace(/\/$/, '');
+	const exists = ['mdx', 'md'].some((ext) =>
+		existsSync(join(root, 'src/content/docs', `${slug}.${ext}`))
+	);
+	if (!exists) {
+		fail(
+			`SANDBOX_PATH points at "${slug}", which has no content file. ` +
+				`The COI worker would never register and LiveSandbox would never boot. ` +
+				`Point it at a real lesson, or set it to null if this course has no sandbox.`
+		);
+	}
+}
+
 // ---- 3. every referenced slug resolves to a real content file ---------------
 for (const slug of sidebarSlugs) {
 	if (slug === 'index') continue;

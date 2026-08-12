@@ -307,9 +307,10 @@ to warn about no longer exists — that is the whole point of the rewrite. Read
 `T` and `teardownAt` in the component if you need the number.
 
 Note that the **intermediate and advanced copies are an older revision** of this
-component: they still hardcode `setTimeout(end, 4400)` alongside a header
-claiming ~3.8 s, which is the hand-synced version this one replaced. Porting
-this file forward would fix that; it is a code change, not a doc change.
+component: they still hardcode `setTimeout(end, 4400)` with the 500 ms exit
+animation separate in `global.css`, which is the hand-synced version this one
+replaced. Their headers no longer claim a total. Porting this file forward would
+remove the hand-sync entirely; that is a code change, not a doc change.
 
 ### 7. The terminal is built for a phone, and that shows up in five places
 

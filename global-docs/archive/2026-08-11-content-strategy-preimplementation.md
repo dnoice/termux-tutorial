@@ -1,3 +1,24 @@
+> [!WARNING]
+> **ARCHIVED — pre-implementation research. Do not build from this document.**
+>
+> Written before the courses existed, as scoping research. The curriculum
+> synthesis in it is of historical interest; **its architecture
+> recommendations were evaluated and reversed during the build**, and three of
+> them are now listed under "Do not undo" in every course's `CLAUDE.md`:
+>
+> | This document recommends | What shipped, and why |
+> | :--- | :--- |
+> | Install Tailwind + `@astrojs/starlight-tailwind` | **Removed.** Tailwind emitted only phantom utilities, and the integration bridged 14 `--sl-*` variables that the BRIDGE section of `global.css` already defines. |
+> | Replace Starlight's cascade layers | **Reversed.** Unlayered CSS outranks *every* layered rule, and Starlight ships its styles inside `@layer starlight.*` — which is the only reason `global.css` can restyle Starlight without a specificity war. Re-introducing a layer would rank our styles *below* Starlight's. |
+> | Override `PageFrame` / `TwoColumnContent` | **Rejected.** The one time `PageFrame` was overridden it took the sticky header with it. The series switcher lives in a `SiteTitle` override instead. |
+>
+> No `package.json` in this repository declares Tailwind. If you are here for
+> the architecture, read the course `CLAUDE.md` files instead — they record what
+> was actually decided and what it cost. Kept because the reasoning that was
+> rejected is worth being able to find.
+
+---
+
 # **Strategic Architecture and Content Synthesis for an Interactive Termux Curriculum Framework**
 
 The deployment of a tripartite, interactive educational curriculum for Termux necessitates a sophisticated convergence of frontend web architecture and rigorous Linux-on-Android system administration content. The objective is to construct three discrete repository builds—progressing from foundational terminal navigation to advanced graphical virtualization—hosted via GitHub Pages. To fulfill the mandate that these environments be "interactive by default" and "beautiful by standard," the curriculum must transcend static markdown files. Instead, it requires the integration of browser-based WebAssembly terminal emulation, advanced frontend documentation frameworks, and meticulously structured pedagogical content. This comprehensive analysis delineates the optimal frontend infrastructure required to host these tutorials and provides an exhaustive, deep-dive synthesis of the syllabus content that must populate the Beginner, Intermediate, and Advanced modules.

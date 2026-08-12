@@ -49,7 +49,8 @@ commit a clean baseline BEFORE launching a multi-agent workflow.
 **The `localStorage` key is `tmx:advanced:v1`, and it must never be unified
 with `tmx:beginners:v1` or `tmx:intermediate:v1`.**
 
-`src/lib/progress.ts` line 10. It looks like a copy-paste leftover from the
+Look for the `KEY` constant in `src/lib/progress.ts` — named rather than
+numbered, because the line moves. It looks like a copy-paste leftover from the
 port. It is the opposite: it is the fix.
 
 All three courses ship as **paths on one origin**, assembled into a single
@@ -571,12 +572,23 @@ they blocked the whole monorepo's pipeline, not just this course.
    what search results showed. The `teaches` list now has nine entries matching
    the nine lessons; nothing validates it, so it is still on you.
 
-### 4. `SANDBOX_PATH` points at a page that does not exist
+### 4. FIXED — `SANDBOX_PATH` pointed at a page that does not exist
 
-`const SANDBOX_PATH = \`${BASE_PATH}/automation/shell-scripts/\`` is a
-course-two slug. See
-[No practice terminal](#no-practice-terminal-anywhere-and-that-is-the-design).
-The COI loader is emitted into every page and never fires.
+It held a course-two slug (`automation/shell-scripts`) for a directory this
+course does not have, so the COI loader shipped in all 13 pages and could never
+fire. Two changes:
+
+- `SANDBOX_PATH` is now `null` — the honest value for a course with no
+  `LiveSandbox`. See
+  [No practice terminal](#no-practice-terminal-anywhere-and-that-is-the-design).
+- The loader entry is emitted **only when `SANDBOX_PATH` is set**, so this
+  course now ships none of it rather than shipping an inert script. Verified: 0
+  built pages reference `coi-serviceworker`.
+
+It is also now **enforced** — `scripts/check-curriculum.mjs` fails the build if a
+non-null `SANDBOX_PATH` does not resolve to a real content file, which is what
+would have caught the original drift. If a sandbox is ever added here, set the
+constant to that lesson's path and the guard will confirm it.
 
 ### 5. `markdown.rehypePlugins` is deprecated
 

@@ -286,7 +286,7 @@ const CODE_THEME_LIGHT = {
  *
  * One `@graph` describing the course as a single entity, emitted site-wide.
  * Site-wide is deliberate: `@id` anchors mean every page points at the SAME
- * Course node rather than declaring eleven competing courses, and Starlight's
+ * Course node rather than declaring one competing course per lesson, and Starlight's
  * `head` is the only injection point that reaches every page from config.
  * Keep `name`/`description` in sync with the Starlight options below.
  * ====================================================================== */
@@ -303,19 +303,20 @@ const STRUCTURED_DATA = {
 			isAccessibleForFree: true,
 			educationalLevel: 'Beginner',
 			learningResourceType: 'Interactive tutorial',
-			// WHAT THIS LIST IS: a summary of the skills the course advertises to
-			// search engines, NOT a per-lesson index. It has been described as
-			// "one entry per lesson" and has never satisfied that reading —
-			// beginner currently lists 8 against 11 lessons, intermediate 7
-			// against 8 — so the rule is stated here as what it actually is:
-			// the list must COVER the curriculum, in sidebar order, with no
-			// entry describing something the course does not teach.
+			// One entry per lesson, in sidebar order. This is what the site
+			// advertises to search engines as the competencies it imparts, and
+			// it sits ~300 lines from the sidebar it tracks, so it drifted
+			// twice: once advertising five skills while teaching seven, and
+			// later eight against eleven lessons.
 			//
-			// Nothing validates it. check-curriculum.mjs already reads both this
-			// file and LESSONS, so asserting coverage is a few lines away; it has
-			// not been done. Until it is, adding a lesson means editing this too.
+			// ENFORCED as of 2026-08-11 — scripts/check-curriculum.mjs asserts
+			// the count matches LESSONS and fails the build if it does not. Add
+			// a lesson and the build tells you to describe it here. Wording is
+			// still yours; coverage is not optional.
 			teaches: [
+				'Understanding what Termux is, and how it differs from a rooted phone or a plain terminal emulator',
 				'Installing Termux safely from F-Droid',
+				'Opening a first session and reading the shell prompt',
 				'Switching the Termux login shell to fish',
 				'Running multiple Termux sessions and using copy and paste on Android',
 				'Navigating a Linux filesystem from a phone',
@@ -323,6 +324,7 @@ const STRUCTURED_DATA = {
 				'Bridging Android storage with termux-setup-storage',
 				'Managing packages with pkg',
 				'Configuring the Termux extra-keys row',
+				'Where to go after the basics, and how to keep learning on the device',
 			],
 			provider: {
 				'@type': 'Organization',
@@ -452,14 +454,14 @@ export default defineConfig({
 					 * WAS: a plain <script src="coi-serviceworker.js"> right here, so
 					 * every page registered the worker, and every page was then served COEP
 					 * `require-corp`, and every first-time visitor paid a self-inflicted
-					 * reload — on 10 pages that gain nothing from it. Site-wide
+					 * reload — on every page that gains nothing from it. Site-wide
 					 * require-corp also silently blocks any future cross-origin
 					 * subresource (an embedded video, a screenshot from GitHub's CDN, a
 					 * badge) — a landmine for a docs site that will grow.
 					 *
 					 * NOW: the loader injects the worker only on the one lesson that
 					 * hosts LiveSandbox, and registers it with that lesson's directory
-					 * as the service-worker SCOPE, so the other ten pages are never
+					 * as the service-worker SCOPE, so every other page are never
 					 * controlled and never reload. `quiet: true` stops it logging on
 					 * every load. Both options are local additions to
 					 * public/coi-serviceworker.js, documented at the top of that file.

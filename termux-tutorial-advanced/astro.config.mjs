@@ -33,39 +33,39 @@ const DESCRIPTION =
 	'Course three of the Termux series. Run a real Debian userland under PRoot, bring up an X11 display server and a full XFCE desktop on your phone\'s own screen, hand 3D work to the GPU, and compile packages nobody has built for Android.';
 
 /**
- * INERT IN THIS COURSE, AND POINTING AT A PAGE THAT DOES NOT EXIST HERE.
+ * NO SANDBOX IN THIS COURSE, so no page needs cross-origin isolation.
  *
- * `SANDBOX_PATH` names the one page needing cross-origin isolation for
- * `SharedArrayBuffer`, which only `LiveSandbox` (CheerpX/WebVM) needs. It came
- * across from course two still naming course two's slug —
- * `automation/shell-scripts` — and this course has no `automation/` directory
- * at all. Its content tree is `container/`, `desktop/`, `hardware/`,
- * `reference/`, plus index/progress/where-next.
+ * `SANDBOX_PATH` names the single page that needs `SharedArrayBuffer`, which
+ * only `LiveSandbox` (CheerpX/WebVM) requires. Nothing in this course imports
+ * LiveSandbox — see "No practice terminal" in index.mdx for why — so the value
+ * is `null` and the COI loader below is not emitted at all.
  *
- * Nothing breaks today: no page in this course imports `LiveSandbox`, so the
- * injected loader's path test simply never matches and
- * `public/coi-serviceworker.js` is never registered. It is dead weight with a
- * landmine attached — add a sandbox to this course without fixing this constant
- * and you get a Boot button permanently stuck on "needs a refresh", with a
- * green build and nothing in the console.
+ * It arrived from course two still naming course two's slug
+ * (`automation/shell-scripts`), which does not exist here: this course's content
+ * tree is `container/`, `desktop/`, `hardware/`, `reference/`, plus
+ * index/progress/where-next. That was harmless only by accident — the loader's
+ * path test never matched — and it was a landmine: add a sandbox without
+ * noticing and the Boot button sticks on "needs a refresh" forever, with a green
+ * build and nothing in the console.
  *
- * Fix it by pointing at the real page at the moment a sandbox is added, or
- * delete the constant and the loader together. Nothing validates it;
- * `check-curriculum.mjs` already enumerates the slugs and could.
+ * If a sandbox is ever added here, set this to that lesson's path. It is checked
+ * — `scripts/check-curriculum.mjs` fails the build if a non-null SANDBOX_PATH
+ * does not resolve to a real content file.
  */
-const SANDBOX_PATH = `${BASE_PATH}/automation/shell-scripts/`;
+const SANDBOX_PATH = null;
 const COI_SW_URL = `${BASE_PATH}/coi-serviceworker.js`;
 
 /**
  * Rewrite root-relative links in content so BASE lives in exactly one place.
  *
- * Markdown/MDX authors write `/start/friendly-shell/` and this prefixes BASE at
- * build time. Previously every cross-lesson link hardcoded
- * `/termux-tutorial-for-beginners/...` (21 of them), which silently breaks the
- * moment `base` changes. It since has: the repo was renamed and BASE is now
- * `/termux-tutorial`, so those 21 links would all be 404s on Pages today. That
- * old path survives in this comment as history and nowhere else in the config —
- * `scripts/check-links.mjs` hardcodes the same BASE and must be changed with it.
+ * Content authors write `/container/why-proot/` and this prefixes BASE at build
+ * time, so the base path lives in exactly one place. Hardcoding it into content
+ * is the failure this prevents: the base has already moved once, and every
+ * hardcoded link would have become a 404 on Pages with a green local build.
+ *
+ * `scripts/check-links.mjs` resolves the same BASE the same way
+ * (`process.env.BASE ?? '<literal>'`). Both files hold that literal — change one
+ * and change the other.
  *
  * Skips external links, anchors, mailto/tel, and anything already prefixed.
  */
@@ -311,7 +311,7 @@ const CODE_THEME_LIGHT = {
  *
  * One `@graph` describing the course as a single entity, emitted site-wide.
  * Site-wide is deliberate: `@id` anchors mean every page points at the SAME
- * Course node rather than declaring eleven competing courses, and Starlight's
+ * Course node rather than declaring one competing course per lesson, and Starlight's
  * `head` is the only injection point that reaches every page from config.
  * Keep `name`/`description` in sync with the Starlight options below.
  * ====================================================================== */
@@ -334,7 +334,8 @@ const STRUCTURED_DATA = {
 			// seven. Nothing validates it, so it is on you. This course arrived
 			// carrying course two's seven entries verbatim, which is the same
 			// drift by a different route: the list survived a port it did not
-			// describe.
+			// describe. ENFORCED as of 2026-08-11 — scripts/check-curriculum.mjs
+			// asserts one entry per lesson and fails the build otherwise.
 			teaches: [
 				'Why a PRoot container beats rooting, and what syscall interception can and cannot fake',
 				'Installing a full Debian userland with proot-distro, and removing it again',
@@ -472,38 +473,50 @@ export default defineConfig({
 					content: JSON.stringify(STRUCTURED_DATA),
 				},
 
-				{
-					/* ---- Cross-origin isolation, SCOPED --------------------------
-					 * WAS: a plain <script src="coi-serviceworker.js"> right here, so
-					 * every page registered the worker, and every page was then served COEP
-					 * `require-corp`, and every first-time visitor paid a self-inflicted
-					 * reload — on 10 pages that gain nothing from it. Site-wide
-					 * require-corp also silently blocks any future cross-origin
-					 * subresource (an embedded video, a screenshot from GitHub's CDN, a
-					 * badge) — a landmine for a docs site that will grow.
-					 *
-					 * NOW: the loader injects the worker only on the one lesson that
-					 * hosts LiveSandbox, and registers it with that lesson's directory
-					 * as the service-worker SCOPE, so the other ten pages are never
-					 * controlled and never reload. `quiet: true` stops it logging on
-					 * every load. Both options are local additions to
-					 * public/coi-serviceworker.js, documented at the top of that file.
-					 *
-					 * The astro:page-load listener is insurance: it fires only if
-					 * Starlight's ClientRouter is ever enabled, at which point head
-					 * scripts stop re-running on navigation and the sandbox page would
-					 * otherwise never become isolated. */
-					tag: 'script',
-					content:
-						`(()=>{const P=${JSON.stringify(SANDBOX_PATH)},S=${JSON.stringify(COI_SW_URL)};let done=false;` +
-						`const load=()=>{if(done)return;let p=location.pathname;` +
-						`if(p.slice(-10)==='index.html')p=p.slice(0,-10);` +
-						`if(p.slice(-1)!=='/')p+='/';` +
-						`if(p!==P)return;done=true;` +
-						`window.coi={quiet:true,swUrl:S,scope:P};` +
-						`const s=document.createElement('script');s.src=S;document.head.appendChild(s);};` +
-						`load();document.addEventListener('astro:page-load',load);})();`,
-				},
+				/*
+				 * EMITTED ONLY IF THIS COURSE HAS A SANDBOX. With SANDBOX_PATH null
+				 * the entry is dropped entirely, rather than shipping a script into
+				 * every page's <head> whose only job is to decide it has nothing to
+				 * do. Advanced has no LiveSandbox, so advanced emits none of this.
+				 */
+				.../** @type {Array<{ tag: 'script', content: string }>} */ (
+					SANDBOX_PATH
+					? [
+					{
+						/* ---- Cross-origin isolation, SCOPED --------------------------
+						 * WAS: a plain <script src="coi-serviceworker.js"> right here, so
+						 * every page registered the worker, and every page was then served COEP
+						 * `require-corp`, and every first-time visitor paid a self-inflicted
+						 * reload — on every page that gains nothing from it. Site-wide
+						 * require-corp also silently blocks any future cross-origin
+						 * subresource (an embedded video, a screenshot from GitHub's CDN, a
+						 * badge) — a landmine for a docs site that will grow.
+						 *
+						 * NOW: the loader injects the worker only on the one lesson that
+						 * hosts LiveSandbox, and registers it with that lesson's directory
+						 * as the service-worker SCOPE, so every other page are never
+						 * controlled and never reload. `quiet: true` stops it logging on
+						 * every load. Both options are local additions to
+						 * public/coi-serviceworker.js, documented at the top of that file.
+						 *
+						 * The astro:page-load listener is insurance: it fires only if
+						 * Starlight's ClientRouter is ever enabled, at which point head
+						 * scripts stop re-running on navigation and the sandbox page would
+						 * otherwise never become isolated. */
+						tag: 'script',
+						content:
+							`(()=>{const P=${JSON.stringify(SANDBOX_PATH)},S=${JSON.stringify(COI_SW_URL)};if(!P)return;let done=false;` +
+							`const load=()=>{if(done)return;let p=location.pathname;` +
+							`if(p.slice(-10)==='index.html')p=p.slice(0,-10);` +
+							`if(p.slice(-1)!=='/')p+='/';` +
+							`if(p!==P)return;done=true;` +
+							`window.coi={quiet:true,swUrl:S,scope:P};` +
+							`const s=document.createElement('script');s.src=S;document.head.appendChild(s);};` +
+							`load();document.addEventListener('astro:page-load',load);})();`,
+					}
+						]
+					: []
+				),
 				{
 					// Pointer-tracked spotlight on cards. One delegated, passive
 					// listener; sets CSS vars the stylesheet reads. rAF-throttled.

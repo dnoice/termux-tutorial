@@ -7,6 +7,22 @@
  * keeps multiple tabs consistent.
  */
 
+/*
+ * NEVER SHARE THIS KEY WITH ANOTHER COURSE — not even to "consolidate the
+ * duplicated store", which is the exact change that breaks it.
+ *
+ * The four projects are PATHS on one origin AND one base directory
+ * (/termux-tutorial/{,beginner,intermediate,advanced}), and localStorage is
+ * scoped to the origin, not the path. A shared key means each course silently
+ * overwrites the others' `completed` array and profile: no error, no warning,
+ * no recovery — the learner just finds their other course blank.
+ *
+ * `v1` is a SCHEMA version, not a course counter. Bump it only when the stored
+ * shape changes, never to distinguish a course.
+ *
+ * The payoff for keeping them distinct: hub/src/lib/store.ts reads all three
+ * keys and writes the shared profile back into each.
+ */
 const KEY = 'tmx:intermediate:v1';
 const EVENT = 'tmx:progress-changed';
 
@@ -145,17 +161,31 @@ export function stats(data: ProgressData = load()): ProgressStats {
  * opaque blob — this is an honour-system checklist, not an auth token.
  * ------------------------------------------------------------------ */
 
+/*
+ * DECLARED BEFORE THE INTERFACE, AND THE INTERFACE KEYS OFF IT.
+ *
+ * This constant and `ProgressExport['kind']` used to be two independent string
+ * literals kept equal by hand, and a port is exactly the moment they stop being
+ * equal: the advanced course was ported from THIS file and shipped with
+ * EXPORT_KIND updated and the interface still saying
+ * `termux-intermediate-progress` — two of the three typecheck errors that port
+ * carried. `typeof EXPORT_KIND` makes that unrepresentable: one string, and the
+ * next port changes it once.
+ *
+ * The VALUE stays per-course. Unifying it with a sibling's would make this
+ * course accept the sibling's export file and prune every slug out of it.
+ */
+export const EXPORT_KIND = 'termux-intermediate-progress' as const;
+
 /** Wire format for an exported progress file. */
 export interface ProgressExport {
 	/** Guards against importing an unrelated JSON file and wiping progress. */
-	kind: 'termux-intermediate-progress';
+	kind: typeof EXPORT_KIND;
 	version: 1;
 	exportedAt: string;
 	profile: Profile;
 	completed: string[];
 }
-
-export const EXPORT_KIND = 'termux-intermediate-progress';
 
 /** Serialize current progress as pretty-printed JSON. */
 export function exportProgress(data: ProgressData = load()): string {

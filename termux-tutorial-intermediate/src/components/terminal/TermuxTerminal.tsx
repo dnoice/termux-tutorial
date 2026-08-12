@@ -513,11 +513,11 @@ export default function TermuxTerminal({
 		   carrying its own copy of the key semantics — duplicating them in a
 		   click handler is how the two drift apart.
 
-		   INVARIANT, currently violated: every sequence TOUCH_KEYS sends should
-		   have a case below. ESC sends '' and has none, so the default
-		   branch rejects it and tapping ESC does nothing. Nothing tests this.
-		   Fixing it is a behaviour change, not a comment change; do not
-		   "correct" this note by deleting it. */
+		   INVARIANT: every sequence TOUCH_KEYS sends has a case below. ESC was
+		   the exception for a while — it sends a bare '\x1b', had no case, and the
+		   default branch rejected it, so tapping ESC did nothing at all. If you
+		   add a key to the row, add its case here in the same commit; nothing
+		   tests this pairing. */
 		const handleData = (raw: string) => {
 			let data = raw;
 
@@ -626,6 +626,15 @@ export default function TermuxTerminal({
 					term.clear();
 					cursorRow = 0; // clear() makes the prompt line the first line
 					render();
+					break;
+				case '\x1b': // ESC — dismiss the ghost suggestion, as fish does
+					// The key row offers ESC, so it must do something. fish's own
+					// behaviour is the honest one: drop the autosuggestion from
+					// view and leave the typed buffer alone. ghostOff is transient
+					// by design — the next keystroke re-renders and it returns.
+					ghostOff = true;
+					render();
+					ghostOff = false;
 					break;
 				case '\x1b[A': // ↑ previous matching history entry
 					historyMove(-1);
