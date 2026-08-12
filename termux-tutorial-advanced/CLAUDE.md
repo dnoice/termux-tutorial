@@ -645,10 +645,22 @@ migration) rather than as a drive-by.
 ## Housekeeping
 
 - Tab indentation in CSS/TS. Comments explain *why*, citing the before/after.
-- Large bitmaps do not belong in `src/assets/` — retired artwork lives in the
-  parent workspace's `global-assets/`. `src/assets/` currently also holds
-  `termux_scatter_field_bundle/` and a `.zip` of it, which the build does not
-  reference; treat them as staging, not as shipped assets.
+- **Shared artwork lives in `global-assets/` at the monorepo root, and this
+  project keeps no copy of it.** Stylesheets reach it with
+  `url('../../../global-assets/…')` and build-time imports with
+  `'../../../../global-assets/…?raw'`; Vite resolves across the project
+  boundary and hashes the file into this project's own `_astro/`. `src/assets/`
+  is empty here and should stay that way.
+
+  Two exceptions are generated copies, because `public/` cannot be aliased:
+  `public/favicon.svg` and `public/fonts/*.woff2`. Run `npm run assets:sync`
+  from the root after changing either upstream; `npm run assets:check` fails on
+  drift. `public/og-default.*` is deliberately NOT synced — the social card
+  names this course, so the copies genuinely differ.
+
+  Media the frontend does not serve lives in the git-ignored `scratchpad/` —
+  including the `termux_scatter_field_bundle/` working set and its `.zip`, which
+  used to sit in `src/assets/` here and which the build never referenced.
 - `tsconfig.json` extends `astro/tsconfigs/strict`. `typescript` and
   `@astrojs/check` **are** installed, and CI runs `npm run check` as a gate
   before the build — so a type error here fails the pipeline for the **whole

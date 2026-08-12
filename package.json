@@ -41,6 +41,8 @@
 		"preview": "node scripts/preview.mjs _site",
 		"check": "node scripts/each.mjs run check",
 		"check:hmr": "node scripts/check-hmr.mjs",
+		"assets:sync": "node scripts/sync-assets.mjs",
+		"assets:check": "node scripts/sync-assets.mjs --check",
 		"check:links": "node scripts/check-assembled-links.mjs _site",
 		"install:all": "node scripts/each.mjs install",
 		"clean": "node scripts/each.mjs run clean --if-present"

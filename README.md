@@ -116,6 +116,48 @@ those — which is exactly the drift shape this repo keeps producing, and why th
 paragraph no longer claims the manifest is the only copy. Making CI derive its
 matrix from `projects.mjs` is the obvious fix and has not been done.
 
+### Assets — one directory for the whole ecosystem
+
+**`global-assets/` is the assets directory.** Every project reads from it; none
+of them keeps its own copy of shared artwork.
+
+```text
+global-assets/
+  linux_scatter_field_v3.svg        the page background, dark
+  linux_scatter_field_v3_light.svg  and light
+  termux_linux_elements.svg         inlined by BootSplash at build time
+  favicon.svg
+  fonts/                            the eight latin woff2 faces
+```
+
+Most of it needs no copying at all. A stylesheet writes
+`url('../../../global-assets/linux_scatter_field_v3.svg')` and an import writes
+`'../../../../global-assets/termux_linux_elements.svg?raw'`; Vite resolves
+across the project boundary, hashes the file into that project's `_astro/`, and
+rewrites the reference. One file on disk, four projects using it.
+
+Two kinds of asset cannot work that way, so they are **generated copies**:
+
+| Asset | Why it must be copied |
+| :--- | :--- |
+| `public/favicon.svg` | `public/` is copied verbatim into the output and cannot be aliased or resolved through Vite |
+| `public/fonts/*.woff2` | `@font-face` needs a literal, un-hashed URL — and faces are registered *per document*, so a face cached from a course page is unusable on a hub page that never declares it |
+
+```bash
+npm run assets:sync      # fan global-assets/ out into every project
+npm run assets:check     # verify without writing; exits 1 on drift
+npm run assets:sync -- --refresh   # re-pull the fonts from @fontsource-variable first
+```
+
+**Not synced, deliberately:** `og-default.png` / `og-default.svg` are per-project.
+The social card carries the course's own name, so those four copies genuinely
+differ and unifying them would be wrong.
+
+Anything the frontend does **not** serve — retired backgrounds, superseded
+artwork revisions, the scatter-field working bundles, screenshots — lives in
+`scratchpad/`, which is git-ignored. It is on disk and out of the repository;
+that directory was roughly 9 MB of a repo that is going public.
+
 ### Working inside one course
 
 You can still drive a single project directly, and the per-course guards are

@@ -28,3 +28,12 @@ pnpm-debug.log*
 Thumbs.db
 desktop.ini
 _site/
+
+# Scratchpad — media that is NOT served by the frontend: retired backgrounds,
+# superseded artwork revisions, the scatter-field working bundles and their
+# zips, screenshots. Kept on disk because it is the author's source material,
+# kept out of git because it was ~9 MB of a repository that is going public.
+#
+# Anything the build actually uses lives in global-assets/ and is referenced
+# from there. If you are looking for an asset the site renders, it is not here.
+scratchpad/
