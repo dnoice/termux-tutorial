@@ -14,7 +14,18 @@ import {
 } from '../lib/store.ts';
 
 /*
- * The one place identity is edited for the whole series.
+ * The only editor that writes identity to EVERY course in the series.
+ *
+ * NOT the only editor there is, and consolidation is NOT finished. All three
+ * courses still ship `src/components/profile/ProfileBadge.tsx`, mounted live
+ * by their `overrides/Sidebar.astro` (`<ProfileBadge client:only="react" />`),
+ * and its name field and avatar chips call that course's own
+ * `progress.ts` `setProfile()` — which loads and saves ONE key: the const KEY
+ * on line 10 of each course's progress.ts, `tmx:beginners:v1` /
+ * `tmx:intermediate:v1` / `tmx:advanced:v1`. So a learner who renames
+ * themselves in a course sidebar changes that course and no sibling; only
+ * this page's writeProfile() reaches all three. That hole is open — this page
+ * routes around it rather than closing it.
  *
  * Everything here is client-only for the same reason the dashboard is: this
  * data lives in the visitor's browser and nowhere else, so there is nothing
@@ -28,8 +39,11 @@ interface Props {
 }
 
 /* A small, deliberately opinionated set. A full emoji picker is a lot of
-   machinery for a decoration, and the free-text field below accepts anything
-   the keyboard can produce anyway. */
+   machinery for a decoration. There is no free-text alternative and no
+   "other…" escape hatch: the fieldset below renders exactly these twelve
+   buttons plus one more that sets `emoji` to '' — which is not "no avatar"
+   but the initials fallback, rendered by initials(profile.name). Twelve
+   presets and your initials are the whole of the choice. */
 const PRESET = ['🐧', '🐟', '🤖', '🦊', '🐙', '🦉', '🌱', '⚡', '🔧', '📦', '🛰️', '🧭'];
 
 type Saved = { kind: 'idle' } | { kind: 'ok'; msg: string } | { kind: 'err'; msg: string };

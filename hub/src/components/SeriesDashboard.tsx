@@ -161,9 +161,14 @@ export default function SeriesDashboard({ courses, base }: Props) {
 						Revisit the beginner course
 					</a>
 				)}
-				{/* The hub owns identity now. This used to send people INTO the
-				    beginner course to edit a profile that is supposed to be theirs
-				    across all three — and edits made there never reached the others. */}
+				{/* The only editor that writes to all three courses. This used to
+				    send people INTO the beginner course, and that editor is still
+				    there: every course mounts ProfileBadge from its
+				    overrides/Sidebar.astro, and its Save button calls that course's
+				    own progress.ts setProfile(), which writes that course's single
+				    key and nothing else. So an in-course rename still never reaches
+				    the siblings — the hole is open. This link routes around it; it
+				    has not replaced it. */}
 				<a className="btn" href={`${base}/profile/`}>
 					Manage your profile
 				</a>

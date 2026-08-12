@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import SettingsDialog from '../components/SettingsDialog.astro';
+import PromptMark from '../components/PromptMark.astro';
 import ProfileManager from '../components/ProfileManager.tsx';
 import { COURSE_MANIFEST } from '../lib/courses.ts';
 
@@ -15,13 +16,7 @@ const DESCRIPTION =
 	<div class="hub hub--page">
 		<header class="hub__top">
 			<a class="hub__mark" href={`${base}/`}>
-				<svg class="hub__mark-icon" viewBox="0 0 34 24" aria-hidden="true" focusable="false">
-					<path
-						class="hub__mark-chevron"
-						d="M3.4 4.2 L6.9 1.2 L18.4 12 L6.9 22.8 L3.4 19.8 L11.7 12 Z"
-					/>
-					<rect class="hub__mark-caret" x="20.5" y="18.4" width="11.5" height="3.4" rx="1.7" />
-				</svg>
+				<PromptMark />
 				Termux Tutorial
 			</a>
 			<SettingsDialog base={base} />

@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import SettingsDialog from '../components/SettingsDialog.astro';
 import Hero from '../components/Hero.astro';
+import PromptMark from '../components/PromptMark.astro';
 import SeriesDashboard from '../components/SeriesDashboard.tsx';
 import { COURSES, COURSE_MANIFEST } from '../lib/courses.ts';
 
@@ -41,26 +42,7 @@ const REFS = [
 	<div class="hub">
 		<header class="hub__top">
 			<a class="hub__mark" href={`${base}/`}>
-				{/*
-				 * The prompt mark, as geometry rather than type.
-				 *
-				 * It was `<span>&gt;_</span>` — two unrelated glyphs from a
-				 * proportional face, so the chevron and the underscore sat on
-				 * different baselines at different optical weights and the pair
-				 * read as disjointed beside a 700-weight wordmark. Text also gave
-				 * no way to size them relative to each other, or to animate.
-				 *
-				 * As an SVG the two shapes are drawn to one grid, scale with the
-				 * wordmark via `em`, take their colour from `currentColor`, and
-				 * the caret can blink the way a real one does.
-				 */}
-				<svg class="hub__mark-icon" viewBox="0 0 34 24" aria-hidden="true" focusable="false">
-					<path
-						class="hub__mark-chevron"
-						d="M3.4 4.2 L6.9 1.2 L18.4 12 L6.9 22.8 L3.4 19.8 L11.7 12 Z"
-					/>
-					<rect class="hub__mark-caret" x="20.5" y="18.4" width="11.5" height="3.4" rx="1.7" />
-				</svg>
+				<PromptMark />
 				Termux Tutorial
 			</a>
 			<SettingsDialog base={base} />

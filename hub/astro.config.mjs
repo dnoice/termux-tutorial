@@ -22,8 +22,19 @@ const BASE_PATH = BASE.replace(/\/$/, '');
 const SITE_URL = `${SITE.replace(/\/$/, '')}${BASE_PATH}`;
 
 const TITLE = 'Termux Tutorial — Linux on your Android phone';
+/*
+ * NOT THE DESCRIPTION THE PAGES USE. src/pages/index.astro and profile.astro
+ * each set their own, and nothing in src/ imports this constant — it is
+ * exported below and currently has no consumer.
+ *
+ * It is kept in step with them anyway, because the failure mode of a stale
+ * copy parked one import away from every <head> is exactly the drift this
+ * whole file set has been audited for. It previously claimed "a live terminal
+ * in every lesson", which is false: the beginner course has one on 8 of 11
+ * lessons, intermediate on none of its lessons, advanced on none at all.
+ */
 const DESCRIPTION =
-	'A three-part, hands-on Termux course with a live terminal in every lesson. Start at the beginning, or pick up where you left off.';
+	'A three-part, hands-on Termux course. The first course puts a live terminal in nearly every lesson, so you can start before you install anything.';
 
 export default defineConfig({
 	site: SITE,

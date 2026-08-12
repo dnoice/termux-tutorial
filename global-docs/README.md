@@ -11,6 +11,8 @@ audits/
   repo/             audits whose subject is the monorepo, not one course
 decisions/          why a piece of architecture is the way it is, with the
                     failures behind it and a deletion condition where one exists
+artwork/            handoff notes for shared artwork — the canonical copy of a
+                    document that was previously duplicated into every course
 walkthroughs/       first-run walkthroughs: reading a course as a learner
 archive/            point-in-time working documents, superseded but kept —
                     including pre-implementation research whose recommendations

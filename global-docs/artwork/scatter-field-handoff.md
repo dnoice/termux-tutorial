@@ -1,3 +1,19 @@
+> [!NOTE]
+> **Canonical copy.** This file existed six times — in all three courses'
+> `src/assets/` and again inside each course's `termux_scatter_field_bundle/` —
+> byte-identical, referenced by no code, and describing one piece of artwork.
+> The five duplicates were deleted and it lives here, once.
+>
+> **The "First Session in Cowork" section at the end is spent.** It is a
+> one-time work plan whose session has happened, and it hardcodes a path into
+> one course's live `src/assets` tree — a path that was simply wrong in the two
+> courses it was copied into. Read it as history, not as instructions.
+>
+> The artwork bundles themselves are still in each course's `src/assets/` and
+> are **not referenced by any build**; they are staging, not shipped assets.
+> Per-asset third-party attribution stays where it belongs, beside the assets,
+> in each `termux_scatter_field_bundle/icon-kit/SOURCES_AND_LICENSES.md`.
+
 <!--
 ✒ Metadata
     - Title: Scatter Field Continuation Handoff (digiSpace Edition - v1.0)

@@ -1,20 +1,43 @@
-/* EXTRACTED VERBATIM from termux-tutorial-for-beginners/src/styles/global.css.
-   Do not hand-edit: change the course tokens and re-extract, or the hub and the
-   courses drift into two slightly different products. */
+/* Fire Watch tokens for the hub, COPIED FROM the courses' global.css — a
+   partial, one-way, hand-maintained copy, not a mirror and not a build step.
+
+   VALUES ARE VERBATIM AND MUST STAY THAT WAY. Every custom property declared
+   below carries the same value as its declaration in
+   termux-tutorial-for-beginners/src/styles/global.css (verified by diffing the
+   two files' declarations: 0 mismatches). All three courses declare the same
+   146 token names, so the beginner course is not special — it is just the one
+   this was taken from. Change a value in a course and change it here, or the
+   hub and the courses drift into two slightly different products.
+
+   BUT THIS IS A SUBSET, SELECTED BY HAND: 78 properties here against 146 in
+   global.css. The 68 left behind are 52 Starlight `--sl-*` bridge vars, 8
+   Expressive Code `--ec-*` vars, and 8 course-only helpers (--tmx-grad,
+   --tmx-grad-soft, --link, --shadow-brand, --shadow-brand-ring,
+   --shadow-brand-lift, --primary, --ghost). The hub has no Starlight and no
+   Expressive Code, so there is nothing for those to bridge; only --sl-font and
+   --sl-font-mono are carried over.
+
+   So "re-extract" is not an operation anyone can run — no script does it, and
+   a naive whole-file copy would either drop what the hub needs or import 68
+   names that resolve to nothing here. Adding a token is a deliberate edit:
+   copy the course's declaration exactly. */
 
 :root {
-	/* Type — four faces, named for the ROLE each one actually plays.
-	   --font-ui was called --font-body until this pass, which was the same
-	   lying-token pattern as the already-fixed --fg-body: it resolves to
-	   Inter, the UI chrome face, while the face that actually sets body prose
-	   is --font-detail (Source Serif 4) — as `.sl-markdown-content
-	   { font-family: var(--font-detail) }` further down this file proves.
-	   Renamed across all 13 consumers; the rename was safe to do in one pass
-	   because the React islands had just stopped reading it from inline style
-	   objects, leaving this file as its only consumer (verified by grep over
-	   src/, scripts/, astro.config.mjs and the root docs: 0 stragglers).
-	   FONT_FACES in astro.config.mjs keys off family NAMES, not token names,
-	   so it needed no mirroring edit. */
+	/* Type — four faces, named for the ROLE each one plays rather than for
+	   where you might guess it is used. --font-ui resolves to Inter, the UI
+	   chrome face; the face that sets body prose is --font-detail (Source
+	   Serif 4). Read the name, not the position in this list. */
+	/*
+	 * NO ALIASES. hub.css previously referenced --bg-raised, --font-display and
+	 * --leading-relaxed, none of which is declared anywhere in this repo — 14
+	 * `var()` lookups resolving to nothing, so those elements silently fell back
+	 * to inherited or initial values. The fix was to point hub.css at the tokens
+	 * that already exist (--bg-elevated, --font-heading, --leading-prose) rather
+	 * than to declare three more names for the same three facts.
+	 *
+	 * If a hub-only token is ever genuinely needed, add it in a clearly marked
+	 * block below rather than aliasing one of these.
+	 */
 	--font-heading: 'Crimson Pro Variable', 'Georgia', 'Cambria', serif;
 	--font-detail: 'Source Serif 4 Variable', 'Georgia', serif;
 	--font-ui: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;

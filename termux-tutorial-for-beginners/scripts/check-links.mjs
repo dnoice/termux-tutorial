@@ -88,11 +88,29 @@ const COURSE_SEGMENTS = ['beginner', 'intermediate', 'advanced'];
 const SIBLING_PREFIXES = COURSE_SEGMENTS.filter((s) => s !== OWN_SEGMENT).map(
 	(s) => `${SERIES_ROOT}/${s}/`
 );
-/** Hub pages, which live directly under the series root rather than a course. */
-const HUB_PAGES = new Set([`${SERIES_ROOT}/`, `${SERIES_ROOT}/profile/`]);
 const deferred = [];
-const isCrossCourse = (p) =>
-	HUB_PAGES.has(p) || SIBLING_PREFIXES.some((pre) => p.startsWith(pre));
+/**
+ * Anything inside the series but outside THIS course is deferred.
+ *
+ * Two shapes qualify: a sibling course (matched against COURSE_SEGMENTS above,
+ * so a typo in the segment is still caught here and now), and a hub page, which
+ * lives directly under the series root.
+ *
+ * The hub arm used to be an exact-match set of its two current pages. That is a
+ * hand-maintained enumeration of another project's routes: the day the hub gains
+ * a third page, every course that links to it fails its own build for a link
+ * that is perfectly correct. Deriving it costs nothing here because
+ * `scripts/check-assembled-links.mjs` resolves all of these for real against the
+ * assembled tree — including a mistyped hub path, which fails there rather than
+ * passing silently.
+ */
+const isCrossCourse = (p) => {
+	if (SIBLING_PREFIXES.some((pre) => p.startsWith(pre))) return true;
+	// Under the series root, but not this course's own base: that is the hub.
+	const inSeries = p === `${SERIES_ROOT}/` || p.startsWith(`${SERIES_ROOT}/`);
+	const inThisCourse = p === BASE || p.startsWith(`${BASE}/`);
+	return inSeries && !inThisCourse;
+};
 const broken = [];
 const unprefixed = [];
 
