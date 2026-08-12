@@ -43,6 +43,7 @@ if (shouldBuild) {
 		const r = spawnSync(npmCmd, ['run', 'build'], {
 			cwd: p.dir,
 			stdio: 'inherit',
+			windowsHide: true,
 			shell: process.platform === 'win32',
 		});
 		if (r.status !== 0) {

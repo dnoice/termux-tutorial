@@ -100,12 +100,20 @@ function waitForPort(port, timeoutMs) {
  * NO `--ignore-lock` — Astro rejects it in background mode, because the lock
  * file is how `astro dev stop` finds its own server. Stale locks are cleared by
  * the sweep before startup instead.
+ *
+ * `windowsHide: true` ON EVERY SPAWN IN THIS REPO, and it is not cosmetic.
+ * Node defaults it to FALSE, so on Windows each child process pops a console
+ * window over whatever the user is doing. `npm run dev` starts eight children
+ * before it prints a URL — four `astro dev stop` sweeps, then four servers —
+ * and four more on Ctrl-C, so the screen flickers with black rectangles every
+ * time. stdio is unaffected: output still reaches the parent, only the window
+ * is suppressed. Any spawn added to scripts/ needs it too.
  */
 function startProject(project) {
 	const child = spawn(
 		process.execPath,
 		['node_modules/astro/bin/astro.mjs', 'dev', '--port', String(project.port)],
-		{ cwd: project.dir, stdio: ['ignore', 'pipe', 'pipe'] }
+		{ cwd: project.dir, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }
 	);
 	/*
 	 * BUFFER EVERYTHING, PRINT ON FAILURE — quiet on success, complete on
@@ -139,6 +147,7 @@ function stopAll() {
 			spawnSync(process.execPath, ['node_modules/astro/bin/astro.mjs', 'dev', 'stop'], {
 				cwd: p.dir,
 				stdio: 'ignore',
+				windowsHide: true,
 				timeout: 15_000,
 			});
 		} catch {
@@ -324,6 +333,7 @@ for (const p of PROJECTS) {
 		spawnSync(process.execPath, ['node_modules/astro/bin/astro.mjs', 'dev', 'stop'], {
 			cwd: p.dir,
 			stdio: 'ignore',
+			windowsHide: true,
 			timeout: 15_000,
 		});
 	} catch {

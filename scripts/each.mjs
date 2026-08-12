@@ -32,6 +32,7 @@ for (const p of PROJECTS) {
 	const r = spawnSync(npmCmd, args, {
 		cwd: p.dir,
 		stdio: 'inherit',
+		windowsHide: true,
 		shell: process.platform === 'win32',
 	});
 	if (r.status !== 0) failed.push(p.label);
