@@ -75,7 +75,21 @@ course should close them in place as they go and delete this note.
 
 | Audit | Scope | State |
 | :--- | :--- | :--- |
-| `repo/2026-08-11-documentation` | All four projects: inline comments + markdown | 414 findings (82 P1, 47 P2). **Remediated in a single ordered pass** — see `repo/2026-08-11-remediation-ledger.md` for item → decision → files → verification. |
+| `repo/2026-08-11-documentation` | All four projects: inline comments + markdown | 414 findings (82 P1, 47 P2). **Remediated in a single ordered pass.** |
+
+**Where the remediation record actually is: the commit history.** A separate
+ledger file was intended and never written — this table pointed at one until
+2026-08-20, which is the same defect the audit existed to remove, found by
+following its own reference. Rather than reconstruct a ledger after the fact,
+the pointer now names the real record:
+
+```bash
+git log --oneline --grep='[Dd]ocs audit'      # the remediation commits
+git log --grep='[Dd]ocs audit'                # with the reasoning in full
+```
+
+Those messages carry item → decision → files → verification for each cluster,
+including the cases where an auditor was wrong and why. Treat them as the ledger.
 
 Three files in this directory were themselves findings of that audit: the tree
 above described the advanced course as non-existent, the status table claimed
