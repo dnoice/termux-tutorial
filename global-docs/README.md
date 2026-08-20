@@ -31,11 +31,19 @@ kind is one of:
 | `lesson-flow` | Sequence, prerequisites, forward references, the prev/next chain |
 | `documentation` | Every documentation surface — inline comments and markdown — against the implementation |
 
-Repo-scoped audits come in two files, because the summary and the evidence serve
-different readers: `<date>-<kind>.html` is the report you read, and
-`<date>-findings.md` is the raw per-region output you consult before changing a
-specific comment. The HTML is the one exception to the markdown convention —
-it carries severity encoding and a theme-aware palette that markdown cannot.
+Repo-scoped audits come in three files, because the standard, the summary and
+the evidence serve different readers:
+
+| File | What it is |
+| :--- | :--- |
+| `<date>-<kind>-brief.md` | **The instructions the audit was run against.** Preserved verbatim, so findings can be judged against the standard that produced them — and so the next audit can reuse it. |
+| `<date>-<kind>.html` | The report you read. |
+| `<date>-findings.md` | The raw per-region evidence, consulted before changing a specific comment. |
+
+The HTML is the one exception to the markdown convention — it carries severity
+encoding and a theme-aware palette that markdown cannot. The brief is the one
+exception to the house markdown style: it is a record of what was asked, so it
+is reproduced exactly as written rather than reformatted.
 
 The date is when the audit **ran**, not when its findings were fixed. Findings
 are closed in place inside the report, with a note explaining the fix — so a
