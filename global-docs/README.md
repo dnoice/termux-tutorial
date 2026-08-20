@@ -13,6 +13,8 @@ decisions/          why a piece of architecture is the way it is, with the
                     failures behind it and a deletion condition where one exists
 artwork/            handoff notes for shared artwork — the canonical copy of a
                     document that was previously duplicated into every course
+templates/          reusable methodology, written to be copied OUT of this repo
+                    and dropped into another one
 walkthroughs/       first-run walkthroughs: reading a course as a learner
 archive/            point-in-time working documents, superseded but kept —
                     including pre-implementation research whose recommendations
@@ -111,6 +113,19 @@ course written in a single pass; the Critical and High findings were closed on
 2026-08-10 (identity, the battery-check filename mismatch, the tunnel bind
 address, the two stub reference pages, code-block overflow), and the Medium and
 below remain open.
+
+## Templates
+
+`templates/documentation-audit-brief.md` is the portable version of the audit
+standard — the same rubric with this repository's assumptions removed, a
+fill-in context block at the top, and the operating lessons from actually
+running it folded in (partition by file family, adjudicate contested facts
+centrally, prove every new guard can fail, verify in the mode users actually
+use, derive-or-delete counts).
+
+It is meant to be **copied into another project**, not read here. The version
+that governed *this* repository's audit stays in `audits/repo/`, verbatim and
+unedited, because that one is evidence rather than a tool.
 
 ## Reading order for the intermediate work
 
